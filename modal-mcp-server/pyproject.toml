@@ -9,4 +9,5 @@ dependencies = [
     "modal>=0.73.116",
     "pydantic>=2.10.6",
     "uv>=0.6.9",
+    "google-generativeai>=0.3.0",
 ]
