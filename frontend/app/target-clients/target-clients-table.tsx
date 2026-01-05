@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { generateICPForClients, ICPResult } from "@/app/(admin)/actions/generate-icp";
+import { generateICPForClients, ICPResult } from "@/app/actions/generate-icp";
 
 interface TargetClientsTableProps {
     clients: TargetClient[];

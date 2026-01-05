@@ -1,4 +1,4 @@
-import { getTargetClients } from "@/app/(admin)/actions/get-target-clients";
+import { getTargetClients } from "@/app/actions/get-target-clients";
 import { BullseyeView } from "@/components/dashboard/BullseyeView";
 
 export default async function BullseyePage() {

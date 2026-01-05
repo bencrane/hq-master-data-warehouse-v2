@@ -2,3 +2,21 @@
 .env
 .env.local
 .env.*.local
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
