@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { TargetClient } from '@/types';
 import {
     Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
@@ -52,12 +53,17 @@ export function TargetClientsTable({ clients }: TargetClientsTableProps) {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Target Clients</CardTitle>
-                    <Button 
-                        disabled={selectedIds.size === 0 || isProcessing} 
-                        onClick={handleGenerateICP}
-                    >
-                        {isProcessing ? "Generating..." : `Generate ICP (${selectedIds.size})`}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href="/target-clients/upload">Upload CSV</Link>
+                        </Button>
+                        <Button 
+                            disabled={selectedIds.size === 0 || isProcessing} 
+                            onClick={handleGenerateICP}
+                        >
+                            {isProcessing ? "Generating..." : `Generate ICP (${selectedIds.size})`}
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
