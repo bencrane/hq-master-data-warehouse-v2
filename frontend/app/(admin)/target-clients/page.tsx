@@ -1,5 +1,5 @@
 
-import { getTargetClients } from "@/app/actions/get-target-clients";
+import { getTargetClients } from "@/app/(admin)/actions/get-target-clients";
 import { TargetClientsTable } from "./target-clients-table";
 
 export default async function TargetClientsPage() {

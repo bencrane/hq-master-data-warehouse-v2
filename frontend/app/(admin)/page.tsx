@@ -1,23 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function Home() {
+export default function AdminHome() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-10">
       <Card className="w-[350px]">
         <CardHeader>
-          <CardTitle>Project Initialized</CardTitle>
+          <CardTitle>Admin Dashboard</CardTitle>
           <CardDescription>
-            Next.js 14 + Tailwind + Shadcn/ui
+            HQ Master Data Warehouse
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            The frontend setup is complete. You can now start building your application.
+            Manage target clients, generate ICPs, and run projections.
           </p>
-          <Button className="w-full">Get Started</Button>
+          <Button className="w-full" asChild>
+            <a href="/target-clients">View Target Clients</a>
+          </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
+
