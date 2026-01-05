@@ -29,6 +29,12 @@ export function Navbar() {
                         Target Clients
                     </Link>
                     <Link
+                        href="/target-clients/upload"
+                        className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                    >
+                        Upload Clients
+                    </Link>
+                    <Link
                         href="#"
                         className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     >
