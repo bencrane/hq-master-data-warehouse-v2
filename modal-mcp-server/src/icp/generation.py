@@ -7,17 +7,8 @@ Uses OpenAI to generate ICP criteria for target clients.
 import os
 import json
 import modal
-from pydantic import BaseModel
-from typing import Optional
 
 from config import app, image
-
-
-class TargetClientRequest(BaseModel):
-    target_client_id: str
-    company_name: str
-    domain: str
-    company_linkedin_url: Optional[str] = None
 
 
 ICP_PROMPT = """You are an expert B2B sales strategist. Given a company, generate ideal customer profile (ICP) criteria for finding leads who would be good prospects for this company's product/service.
@@ -56,13 +47,21 @@ Return ONLY the JSON object, no other text.
     ],
 )
 @modal.fastapi_endpoint(method="POST")
-def generate_target_client_icp(request: TargetClientRequest) -> dict:
+def generate_target_client_icp(request: dict) -> dict:
     """
     Generate ICP criteria for a target client using OpenAI.
     Stores raw response and extracted ICP.
     """
     from openai import OpenAI
     from supabase import create_client
+
+    target_client_id = request.get("target_client_id")
+    company_name = request.get("company_name")
+    domain = request.get("domain")
+    company_linkedin_url = request.get("company_linkedin_url")
+
+    if not target_client_id or not company_name or not domain:
+        return {"success": False, "error": "Missing required fields: target_client_id, company_name, domain"}
 
     openai_api_key = os.environ["OPENAI_API_KEY"]
     supabase_url = os.environ["SUPABASE_URL"]
@@ -73,9 +72,9 @@ def generate_target_client_icp(request: TargetClientRequest) -> dict:
 
     try:
         prompt = ICP_PROMPT.format(
-            company_name=request.company_name,
-            domain=request.domain,
-            company_linkedin_url=request.company_linkedin_url or "N/A",
+            company_name=company_name,
+            domain=domain,
+            company_linkedin_url=company_linkedin_url or "N/A",
         )
 
         response = client.chat.completions.create(
@@ -99,7 +98,7 @@ def generate_target_client_icp(request: TargetClientRequest) -> dict:
             supabase.schema("raw")
             .from_("icp_payloads")
             .insert({
-                "target_client_id": request.target_client_id,
+                "target_client_id": target_client_id,
                 "workflow_slug": "ai-generate-target-client-icp",
                 "provider": "openai",
                 "model": "gpt-4o-mini",
@@ -114,7 +113,7 @@ def generate_target_client_icp(request: TargetClientRequest) -> dict:
 
         extracted_data = {
             "raw_payload_id": raw_id,
-            "target_client_id": request.target_client_id,
+            "target_client_id": target_client_id,
             "industries": company_criteria.get("industries"),
             "employee_count_min": company_criteria.get("employee_count_min"),
             "employee_count_max": company_criteria.get("employee_count_max"),
