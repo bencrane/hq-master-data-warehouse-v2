@@ -272,3 +272,20 @@ modal deploy app.py
 ## Contact
 
 For questions about this infrastructure, reference this document and the MODAL_ENDPOINTS.md file which contains detailed payload documentation.
+
+---
+
+## ⚠️ CRITICAL WARNING: DO NOT DELETE OLD FILES
+
+**File:** `modal-mcp-server/src/icp_generation.py`
+
+**Status:** DO NOT DELETE
+
+**Reason:** This old file may contain logic that the new code is missing. It must remain in place until:
+
+1. Deployment is confirmed working
+2. ALL endpoints are tested end-to-end with real data
+3. Results are verified in the database
+4. User explicitly approves deletion
+
+**Rule:** No files are to be deleted without express, specific, explicit permission from the user. Deleting files haphazardly without verification is exactly the type of careless work that caused this infrastructure failure in the first place.
