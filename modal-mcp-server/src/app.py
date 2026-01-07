@@ -18,8 +18,8 @@ from config import app, image
 
 # Import all endpoint modules - this registers them with the app
 # These imports must happen AFTER app is defined in config
-from ingest.company import ingest_company_payload, ingest_company_discovery
-from ingest.person import ingest_person_payload, ingest_person_discovery
+from ingest.company import ingest_clay_company_firmographics, ingest_clay_find_companies
+from ingest.person import ingest_clay_person_profile, ingest_clay_find_people
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -33,9 +33,9 @@ import extraction.person
 __all__ = [
     "app",
     "image",
-    "ingest_company_payload",
-    "ingest_company_discovery",
-    "ingest_person_payload",
-    "ingest_person_discovery",
+    "ingest_clay_company_firmographics",
+    "ingest_clay_find_companies",
+    "ingest_clay_person_profile",
+    "ingest_clay_find_people",
     "generate_target_client_icp",
 ]

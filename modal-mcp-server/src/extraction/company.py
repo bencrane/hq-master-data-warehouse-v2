@@ -13,6 +13,7 @@ def extract_company_firmographics(supabase, raw_payload_id: str, company_domain:
     Extract company firmographics from raw payload to extracted.company_firmographics.
     Upserts on company_domain.
     """
+    # Get primary location
     locations = payload.get("locations", [])
     primary_location = None
     if locations:
@@ -23,6 +24,7 @@ def extract_company_firmographics(supabase, raw_payload_id: str, company_domain:
         if not primary_location:
             primary_location = locations[0]
 
+    # Parse source_last_refresh
     source_last_refresh = None
     if payload.get("last_refresh"):
         try:
@@ -55,6 +57,7 @@ def extract_company_firmographics(supabase, raw_payload_id: str, company_domain:
         "source_last_refresh": source_last_refresh,
     }
 
+    # Upsert on company_domain
     result = (
         supabase.schema("extracted")
         .from_("company_firmographics")
@@ -65,7 +68,7 @@ def extract_company_firmographics(supabase, raw_payload_id: str, company_domain:
     return result.data[0]["id"] if result.data else None
 
 
-def extract_company_discovery(supabase, raw_payload_id: str, company_domain: str, payload: dict) -> Optional[str]:
+def extract_find_companies(supabase, raw_payload_id: str, company_domain: str, payload: dict) -> Optional[str]:
     """
     Extract company discovery data from raw payload to extracted.company_discovery.
     Upserts on domain.
@@ -90,6 +93,7 @@ def extract_company_discovery(supabase, raw_payload_id: str, company_domain: str
         "derived_datapoints": payload.get("derived_datapoints"),
     }
 
+    # Upsert on domain
     result = (
         supabase.schema("extracted")
         .from_("company_discovery")

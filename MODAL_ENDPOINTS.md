@@ -9,11 +9,11 @@
 
 These endpoints receive fully enriched data (detailed profiles with arrays).
 
-### 1. Ingest Company Payload (Enriched)
+### 1. Ingest Clay Company Firmographics (Enriched)
 
 **Endpoint:**  
 ```
-https://bencrane--hq-master-data-ingest-ingest-company-payload.modal.run
+https://bencrane--hq-master-data-ingest-ingest-clay-company-firmographics.modal.run
 ```
 
 **Method:** `POST`
@@ -69,11 +69,11 @@ https://bencrane--hq-master-data-ingest-ingest-company-payload.modal.run
 
 ---
 
-### 2. Ingest Person Payload (Enriched)
+### 2. Ingest Clay Person Profile (Enriched)
 
 **Endpoint:**  
 ```
-https://bencrane--hq-master-data-ingest-ingest-person-payload.modal.run
+https://bencrane--hq-master-data-ingest-ingest-clay-person-profile.modal.run
 ```
 
 **Method:** `POST`
@@ -207,11 +207,11 @@ https://bencrane--hq-master-data-ingest-ingest-person-payload.modal.run
 
 These endpoints receive lightweight discovery data (no full arrays, just key fields).
 
-### 3. Ingest Company Discovery
+### 3. Ingest Clay Find Companies (Discovery)
 
 **Endpoint:**  
 ```
-https://bencrane--hq-master-data-ingest-ingest-company-discovery.modal.run
+https://bencrane--hq-master-data-ingest-ingest-clay-find-companies.modal.run
 ```
 
 **Method:** `POST`
@@ -263,11 +263,11 @@ https://bencrane--hq-master-data-ingest-ingest-company-discovery.modal.run
 
 ---
 
-### 4. Ingest Person Discovery
+### 4. Ingest Clay Find People (Discovery)
 
 **Endpoint:**  
 ```
-https://bencrane--hq-master-data-ingest-ingest-person-discovery.modal.run
+https://bencrane--hq-master-data-ingest-ingest-clay-find-people.modal.run
 ```
 
 **Method:** `POST`
@@ -388,9 +388,9 @@ All workflows are registered in `reference.enrichment_workflow_registry`:
 
 | Data Type | Endpoint | Workflow Slug |
 |-----------|----------|---------------|
-| **Company enriched** | ingest-company-payload | `clay-company-firmographics` |
-| **Person enriched** | ingest-person-payload | `clay-person-profile` |
-| **Company discovery** | ingest-company-discovery | `clay-find-companies` |
-| **Person discovery** | ingest-person-discovery | `clay-find-people` |
+| **Company enriched** | ingest-clay-company-firmographics | `clay-company-firmographics` |
+| **Person enriched** | ingest-clay-person-profile | `clay-person-profile` |
+| **Company discovery** | ingest-clay-find-companies | `clay-find-companies` |
+| **Person discovery** | ingest-clay-find-people | `clay-find-people` |
 | **ICP generation** | generate-target-client-icp | `ai-generate-target-client-icp` |
 

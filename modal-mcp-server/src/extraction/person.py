@@ -13,6 +13,7 @@ def parse_date(date_str: Optional[str]) -> Optional[str]:
     if not date_str:
         return None
     try:
+        # Handle various formats
         if "T" in date_str:
             return date_str.split("T")[0]
         return date_str[:10] if len(date_str) >= 10 else date_str
@@ -28,6 +29,7 @@ def extract_person_profile(supabase, raw_payload_id: str, linkedin_url: str, pay
     """
     latest_exp = payload.get("latest_experience", {}) or {}
 
+    # Parse source_last_refresh
     source_last_refresh = None
     if payload.get("last_refresh"):
         try:
@@ -51,6 +53,7 @@ def extract_person_profile(supabase, raw_payload_id: str, linkedin_url: str, pay
         "num_followers": payload.get("num_followers"),
         "picture_url": payload.get("picture_url_orig") or payload.get("picture_url_copy"),
         "jobs_count": payload.get("jobs_count"),
+        # Flattened from latest_experience
         "latest_title": latest_exp.get("title"),
         "latest_company": latest_exp.get("company"),
         "latest_company_domain": latest_exp.get("company_domain"),
@@ -59,6 +62,7 @@ def extract_person_profile(supabase, raw_payload_id: str, linkedin_url: str, pay
         "latest_locality": latest_exp.get("locality"),
         "latest_start_date": parse_date(latest_exp.get("start_date")),
         "latest_is_current": latest_exp.get("is_current"),
+        # Sparse arrays as JSONB
         "certifications": payload.get("certifications"),
         "languages": payload.get("languages"),
         "courses": payload.get("courses"),
@@ -67,9 +71,11 @@ def extract_person_profile(supabase, raw_payload_id: str, linkedin_url: str, pay
         "publications": payload.get("publications"),
         "volunteering": payload.get("volunteering"),
         "awards": payload.get("awards"),
+        # Metadata
         "source_last_refresh": source_last_refresh,
     }
 
+    # Check if existing record has older source_last_refresh
     existing = (
         supabase.schema("extracted")
         .from_("person_profile")
@@ -82,8 +88,10 @@ def extract_person_profile(supabase, raw_payload_id: str, linkedin_url: str, pay
         existing_refresh = existing.data[0].get("source_last_refresh")
         if existing_refresh and source_last_refresh:
             if str(existing_refresh) >= str(source_last_refresh):
+                # Existing is newer or same, skip update
                 return existing.data[0]["id"]
 
+        # Update existing
         result = (
             supabase.schema("extracted")
             .from_("person_profile")
@@ -93,6 +101,7 @@ def extract_person_profile(supabase, raw_payload_id: str, linkedin_url: str, pay
         )
         return existing.data[0]["id"]
     else:
+        # Insert new
         result = (
             supabase.schema("extracted")
             .from_("person_profile")
@@ -106,16 +115,19 @@ def extract_person_experience(supabase, raw_payload_id: str, linkedin_url: str, 
     """
     Extract person experience from raw payload to extracted.person_experience.
     Deletes existing records for this linkedin_url, then inserts new ones.
+    Returns count of records inserted.
     """
     experience_array = payload.get("experience", []) or []
 
     if not experience_array:
         return 0
 
+    # Delete existing experience records for this person
     supabase.schema("extracted").from_("person_experience").delete().eq(
         "linkedin_url", linkedin_url
     ).execute()
 
+    # Insert new records
     records = []
     for idx, exp in enumerate(experience_array):
         records.append({
@@ -144,16 +156,19 @@ def extract_person_education(supabase, raw_payload_id: str, linkedin_url: str, p
     """
     Extract person education from raw payload to extracted.person_education.
     Deletes existing records for this linkedin_url, then inserts new ones.
+    Returns count of records inserted.
     """
     education_array = payload.get("education", []) or []
 
     if not education_array:
         return 0
 
+    # Delete existing education records for this person
     supabase.schema("extracted").from_("person_education").delete().eq(
         "linkedin_url", linkedin_url
     ).execute()
 
+    # Insert new records
     records = []
     for idx, edu in enumerate(education_array):
         records.append({
@@ -175,7 +190,7 @@ def extract_person_education(supabase, raw_payload_id: str, linkedin_url: str, p
     return len(records)
 
 
-def extract_person_discovery(supabase, raw_payload_id: str, linkedin_url: str, payload: dict) -> Optional[str]:
+def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payload: dict) -> Optional[str]:
     """
     Extract person discovery data from raw payload to extracted.person_discovery.
     Upserts on linkedin_url.
@@ -195,6 +210,7 @@ def extract_person_discovery(supabase, raw_payload_id: str, linkedin_url: str, p
         "clay_company_record_id": payload.get("company_record_id"),
     }
 
+    # Upsert on linkedin_url
     result = (
         supabase.schema("extracted")
         .from_("person_discovery")
