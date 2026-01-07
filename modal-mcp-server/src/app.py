@@ -17,9 +17,17 @@ Rules:
 from config import app, image
 
 # Import all endpoint modules - this registers them with the app
+# These imports must happen AFTER app is defined in config
 from ingest.company import ingest_company_payload, ingest_company_discovery
 from ingest.person import ingest_person_payload, ingest_person_discovery
 from icp.generation import generate_target_client_icp
+
+# CRITICAL: Explicitly import extraction module so Modal mounts it.
+# The ingest functions import from extraction.company and extraction.person
+# inside their function bodies (lazy imports). Modal's static analysis may
+# not detect these runtime imports, so we force it to mount the package here.
+import extraction.company
+import extraction.person
 
 # Re-export for clarity
 __all__ = [
