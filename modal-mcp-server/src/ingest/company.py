@@ -1,7 +1,7 @@
 """
 Company Ingestion Endpoints
 
-- ingest_clay_company_firmographics: Enriched company data (clay-company-firmographics)
+- ingest_clay_company_firmo: Enriched company data (clay-company-firmographics)
 - ingest_clay_find_companies: Discovery company data (clay-find-companies)
 """
 
@@ -34,7 +34,7 @@ class CompanyDiscoveryRequest(BaseModel):
     secrets=[modal.Secret.from_name("supabase-credentials")],
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest_clay_company_firmographics(request: CompanyIngestRequest) -> dict:
+def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
     """
     Ingest enriched company payload (clay-company-firmographics workflow).
     Stores raw payload, then extracts to company_firmographics table.

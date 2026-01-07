@@ -9,11 +9,11 @@
 
 These endpoints receive fully enriched data (detailed profiles with arrays).
 
-### 1. Ingest Clay Company Firmographics (Enriched)
+### 1. Ingest Clay Company Firmo (Enriched)
 
 **Endpoint:**  
 ```
-https://bencrane--hq-master-data-ingest-ingest-clay-company-firmographics.modal.run
+https://bencrane--hq-master-data-ingest-ingest-clay-company-firmo.modal.run
 ```
 
 **Method:** `POST`
@@ -388,7 +388,7 @@ All workflows are registered in `reference.enrichment_workflow_registry`:
 
 | Data Type | Endpoint | Workflow Slug |
 |-----------|----------|---------------|
-| **Company enriched** | ingest-clay-company-firmographics | `clay-company-firmographics` |
+| **Company enriched** | ingest-clay-company-firmo | `clay-company-firmographics` |
 | **Person enriched** | ingest-clay-person-profile | `clay-person-profile` |
 | **Company discovery** | ingest-clay-find-companies | `clay-find-companies` |
 | **Person discovery** | ingest-clay-find-people | `clay-find-people` |
