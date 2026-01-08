@@ -46,12 +46,12 @@ CREATE TABLE IF NOT EXISTS extracted.company_customer_claygent (
     origin_company_name TEXT,
     
     -- Customer company (exploded from customers array)
-    customer_company_name TEXT NOT NULL,
+    company_customer_name TEXT NOT NULL,
     case_study_url TEXT,
     has_case_study BOOLEAN NOT NULL DEFAULT false,
     
     -- Unique constraint: one record per origin+customer pair
-    UNIQUE(origin_company_domain, customer_company_name)
+    UNIQUE(origin_company_domain, company_customer_name)
 );
 
 -- Indexes for common queries
@@ -59,7 +59,7 @@ CREATE INDEX IF NOT EXISTS idx_company_customer_claygent_origin
     ON extracted.company_customer_claygent(origin_company_domain);
 
 CREATE INDEX IF NOT EXISTS idx_company_customer_claygent_customer 
-    ON extracted.company_customer_claygent(customer_company_name);
+    ON extracted.company_customer_claygent(company_customer_name);
 
 CREATE INDEX IF NOT EXISTS idx_company_customer_claygent_raw_payload 
     ON extracted.company_customer_claygent(raw_payload_id);
@@ -77,7 +77,7 @@ INSERT INTO reference.enrichment_workflow_registry (
     payload_type,
     entity_type
 ) VALUES (
-    'claygent-get-all-customer-companies',
+    'claygent-get-all-company-customers',
     'clay',
     'clay',
     'customer_research',

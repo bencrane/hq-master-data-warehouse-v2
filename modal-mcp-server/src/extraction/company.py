@@ -134,16 +134,16 @@ def extract_company_customers_claygent(
             "raw_payload_id": raw_payload_id,
             "origin_company_domain": origin_company_domain,
             "origin_company_name": origin_company_name,
-            "customer_company_name": customer_name,
+            "company_customer_name": customer_name,
             "case_study_url": customer.get("url"),
             "has_case_study": customer.get("hasCaseStudy", False),
         }
         
-        # Upsert on (origin_company_domain, customer_company_name)
+        # Upsert on (origin_company_domain, company_customer_name)
         try:
             supabase.schema("extracted").from_("company_customer_claygent").upsert(
                 extracted_data, 
-                on_conflict="origin_company_domain,customer_company_name"
+                on_conflict="origin_company_domain,company_customer_name"
             ).execute()
             extracted_count += 1
         except Exception as e:
