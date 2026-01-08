@@ -18,7 +18,7 @@ from config import app, image
 
 # Import all endpoint modules - this registers them with the app
 # These imports must happen AFTER app is defined in config
-from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies
+from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_get_all_customer_companies
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people
 from icp.generation import generate_target_client_icp
 
@@ -35,6 +35,7 @@ __all__ = [
     "image",
     "ingest_clay_company_firmo",
     "ingest_clay_find_companies",
+    "ingest_get_all_customer_companies",
     "ingest_clay_person_profile",
     "ingest_clay_find_people",
     "generate_target_client_icp",

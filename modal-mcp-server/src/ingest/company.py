@@ -3,6 +3,7 @@ Company Ingestion Endpoints
 
 - ingest_clay_company_firmo: Enriched company data (clay-company-firmographics)
 - ingest_clay_find_companies: Discovery company data (clay-find-companies)
+- ingest_get_all_customer_companies: Customer research from Claygent (claygent-get-all-customer-companies)
 """
 
 import os
@@ -14,7 +15,7 @@ from datetime import datetime
 # Import app and image from config
 from config import app, image
 
-from extraction.company import extract_company_firmographics, extract_find_companies
+from extraction.company import extract_company_firmographics, extract_find_companies, extract_company_customers_claygent
 
 
 class CompanyIngestRequest(BaseModel):
@@ -25,6 +26,14 @@ class CompanyIngestRequest(BaseModel):
 
 class CompanyDiscoveryRequest(BaseModel):
     company_domain: str
+    workflow_slug: str
+    raw_payload: dict
+
+
+class CompanyCustomerRequest(BaseModel):
+    origin_company_domain: str
+    origin_company_name: str
+    origin_company_linkedin_url: Optional[str] = None
     workflow_slug: str
     raw_payload: dict
 
@@ -149,6 +158,74 @@ def ingest_clay_find_companies(request: CompanyDiscoveryRequest) -> dict:
             "success": True,
             "raw_id": raw_id,
             "extracted_id": extracted_id,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_get_all_customer_companies(request: CompanyCustomerRequest) -> dict:
+    """
+    Ingest customer research payload from Claygent (claygent-get-all-customer-companies workflow).
+    Stores raw payload, then extracts customer companies to individual rows.
+    """
+    from supabase import create_client
+
+    supabase_url = os.environ["SUPABASE_URL"]
+    supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
+    supabase = create_client(supabase_url, supabase_key)
+
+    try:
+        # Look up workflow in registry
+        workflow_result = (
+            supabase.schema("reference")
+            .from_("enrichment_workflow_registry")
+            .select("*")
+            .eq("workflow_slug", request.workflow_slug)
+            .single()
+            .execute()
+        )
+        workflow = workflow_result.data
+
+        if not workflow:
+            return {"success": False, "error": f"Workflow '{request.workflow_slug}' not found"}
+
+        # Store raw payload
+        raw_insert = (
+            supabase.schema("raw")
+            .from_("company_customer_claygent_payloads")
+            .insert({
+                "origin_company_domain": request.origin_company_domain,
+                "origin_company_name": request.origin_company_name,
+                "origin_company_linkedin_url": request.origin_company_linkedin_url,
+                "workflow_slug": request.workflow_slug,
+                "provider": workflow["provider"],
+                "platform": workflow["platform"],
+                "payload_type": workflow["payload_type"],
+                "raw_payload": request.raw_payload,
+            })
+            .execute()
+        )
+        raw_id = raw_insert.data[0]["id"]
+
+        # Extract customers (explodes array into individual rows)
+        customer_count = extract_company_customers_claygent(
+            supabase,
+            raw_id,
+            request.origin_company_domain,
+            request.origin_company_name,
+            request.raw_payload
+        )
+
+        return {
+            "success": True,
+            "raw_id": raw_id,
+            "customer_count": customer_count,
         }
 
     except Exception as e:

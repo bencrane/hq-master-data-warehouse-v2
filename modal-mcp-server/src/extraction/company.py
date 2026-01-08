@@ -102,3 +102,52 @@ def extract_find_companies(supabase, raw_payload_id: str, company_domain: str, p
     )
 
     return result.data[0]["id"] if result.data else None
+
+
+def extract_company_customers_claygent(
+    supabase, 
+    raw_payload_id: str, 
+    origin_company_domain: str, 
+    origin_company_name: str,
+    payload: dict
+) -> int:
+    """
+    Extract customer companies from Claygent payload to extracted.company_customer_claygent.
+    Explodes the customers array into individual rows.
+    Upserts on (origin_company_domain, customer_company_name).
+    
+    Returns count of customers extracted.
+    """
+    customers = payload.get("customers", [])
+    
+    if not customers:
+        return 0
+    
+    extracted_count = 0
+    
+    for customer in customers:
+        customer_name = customer.get("companyName")
+        if not customer_name:
+            continue
+            
+        extracted_data = {
+            "raw_payload_id": raw_payload_id,
+            "origin_company_domain": origin_company_domain,
+            "origin_company_name": origin_company_name,
+            "customer_company_name": customer_name,
+            "case_study_url": customer.get("url"),
+            "has_case_study": customer.get("hasCaseStudy", False),
+        }
+        
+        # Upsert on (origin_company_domain, customer_company_name)
+        try:
+            supabase.schema("extracted").from_("company_customer_claygent").upsert(
+                extracted_data, 
+                on_conflict="origin_company_domain,customer_company_name"
+            ).execute()
+            extracted_count += 1
+        except Exception as e:
+            # Log but continue with other customers
+            print(f"Failed to upsert customer {customer_name}: {e}")
+    
+    return extracted_count
