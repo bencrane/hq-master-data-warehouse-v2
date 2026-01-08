@@ -3,7 +3,7 @@ Company Ingestion Endpoints
 
 - ingest_clay_company_firmo: Enriched company data (clay-company-firmographics)
 - ingest_clay_find_companies: Discovery company data (clay-find-companies)
-- ingest_get_all_company_customers: Customer research from Claygent (claygent-get-all-company-customers)
+- ingest_all_comp_customers: Customer research from Claygent (claygent-get-all-company-customers)
 """
 
 import os
@@ -169,7 +169,7 @@ def ingest_clay_find_companies(request: CompanyDiscoveryRequest) -> dict:
     secrets=[modal.Secret.from_name("supabase-credentials")],
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest_get_all_company_customers(request: CompanyCustomerRequest) -> dict:
+def ingest_all_comp_customers(request: CompanyCustomerRequest) -> dict:
     """
     Ingest customer research payload from Claygent (claygent-get-all-company-customers workflow).
     Stores raw payload, then extracts company customers to individual rows.
