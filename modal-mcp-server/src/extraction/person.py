@@ -190,7 +190,7 @@ def extract_person_education(supabase, raw_payload_id: str, linkedin_url: str, p
     return len(records)
 
 
-def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payload: dict) -> Optional[str]:
+def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payload: dict, clay_table_url: str = None) -> Optional[str]:
     """
     Extract person discovery data from raw payload to extracted.person_discovery.
     Upserts on linkedin_url.
@@ -208,6 +208,7 @@ def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payloa
         "latest_start_date": parse_date(payload.get("latest_experience_start_date")),
         "clay_company_table_id": payload.get("company_table_id"),
         "clay_company_record_id": payload.get("company_record_id"),
+        "clay_table_url": clay_table_url,
     }
 
     # Upsert on linkedin_url

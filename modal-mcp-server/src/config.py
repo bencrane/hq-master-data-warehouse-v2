@@ -18,6 +18,8 @@ image = (
         "pydantic",
         "fastapi",
         "openai",
+        "google-generativeai",
+        "httpx",
     )
     .add_local_python_source("config", "ingest", "extraction", "icp")
 )

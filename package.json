@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "port-registry": "file:../ports"
+  }
+}

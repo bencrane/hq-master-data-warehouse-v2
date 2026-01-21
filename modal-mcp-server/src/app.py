@@ -18,8 +18,11 @@ from config import app, image
 
 # Import all endpoint modules - this registers them with the app
 # These imports must happen AFTER app is defined in config
-from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers
+from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people
+from ingest.case_study import ingest_case_study_extraction
+from ingest.waterfall import command_center_email_enrichment, get_email_job
+from ingest.icp_verdict import ingest_icp_verdict
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -28,6 +31,8 @@ from icp.generation import generate_target_client_icp
 # not detect these runtime imports, so we force it to mount the package here.
 import extraction.company
 import extraction.person
+import extraction.case_study
+import extraction.icp_verdict
 
 # Re-export for clarity
 __all__ = [
@@ -36,7 +41,13 @@ __all__ = [
     "ingest_clay_company_firmo",
     "ingest_clay_find_companies",
     "ingest_all_comp_customers",
+    "upsert_core_company",
+    "ingest_manual_comp_customer",
     "ingest_clay_person_profile",
     "ingest_clay_find_people",
+    "ingest_case_study_extraction",
+    "ingest_icp_verdict",
     "generate_target_client_icp",
+    "command_center_email_enrichment",
+    "get_email_job",
 ]

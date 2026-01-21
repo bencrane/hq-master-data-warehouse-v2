@@ -29,6 +29,7 @@ class PersonDiscoveryRequest(BaseModel):
     linkedin_url: str
     workflow_slug: str
     raw_payload: dict
+    clay_table_url: Optional[str] = None
 
 
 @app.function(
@@ -147,6 +148,7 @@ def ingest_clay_find_people(request: PersonDiscoveryRequest) -> dict:
                 "platform": workflow["platform"],
                 "payload_type": workflow["payload_type"],
                 "raw_payload": request.raw_payload,
+                "clay_table_url": request.clay_table_url,
             })
             .execute()
         )
@@ -154,7 +156,7 @@ def ingest_clay_find_people(request: PersonDiscoveryRequest) -> dict:
 
         # Extract
         extracted_id = extract_find_people(
-            supabase, raw_id, request.linkedin_url, request.raw_payload
+            supabase, raw_id, request.linkedin_url, request.raw_payload, request.clay_table_url
         )
 
         return {

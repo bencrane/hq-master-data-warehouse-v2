@@ -68,11 +68,34 @@ def extract_company_firmographics(supabase, raw_payload_id: str, company_domain:
     return result.data[0]["id"] if result.data else None
 
 
-def extract_find_companies(supabase, raw_payload_id: str, company_domain: str, payload: dict) -> Optional[str]:
+def extract_find_companies(supabase, raw_payload_id: str, company_domain: str, payload: dict, clay_table_url: str = None) -> tuple:
     """
     Extract company discovery data from raw payload to extracted.company_discovery.
-    Upserts on domain.
+    Upserts on domain, but only if linkedin_url matches (or no existing record).
+    
+    Returns:
+        tuple: (extracted_id, status) where status is 'inserted', 'updated', or 'skipped_conflict'
     """
+    incoming_linkedin_url = payload.get("linkedin_url")
+    
+    # Check if record already exists for this domain
+    existing = (
+        supabase.schema("extracted")
+        .from_("company_discovery")
+        .select("id, linkedin_url")
+        .eq("domain", company_domain)
+        .execute()
+    )
+    
+    if existing.data:
+        existing_record = existing.data[0]
+        existing_linkedin_url = existing_record.get("linkedin_url")
+        
+        # If existing record has a linkedin_url and it doesn't match incoming, skip
+        if existing_linkedin_url is not None and incoming_linkedin_url is not None:
+            if existing_linkedin_url != incoming_linkedin_url:
+                return (None, "skipped_conflict", existing_linkedin_url, incoming_linkedin_url)
+    
     extracted_data = {
         "raw_payload_id": raw_payload_id,
         "domain": company_domain,
@@ -91,6 +114,7 @@ def extract_find_companies(supabase, raw_payload_id: str, company_domain: str, p
         "total_funding_amount_range_usd": payload.get("total_funding_amount_range_usd"),
         "resolved_domain": payload.get("resolved_domain"),
         "derived_datapoints": payload.get("derived_datapoints"),
+        "clay_table_url": clay_table_url,
     }
 
     # Upsert on domain
@@ -101,7 +125,8 @@ def extract_find_companies(supabase, raw_payload_id: str, company_domain: str, p
         .execute()
     )
 
-    return result.data[0]["id"] if result.data else None
+    status = "updated" if existing.data else "inserted"
+    return (result.data[0]["id"] if result.data else None, status)
 
 
 def extract_company_customers_claygent(
