@@ -27,6 +27,8 @@ from ingest.crunchbase_domain import infer_crunchbase_domain
 from ingest.signal_new_hire import ingest_clay_signal_new_hire
 from ingest.signal_news_fundraising import ingest_clay_signal_news_fundraising
 from ingest.signal_job_posting import ingest_clay_signal_job_posting
+from ingest.signal_job_change import ingest_clay_signal_job_change
+from ingest.signal_promotion import ingest_clay_signal_promotion
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -41,6 +43,8 @@ import extraction.crunchbase_domain
 import extraction.signal_new_hire
 import extraction.signal_news_fundraising
 import extraction.signal_job_posting
+import extraction.signal_job_change
+import extraction.signal_promotion
 
 # Re-export for clarity
 __all__ = [
@@ -62,4 +66,6 @@ __all__ = [
     "ingest_clay_signal_new_hire",
     "ingest_clay_signal_news_fundraising",
     "ingest_clay_signal_job_posting",
+    "ingest_clay_signal_job_change",
+    "ingest_clay_signal_promotion",
 ]
