@@ -183,6 +183,49 @@ signals/
 
 ## Next Steps
 
-1. Build remaining 4 signals (Web Intent, Job Change, Promotion, LinkedIn Brand Mentions)
-2. Replicate signal infrastructure to `outbound-solutions-db` (Option B: separate endpoints per DB)
+1. Build remaining 2 signals (Web Intent, LinkedIn Brand Mentions)
+2. Create Modal endpoints for writing to `outbound-solutions-db`
 3. Build signal feed UI for clients
+
+---
+
+## Outbound Solutions DB Schema
+
+Created 2026-01-21. Multi-tenant client-facing database.
+
+### Core Tables
+
+```
+core.client              -- Your customers
+core.client_company      -- Companies in each client's TAM
+core.client_person       -- People each client is tracking
+```
+
+### Signal Tables
+
+```
+signal.feed              -- Unified signal feed (all types, all clients)
+signal.registry          -- Signal type definitions with display metadata
+```
+
+### Data Flow
+
+```
+HQ DB (canonical)                    Outbound DB (client-facing)
+─────────────────                    ───────────────────────────
+raw.clay_* payloads        →         (not replicated)
+extracted.clay_*           →         signal.feed (per client)
+reference.signal_registry  →         signal.registry
+```
+
+When a signal is detected:
+1. Store in HQ (raw + extracted)
+2. Look up which clients have that company/person in their TAM
+3. Insert into `signal.feed` for each matching client
+
+### Migrations
+
+Located in `supabase/migrations/outbound-solutions-db/`:
+- `20260121_core_client_tables.sql`
+- `20260121_signal_feed_table.sql`
+- `20260121_signal_registry_table.sql`
