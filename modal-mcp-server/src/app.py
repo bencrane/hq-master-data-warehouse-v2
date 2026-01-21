@@ -23,6 +23,7 @@ from ingest.person import ingest_clay_person_profile, ingest_clay_find_people
 from ingest.case_study import ingest_case_study_extraction
 from ingest.waterfall import command_center_email_enrichment, get_email_job
 from ingest.icp_verdict import ingest_icp_verdict
+from ingest.crunchbase_domain import infer_crunchbase_domain
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -33,6 +34,7 @@ import extraction.company
 import extraction.person
 import extraction.case_study
 import extraction.icp_verdict
+import extraction.crunchbase_domain
 
 # Re-export for clarity
 __all__ = [
@@ -50,4 +52,5 @@ __all__ = [
     "generate_target_client_icp",
     "command_center_email_enrichment",
     "get_email_job",
+    "infer_crunchbase_domain",
 ]
