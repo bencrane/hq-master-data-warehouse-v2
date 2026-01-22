@@ -801,12 +801,15 @@ Common errors:
 
 ## Deployment
 
+**IMPORTANT:** Use `uv run` to ensure dependencies are available.
+
 ```bash
-cd modal-mcp-server/src
-modal deploy app.py
+cd /Users/benjamincrane/hq-master-data-warehouse-v2/modal-mcp-server
+uv run modal deploy src/app.py
 ```
 
 **Rules:**
 1. All code must be committed to main before deploy
 2. Always deploy from `app.py` entry point
 3. Always deploy from main branch
+4. Always use `uv run modal deploy` (not bare `modal deploy`)

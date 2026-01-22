@@ -220,3 +220,59 @@ def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payloa
     )
 
     return result.data[0]["id"] if result.data else None
+
+
+def extract_find_people_location_parsed(
+    supabase,
+    raw_payload_id: str,
+    linkedin_url: str,
+    payload: dict,
+    parsed_location: dict,
+    clay_table_url: str = None
+) -> Optional[str]:
+    """
+    Extract person discovery data with pre-parsed location fields.
+    Upserts on linkedin_url to extracted.person_discovery_location_parsed.
+    
+    Args:
+        supabase: Supabase client
+        raw_payload_id: ID of the raw payload record
+        linkedin_url: Person's LinkedIn URL
+        payload: Raw payload dict (same as clay-find-people)
+        parsed_location: Pre-parsed location dict with city, state, country, hasCity, hasState, hasCountry
+        clay_table_url: Optional Clay table URL
+    """
+    extracted_data = {
+        "raw_payload_id": raw_payload_id,
+        "linkedin_url": linkedin_url,
+        "first_name": payload.get("first_name"),
+        "last_name": payload.get("last_name"),
+        "full_name": payload.get("name"),
+        "location_name": payload.get("location_name"),
+        # Parsed location fields
+        "city": parsed_location.get("city") if parsed_location else None,
+        "state": parsed_location.get("state") if parsed_location else None,
+        "country": parsed_location.get("country") if parsed_location else None,
+        "has_city": parsed_location.get("hasCity", False) if parsed_location else False,
+        "has_state": parsed_location.get("hasState", False) if parsed_location else False,
+        "has_country": parsed_location.get("hasCountry", False) if parsed_location else False,
+        # Company/job info
+        "company_domain": payload.get("domain"),
+        "latest_title": payload.get("latest_experience_title"),
+        "latest_company": payload.get("latest_experience_company"),
+        "latest_start_date": parse_date(payload.get("latest_experience_start_date")),
+        # Clay references
+        "clay_company_table_id": payload.get("company_table_id"),
+        "clay_company_record_id": payload.get("company_record_id"),
+        "clay_table_url": clay_table_url,
+    }
+
+    # Upsert on linkedin_url
+    result = (
+        supabase.schema("extracted")
+        .from_("person_discovery_location_parsed")
+        .upsert(extracted_data, on_conflict="linkedin_url")
+        .execute()
+    )
+
+    return result.data[0]["id"] if result.data else None

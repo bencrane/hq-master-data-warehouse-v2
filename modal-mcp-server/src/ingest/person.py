@@ -3,6 +3,7 @@ Person Ingestion Endpoints
 
 - ingest_clay_person_profile: Enriched person data (clay-person-profile)
 - ingest_clay_find_people: Discovery person data (clay-find-people)
+- ingest_clay_find_people_location_parsed: Discovery person data with pre-parsed location (clay-find-people-location-parsed)
 """
 
 import os
@@ -16,6 +17,7 @@ from extraction.person import (
     extract_person_experience,
     extract_person_education,
     extract_find_people,
+    extract_find_people_location_parsed,
 )
 
 
@@ -29,6 +31,14 @@ class PersonDiscoveryRequest(BaseModel):
     linkedin_url: str
     workflow_slug: str
     raw_payload: dict
+    clay_table_url: Optional[str] = None
+
+
+class PersonDiscoveryLocationParsedRequest(BaseModel):
+    linkedin_url: str
+    workflow_slug: str
+    raw_person_payload: dict
+    raw_person_parsed_location_payload: Optional[dict] = None
     clay_table_url: Optional[str] = None
 
 
@@ -157,6 +167,76 @@ def ingest_clay_find_people(request: PersonDiscoveryRequest) -> dict:
         # Extract
         extracted_id = extract_find_people(
             supabase, raw_id, request.linkedin_url, request.raw_payload, request.clay_table_url
+        )
+
+        return {
+            "success": True,
+            "raw_id": raw_id,
+            "extracted_id": extracted_id,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_clay_find_people_location_parsed(request: PersonDiscoveryLocationParsedRequest) -> dict:
+    """
+    Ingest person discovery payload with pre-parsed location (clay-find-people-location-parsed workflow).
+    Location parsing done in Clay via Gemini before sending to this endpoint.
+    Stores raw payload + parsed location, then extracts to person_discovery_location_parsed table.
+    """
+    from supabase import create_client
+
+    supabase_url = os.environ["SUPABASE_URL"]
+    supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
+    supabase = create_client(supabase_url, supabase_key)
+
+    try:
+        # Look up workflow in registry
+        workflow_result = (
+            supabase.schema("reference")
+            .from_("enrichment_workflow_registry")
+            .select("*")
+            .eq("workflow_slug", request.workflow_slug)
+            .single()
+            .execute()
+        )
+        workflow = workflow_result.data
+
+        if not workflow:
+            return {"success": False, "error": f"Workflow '{request.workflow_slug}' not found"}
+
+        # Store raw payload
+        raw_insert = (
+            supabase.schema("raw")
+            .from_("person_discovery_location_parsed")
+            .insert({
+                "linkedin_url": request.linkedin_url,
+                "workflow_slug": request.workflow_slug,
+                "provider": workflow["provider"],
+                "platform": workflow["platform"],
+                "payload_type": workflow["payload_type"],
+                "raw_person_payload": request.raw_person_payload,
+                "raw_person_parsed_location_payload": request.raw_person_parsed_location_payload,
+                "clay_table_url": request.clay_table_url,
+            })
+            .execute()
+        )
+        raw_id = raw_insert.data[0]["id"]
+
+        # Extract with parsed location
+        extracted_id = extract_find_people_location_parsed(
+            supabase,
+            raw_id,
+            request.linkedin_url,
+            request.raw_person_payload,
+            request.raw_person_parsed_location_payload,
+            request.clay_table_url,
         )
 
         return {

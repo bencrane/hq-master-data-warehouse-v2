@@ -155,10 +155,14 @@ modal app stop ap-fzBuQUP34ut0cpWoQX4OtA  # data-enrich-*
 
 ### After Resolving Limits: Deploy
 
+**IMPORTANT:** The project uses `uv` for dependency management. You MUST run modal commands through `uv run` from the `modal-mcp-server` directory (where `pyproject.toml` lives), NOT from `src/`.
+
 ```bash
-cd /Users/benjamincrane/hq-master-data-warehouse-v2/modal-mcp-server/src
-modal deploy app.py
+cd /Users/benjamincrane/hq-master-data-warehouse-v2/modal-mcp-server
+uv run modal deploy src/app.py
 ```
+
+Do NOT run `modal deploy` directly - it will fail with `ModuleNotFoundError: No module named 'pydantic'` because the dependencies are managed by uv.
 
 ### Verify Deployment
 
@@ -193,13 +197,15 @@ git pull origin main
 # 2. Verify code is committed
 git status  # Should show "nothing to commit, working tree clean"
 
-# 3. Deploy from src directory
-cd modal-mcp-server/src
-modal deploy app.py
+# 3. Deploy using uv from modal-mcp-server directory
+cd modal-mcp-server
+uv run modal deploy src/app.py
 
 # 4. Verify endpoints
 # (run verification curls above)
 ```
+
+**Why `uv run`?** The project uses `uv` for dependency management. Running `modal deploy` directly will fail because pydantic and other dependencies are only available in the uv-managed virtual environment.
 
 ---
 
