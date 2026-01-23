@@ -19,12 +19,13 @@ Rules:
 """
 
 # Import the app from config (this is what Modal looks for)
+import modal
 from config import app, image
 
 # Import all endpoint modules - this registers them with the app
 # These imports must happen AFTER app is defined in config
-from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer
-from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_people_location_parsed
+from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
+from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
 from ingest.case_study import ingest_case_study_extraction
 from ingest.waterfall import command_center_email_enrichment, get_email_job
 from ingest.icp_verdict import ingest_icp_verdict
@@ -35,7 +36,9 @@ from ingest.signal_job_posting import ingest_clay_signal_job_posting
 from ingest.signal_job_change import ingest_clay_signal_job_change
 from ingest.signal_promotion import ingest_clay_signal_promotion
 from ingest.company_address import ingest_company_address_parsing
-from ingest.salesnav_person import ingest_salesnav_scrapes_person
+from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title
+from ingest.vc_portfolio import ingest_vc_portfolio
+# from ingest.salesnav_person import ingest_salesnav_scrapes_person  # Temporarily disabled
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -53,20 +56,31 @@ import extraction.signal_job_posting
 import extraction.signal_job_change
 import extraction.signal_promotion
 import extraction.company_address
-import extraction.salesnav_person
+# import extraction.salesnav_person  # Temporarily disabled
+
+# Simple test endpoint - always keep this
+@app.function(image=image)
+@modal.fastapi_endpoint(method="POST")
+def test_endpoint(data: dict) -> dict:
+    """Simple test endpoint that echoes back what you send."""
+    return {"success": True, "received": data}
+
 
 # Re-export for clarity
 __all__ = [
     "app",
     "image",
+    "test_endpoint",
+    "ingest_clay_find_ppl_lctn_prsd",
+    "ingest_ppl_title_enrich",
     "ingest_clay_company_firmo",
     "ingest_clay_find_companies",
+    "ingest_clay_find_co_lctn_prsd",
     "ingest_all_comp_customers",
     "upsert_core_company",
     "ingest_manual_comp_customer",
     "ingest_clay_person_profile",
     "ingest_clay_find_people",
-    "ingest_clay_find_people_location_parsed",
     "ingest_case_study_extraction",
     "ingest_icp_verdict",
     "generate_target_client_icp",
@@ -79,5 +93,10 @@ __all__ = [
     "ingest_clay_signal_job_change",
     "ingest_clay_signal_promotion",
     "ingest_company_address_parsing",
-    "ingest_salesnav_scrapes_person",
+    "lookup_person_location",
+    "lookup_salesnav_location",
+    "lookup_salesnav_company_location",
+    "lookup_job_title",
+    "ingest_vc_portfolio",
+    # "ingest_salesnav_scrapes_person",  # Temporarily disabled
 ]

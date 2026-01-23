@@ -6,6 +6,7 @@ Company Ingestion Endpoints
 - ingest_all_comp_customers: Customer research from Claygent (claygent-get-all-company-customers)
 - upsert_core_company: Direct upsert to core.companies
 - ingest_manual_comp_customer: Manual company customer data (manual-company-customers)
+- ingest_clay_find_co_lctn_prsd: Discovery company data with pre-parsed location
 """
 
 import os
@@ -17,7 +18,12 @@ from datetime import datetime
 # Import app and image from config
 from config import app, image
 
-from extraction.company import extract_company_firmographics, extract_find_companies, extract_company_customers_claygent
+from extraction.company import (
+    extract_company_firmographics,
+    extract_find_companies,
+    extract_company_customers_claygent,
+    extract_find_companies_location_parsed,
+)
 
 
 class CompanyIngestRequest(BaseModel):
@@ -30,6 +36,14 @@ class CompanyDiscoveryRequest(BaseModel):
     company_domain: str
     workflow_slug: str
     raw_payload: dict
+    clay_table_url: Optional[str] = None
+
+
+class CompanyDiscoveryLocationParsedRequest(BaseModel):
+    company_domain: str
+    workflow_slug: str
+    raw_company_payload: dict
+    raw_company_location_payload: Optional[dict] = None
     clay_table_url: Optional[str] = None
 
 
@@ -363,6 +377,76 @@ def ingest_manual_comp_customer(request: ManualCompanyCustomerRequest) -> dict:
             "id": result.data[0]["id"] if result.data else None,
             "origin_company_domain": request.origin_company_domain,
             "company_customer_name": request.company_customer_name,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_clay_find_co_lctn_prsd(request: CompanyDiscoveryLocationParsedRequest) -> dict:
+    """
+    Ingest company discovery payload with pre-parsed location.
+    Location parsing done in Clay via Gemini before sending to this endpoint.
+    Stores raw payload + parsed location, then extracts to company_discovery_location_parsed table.
+    """
+    from supabase import create_client
+
+    supabase_url = os.environ["SUPABASE_URL"]
+    supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
+    supabase = create_client(supabase_url, supabase_key)
+
+    try:
+        # Look up workflow in registry
+        workflow_result = (
+            supabase.schema("reference")
+            .from_("enrichment_workflow_registry")
+            .select("*")
+            .eq("workflow_slug", request.workflow_slug)
+            .single()
+            .execute()
+        )
+        workflow = workflow_result.data
+
+        if not workflow:
+            return {"success": False, "error": f"Workflow '{request.workflow_slug}' not found"}
+
+        # Store raw payload
+        raw_insert = (
+            supabase.schema("raw")
+            .from_("company_discovery_location_parsed")
+            .insert({
+                "company_domain": request.company_domain,
+                "workflow_slug": request.workflow_slug,
+                "provider": workflow["provider"],
+                "platform": workflow["platform"],
+                "payload_type": workflow["payload_type"],
+                "raw_company_payload": request.raw_company_payload,
+                "raw_company_location_payload": request.raw_company_location_payload,
+                "clay_table_url": request.clay_table_url,
+            })
+            .execute()
+        )
+        raw_id = raw_insert.data[0]["id"]
+
+        # Extract with parsed location
+        extracted_id = extract_find_companies_location_parsed(
+            supabase,
+            raw_id,
+            request.company_domain,
+            request.raw_company_payload,
+            request.raw_company_location_payload,
+            request.clay_table_url,
+        )
+
+        return {
+            "success": True,
+            "raw_id": raw_id,
+            "extracted_id": extracted_id,
         }
 
     except Exception as e:

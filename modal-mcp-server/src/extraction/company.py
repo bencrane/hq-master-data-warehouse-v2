@@ -176,3 +176,61 @@ def extract_company_customers_claygent(
             print(f"Failed to upsert customer {customer_name}: {e}")
     
     return extracted_count
+
+
+def extract_find_companies_location_parsed(
+    supabase,
+    raw_payload_id: str,
+    company_domain: str,
+    payload: dict,
+    parsed_location: dict,
+    clay_table_url: str = None
+) -> Optional[str]:
+    """
+    Extract company discovery data with pre-parsed location fields.
+    Upserts on domain to extracted.company_discovery_location_parsed.
+    
+    Args:
+        supabase: Supabase client
+        raw_payload_id: ID of the raw payload record
+        company_domain: Company domain
+        payload: Raw company payload dict
+        parsed_location: Pre-parsed location dict with city, state, hasCity, hasState
+        clay_table_url: Optional Clay table URL
+    """
+    extracted_data = {
+        "raw_payload_id": raw_payload_id,
+        "domain": company_domain,
+        "name": payload.get("name"),
+        "linkedin_url": payload.get("linkedin_url"),
+        "linkedin_company_id": payload.get("linkedin_company_id"),
+        "clay_company_id": payload.get("clay_company_id"),
+        "size": payload.get("size"),
+        "type": payload.get("type"),
+        # Location fields
+        "country": payload.get("country"),
+        "location": payload.get("location"),
+        "city": parsed_location.get("city") if parsed_location else None,
+        "state": parsed_location.get("state") if parsed_location else None,
+        "has_city": parsed_location.get("hasCity", False) if parsed_location else False,
+        "has_state": parsed_location.get("hasState", False) if parsed_location else False,
+        # Industry/business info
+        "industry": payload.get("industry"),
+        "industries": payload.get("industries"),
+        "description": payload.get("description"),
+        "annual_revenue": payload.get("annual_revenue"),
+        "total_funding_amount_range_usd": payload.get("total_funding_amount_range_usd"),
+        "resolved_domain": payload.get("resolved_domain"),
+        "derived_datapoints": payload.get("derived_datapoints"),
+        "clay_table_url": clay_table_url,
+    }
+
+    # Upsert on domain
+    result = (
+        supabase.schema("extracted")
+        .from_("company_discovery_location_parsed")
+        .upsert(extracted_data, on_conflict="domain")
+        .execute()
+    )
+
+    return result.data[0]["id"] if result.data else None

@@ -276,3 +276,56 @@ def extract_find_people_location_parsed(
     )
 
     return result.data[0]["id"] if result.data else None
+
+
+def extract_person_title_enrichment(
+    supabase,
+    raw_payload_id: str,
+    payload: dict,
+    clay_table_url: str = None
+) -> Optional[str]:
+    """
+    Extract person data with title enrichment (seniority_level, job_function, cleaned_job_title).
+    Upserts on linkedin_url to extracted.person_title_enrichment.
+    """
+    extracted_data = {
+        "raw_payload_id": raw_payload_id,
+        "linkedin_url": payload.get("linkedin_url"),
+        "first_name": payload.get("first_name"),
+        "last_name": payload.get("last_name"),
+        "full_name": payload.get("full_name"),
+        "cleaned_first_name": payload.get("cleaned_first_name"),
+        "cleaned_last_name": payload.get("cleaned_last_name"),
+        "cleaned_full_name": payload.get("cleaned_full_name"),
+        # Location fields
+        "location_name": payload.get("location_name"),
+        "city": payload.get("city"),
+        "state": payload.get("state"),
+        "country": payload.get("country"),
+        "has_city": payload.get("has_city", False),
+        "has_state": payload.get("has_state", False),
+        "has_country": payload.get("has_country", False),
+        # Company info
+        "company_domain": payload.get("company_domain"),
+        "latest_company": payload.get("latest_company"),
+        # Title fields
+        "latest_title": payload.get("latest_title"),
+        "cleaned_job_title": payload.get("cleaned_job_title"),
+        "seniority_level": payload.get("seniority_level"),
+        "job_function": payload.get("job_function"),
+        "latest_start_date": parse_date(payload.get("latest_start_date")),
+        # Clay references
+        "clay_company_table_id": payload.get("clay_company_table_id"),
+        "clay_company_record_id": payload.get("clay_company_record_id"),
+        "clay_table_url": clay_table_url,
+    }
+
+    # Upsert on linkedin_url
+    result = (
+        supabase.schema("extracted")
+        .from_("person_title_enrichment")
+        .upsert(extracted_data, on_conflict="linkedin_url")
+        .execute()
+    )
+
+    return result.data[0]["id"] if result.data else None

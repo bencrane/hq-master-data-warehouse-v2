@@ -38,6 +38,59 @@ Add to `src/ingest/<module>.py`:
 - Stores to raw table
 - Calls extraction function
 
+---
+
+### CORRECT WAY (function in separate module)
+
+**File: `src/ingest/person.py`**
+```python
+import os
+import modal
+from pydantic import BaseModel
+from config import app, image
+from extraction.person import extract_my_function
+
+class MyRequest(BaseModel):
+    linkedin_url: str
+    workflow_slug: str
+    raw_payload: dict
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_my_function(request: MyRequest) -> dict:
+    from supabase import create_client
+    # ... function body
+```
+
+**File: `src/app.py`**
+```python
+from ingest.person import ingest_my_function  # Import only
+```
+
+---
+
+### INCORRECT WAY (function inline in app.py) - DO NOT DO THIS
+
+**File: `src/app.py`**
+```python
+# WRONG - function defined directly in app.py
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_my_function(data: dict) -> dict:  # WRONG - inline definition
+    # This will NOT receive secrets properly
+    pass
+```
+
+---
+
+**WHY THIS MATTERS:** Modal handles secrets injection differently for imported module functions vs inline definitions. Inline functions in `app.py` fail silently when accessing `os.environ` for secrets.
+
 ## 4. Update app.py
 
 In `src/app.py`:
@@ -72,3 +125,13 @@ uv run modal deploy src/app.py
 ```
 
 **IMPORTANT:** Always use `uv run` to ensure dependencies are available.
+
+## Naming Constraints
+
+**DNS Label Limit:** Function names must result in URLs under 63 characters for the hostname portion.
+
+Format: `bencrane--hq-master-data-ingest-<function-name>.modal.run`
+
+The prefix `bencrane--hq-master-data-ingest-` is 32 characters, leaving ~30 characters for the function name (with hyphens).
+
+If names are too long, abbreviate: `people` → `ppl`, `location` → `lctn`, `parsed` → `prsd`
