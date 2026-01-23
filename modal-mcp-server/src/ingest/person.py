@@ -33,6 +33,9 @@ class PersonDiscoveryRequest(BaseModel):
     linkedin_url: str
     workflow_slug: str
     raw_payload: dict
+    cleaned_first_name: Optional[str] = None
+    cleaned_last_name: Optional[str] = None
+    cleaned_full_name: Optional[str] = None
     clay_table_url: Optional[str] = None
 
 
@@ -196,7 +199,14 @@ def ingest_clay_find_people(request: PersonDiscoveryRequest) -> dict:
 
         # Extract
         extracted_id = extract_find_people(
-            supabase, raw_id, request.linkedin_url, request.raw_payload, request.clay_table_url
+            supabase,
+            raw_id,
+            request.linkedin_url,
+            request.raw_payload,
+            request.clay_table_url,
+            cleaned_first_name=request.cleaned_first_name,
+            cleaned_last_name=request.cleaned_last_name,
+            cleaned_full_name=request.cleaned_full_name,
         )
 
         return {

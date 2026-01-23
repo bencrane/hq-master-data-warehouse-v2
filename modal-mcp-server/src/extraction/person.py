@@ -190,7 +190,16 @@ def extract_person_education(supabase, raw_payload_id: str, linkedin_url: str, p
     return len(records)
 
 
-def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payload: dict, clay_table_url: str = None) -> Optional[str]:
+def extract_find_people(
+    supabase,
+    raw_payload_id: str,
+    linkedin_url: str,
+    payload: dict,
+    clay_table_url: str = None,
+    cleaned_first_name: str = None,
+    cleaned_last_name: str = None,
+    cleaned_full_name: str = None
+) -> Optional[str]:
     """
     Extract person discovery data from raw payload to extracted.person_discovery.
     Upserts on linkedin_url.
@@ -201,6 +210,9 @@ def extract_find_people(supabase, raw_payload_id: str, linkedin_url: str, payloa
         "first_name": payload.get("first_name"),
         "last_name": payload.get("last_name"),
         "full_name": payload.get("name"),
+        "cleaned_first_name": cleaned_first_name,
+        "cleaned_last_name": cleaned_last_name,
+        "cleaned_full_name": cleaned_full_name,
         "location_name": payload.get("location_name"),
         "company_domain": payload.get("domain"),
         "latest_title": payload.get("latest_experience_title"),
