@@ -2,7 +2,7 @@
 
 > **⚠️ ARCHIVED DOCUMENT**  
 > This document is from January 6, 2026 and represents a one-time verification.  
-> For current documentation, see [docs/modal-onboarding.md](./docs/modal-onboarding.md).
+> For current documentation, see [modal-onboarding.md](./modal-onboarding.md).
 
 **Date:** January 6, 2026  
 **Verified by:** Agent  

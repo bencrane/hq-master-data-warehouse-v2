@@ -122,15 +122,15 @@ Batch update extracted tables from reference data.
 | Document | Purpose |
 |----------|---------|
 | [Modal Development Guide](./modal-development-guide.md) | How to create new endpoints |
-| [Modal Endpoints Reference](../MODAL_ENDPOINTS.md) | Full API reference with payloads |
-| [Modal Changelog](../MODAL_CHANGELOG.md) | History of changes |
+| [Modal Endpoints Reference](./MODAL_ENDPOINTS.md) | Full API reference with payloads |
+| [Modal Changelog](./MODAL_CHANGELOG.md) | History of changes |
 
 ### Historical / Archive
 | Document | Purpose |
 |----------|---------|
-| [MODAL_INFRASTRUCTURE_WORK.md](../MODAL_INFRASTRUCTURE_WORK.md) | (Archive) January 2026 infrastructure rebuild |
-| [MODAL_CODE_VERIFICATION.md](../MODAL_CODE_VERIFICATION.md) | (Archive) One-time verification from Jan 6, 2026 |
-| [modal-docs/FIX-001-*.md](../modal-docs/) | Post-mortem fix documents |
+| [MODAL_INFRASTRUCTURE_WORK.md](./MODAL_INFRASTRUCTURE_WORK.md) | (Archive) January 2026 infrastructure rebuild |
+| [MODAL_CODE_VERIFICATION.md](./MODAL_CODE_VERIFICATION.md) | (Archive) One-time verification from Jan 6, 2026 |
+| [modal-fixes/FIX-001-*.md](./modal-fixes/) | Post-mortem fix documents |
 
 ---
 

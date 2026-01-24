@@ -2,7 +2,8 @@
 
 Log of significant changes to Modal infrastructure.
 
-For detailed API documentation, see [MODAL_ENDPOINTS.md](./MODAL_ENDPOINTS.md).
+For detailed API documentation, see [MODAL_ENDPOINTS.md](./MODAL_ENDPOINTS.md).  
+For onboarding, see [modal-onboarding.md](./modal-onboarding.md).
 
 ---
 
@@ -63,7 +64,7 @@ For detailed API documentation, see [MODAL_ENDPOINTS.md](./MODAL_ENDPOINTS.md).
 
 ## 2026-01-07
 
-### [FIX-001: Person Extraction Column Name Mismatch](./modal-docs/FIX-001-person-extraction-columns.md)
+### [FIX-001: Person Extraction Column Name Mismatch](./modal-fixes/FIX-001-person-extraction-columns.md)
 
 **Status:** ✅ Resolved  
 **Affected endpoints:** `ingest-clay-person-profile`  
@@ -78,7 +79,7 @@ Column name mismatch in `extraction/person.py` caused all person profile extract
 ### Infrastructure Rebuild
 
 **Status:** ✅ Completed  
-**Documentation:** [MODAL_INFRASTRUCTURE_WORK.md](./MODAL_INFRASTRUCTURE_WORK.md) (archived)
+**Documentation:** [MODAL_INFRASTRUCTURE_WORK.md](./MODAL_INFRASTRUCTURE_WORK.md) (archived, in docs/)
 
 Rebuilt Modal ingestion infrastructure from scratch after discovering previous deployments were lost. Established new architecture with single entry point (`app.py`), proper module structure, and deployment rules.
 
