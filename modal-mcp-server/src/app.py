@@ -38,6 +38,7 @@ from ingest.signal_promotion import ingest_clay_signal_promotion
 from ingest.company_address import ingest_company_address_parsing
 from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title
 from ingest.vc_portfolio import ingest_vc_portfolio
+from ingest.backfill import backfill_person_location
 # from ingest.salesnav_person import ingest_salesnav_scrapes_person  # Temporarily disabled
 from icp.generation import generate_target_client_icp
 
@@ -98,5 +99,6 @@ __all__ = [
     "lookup_salesnav_company_location",
     "lookup_job_title",
     "ingest_vc_portfolio",
+    "backfill_person_location",
     # "ingest_salesnav_scrapes_person",  # Temporarily disabled
 ]
