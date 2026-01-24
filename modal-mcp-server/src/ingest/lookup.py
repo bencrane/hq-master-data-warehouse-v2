@@ -5,6 +5,8 @@ Lookup Endpoints - query reference tables without storage/AI
 - lookup_salesnav_location: Check if location exists in salesnav_location_lookup
 - lookup_salesnav_company_location: Check if location exists in salesnav_company_location_lookup
 - lookup_job_title: Check if job title exists in job_title_lookup
+- ingest_clay_company_location_lookup: Insert location into clay_find_companies_location_lookup
+- ingest_clay_person_location_lookup: Insert location into clay_find_people_location_lookup
 """
 
 import os
@@ -246,3 +248,103 @@ def lookup_job_title(request: JobTitleLookupRequest) -> dict:
 
     except Exception as e:
         return {"match_status": False, "error": str(e)}
+
+
+class ClayCompanyLocationIngestRequest(BaseModel):
+    location_name: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    has_city: Optional[bool] = False
+    has_state: Optional[bool] = False
+    has_country: Optional[bool] = False
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_clay_company_location_lookup(request: ClayCompanyLocationIngestRequest) -> dict:
+    """
+    Insert/upsert location into reference.clay_find_companies_location_lookup.
+    """
+    from supabase import create_client
+
+    supabase_url = os.environ["SUPABASE_URL"]
+    supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
+    supabase = create_client(supabase_url, supabase_key)
+
+    try:
+        result = (
+            supabase.schema("reference")
+            .from_("clay_find_companies_location_lookup")
+            .upsert({
+                "location_name": request.location_name,
+                "city": request.city,
+                "state": request.state,
+                "country": request.country,
+                "has_city": request.has_city,
+                "has_state": request.has_state,
+                "has_country": request.has_country,
+            }, on_conflict="location_name")
+            .execute()
+        )
+
+        return {
+            "success": True,
+            "location_name": request.location_name,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class ClayPersonLocationIngestRequest(BaseModel):
+    location_name: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    has_city: Optional[bool] = False
+    has_state: Optional[bool] = False
+    has_country: Optional[bool] = False
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="POST")
+def ingest_clay_person_location_lookup(request: ClayPersonLocationIngestRequest) -> dict:
+    """
+    Insert/upsert location into reference.clay_find_people_location_lookup.
+    """
+    from supabase import create_client
+
+    supabase_url = os.environ["SUPABASE_URL"]
+    supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
+    supabase = create_client(supabase_url, supabase_key)
+
+    try:
+        result = (
+            supabase.schema("reference")
+            .from_("clay_find_people_location_lookup")
+            .upsert({
+                "location_name": request.location_name,
+                "city": request.city,
+                "state": request.state,
+                "country": request.country,
+                "has_city": request.has_city,
+                "has_state": request.has_state,
+                "has_country": request.has_country,
+            }, on_conflict="location_name")
+            .execute()
+        )
+
+        return {
+            "success": True,
+            "location_name": request.location_name,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}

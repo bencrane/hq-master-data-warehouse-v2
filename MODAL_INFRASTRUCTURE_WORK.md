@@ -1,7 +1,12 @@
 # Modal Infrastructure Work Documentation
 
+> **⚠️ ARCHIVED DOCUMENT**  
+> This document is from January 6, 2026 and describes a historical infrastructure rebuild.  
+> The endpoint limit issue has since been resolved.  
+> For current documentation, see [docs/modal-onboarding.md](./docs/modal-onboarding.md).
+
 **Date:** January 6, 2026  
-**Status:** Code committed, deployment blocked by endpoint limits
+**Status:** Code committed, deployment blocked by endpoint limits (RESOLVED)
 
 ---
 

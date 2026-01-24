@@ -1,396 +1,658 @@
 # Modal Endpoints Reference
 
+**Last Updated:** 2026-01-24  
 **App Name:** `hq-master-data-ingest`  
 **Dashboard:** https://modal.com/apps/bencrane/main/deployed/hq-master-data-ingest
 
 ---
 
-## Enriched Data Endpoints
+## Table of Contents
 
-These endpoints receive fully enriched data (detailed profiles with arrays).
+1. [Company Ingest Endpoints](#company-ingest-endpoints)
+2. [Person Ingest Endpoints](#person-ingest-endpoints)
+3. [Signal Endpoints](#signal-endpoints)
+4. [Lookup Endpoints](#lookup-endpoints)
+5. [Location Lookup Ingest Endpoints](#location-lookup-ingest-endpoints)
+6. [Backfill Endpoints](#backfill-endpoints)
+7. [Other Endpoints](#other-endpoints)
+8. [Utility Endpoints](#utility-endpoints)
 
-### 1. Ingest Clay Company Firmo (Enriched)
+---
 
-**Endpoint:**  
-```
-https://bencrane--hq-master-data-ingest-ingest-clay-company-firmo.modal.run
-```
+## Company Ingest Endpoints
 
-**Method:** `POST`
+### ingest_clay_company_firmo
 
-**Workflow:** `clay-company-firmographics`
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-company-firmo.modal.run`
 
-**Purpose:** Receives enriched company data and stores raw + extracted firmographics.
+**Purpose:** Receive enriched company firmographic data.
 
-**Request Body:**
+**Payload:**
 ```json
 {
-  "company_domain": "openenvoy.com",
+  "company_domain": "example.com",
   "workflow_slug": "clay-company-firmographics",
-  "raw_payload": {
-    "url": "https://www.linkedin.com/company/openenvoy",
-    "name": "OpenEnvoy",
-    "slug": "openenvoy",
-    "type": "Privately Held",
-    "domain": "openenvoy.com",
-    "org_id": 43237988,
-    "country": "US",
-    "founded": 2020,
-    "website": "http://www.openenvoy.com",
-    "industry": "Software Development",
-    "locality": "San Mateo, California",
-    "logo_url": "https://...",
-    "locations": [...],
-    "company_id": 111167945,
-    "description": "OpenEnvoy is the Applied AI platform...",
-    "specialties": ["SaaS", "Finance", "Fraud Prevention"],
-    "last_refresh": "2024-10-19T23:31:39.952297",
-    "employee_count": 69,
-    "follower_count": 3983,
-    "size": "51-200 employees"
-  }
+  "raw_payload": {}
 }
 ```
 
-**Stores To:**
-| Table | Purpose |
-|-------|---------|
-| `raw.company_payloads` | Raw JSONB payload |
-| `extracted.company_firmographics` | Flattened fields (linkedin_url, name, industry, size, employee_count, country, etc.) |
-
-**Response:**
-```json
-{
-  "success": true,
-  "raw_id": "uuid",
-  "extracted_id": "uuid"
-}
-```
+**Stores to:** `raw.company_payloads` → `extracted.company_firmographics`
 
 ---
 
-### 2. Ingest Clay Person Profile (Enriched)
+### ingest_clay_find_companies
 
-**Endpoint:**  
-```
-https://bencrane--hq-master-data-ingest-ingest-clay-person-profile.modal.run
-```
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-find-companies.modal.run`
 
-**Method:** `POST`
+**Purpose:** Receive company discovery data from Clay Find Companies.
 
-**Workflow:** `clay-person-profile`
-
-**Purpose:** Receives enriched person data including full work history and education. Extracts to profile, experience, and education tables.
-
-**Request Body:**
-```json
-{
-  "linkedin_url": "https://www.linkedin.com/in/andrewracine",
-  "workflow_slug": "clay-person-profile",
-  "raw_payload": {
-    "url": "https://www.linkedin.com/in/andrewracine",
-    "name": "Andrew Racine",
-    "first_name": "Andrew",
-    "last_name": "Racine",
-    "slug": "andrewracine",
-    "headline": "Marketing @ Writer",
-    "title": "VP, Demand Generation & Growth",
-    "summary": "I love helping companies grow.",
-    "country": "United States",
-    "location_name": "Santa Barbara, California, United States",
-    "connections": 3211,
-    "num_followers": 3501,
-    "profile_id": 11321611,
-    "jobs_count": 7,
-    "picture_url_orig": "https://...",
-    "last_refresh": "2024-10-22 23:52:44.766",
-    
-    "latest_experience": {
-      "url": "https://www.linkedin.com/company/getwriter",
-      "title": "VP, Demand Generation & Growth",
-      "org_id": 67088679,
-      "company": "Writer",
-      "summary": "Writer is the full-stack generative AI platform...",
-      "end_date": null,
-      "locality": "San Francisco, California, United States",
-      "is_current": true,
-      "start_date": "2023-07-01",
-      "company_domain": "writer.com"
-    },
-    
-    "experience": [
-      {
-        "url": "https://www.linkedin.com/company/getwriter",
-        "title": "VP, Demand Generation & Growth",
-        "org_id": 67088679,
-        "company": "Writer",
-        "end_date": null,
-        "locality": "San Francisco, California, United States",
-        "is_current": true,
-        "start_date": "2023-07-01",
-        "company_domain": "writer.com"
-      },
-      {
-        "url": "https://www.linkedin.com/company/fivetran",
-        "title": "VP of Global Demand Generation",
-        "org_id": 3954657,
-        "company": "Fivetran",
-        "end_date": "2023-07-01",
-        "is_current": false,
-        "start_date": "2019-12-01",
-        "company_domain": "5tran.co"
-      }
-      // ... more experience entries
-    ],
-    
-    "education": [
-      {
-        "degree": "Master of Business Administration (M.B.A.)",
-        "school_name": "Babson F.W. Olin Graduate School of Business",
-        "field_of_study": "Business Administration",
-        "start_date": null,
-        "end_date": null
-      },
-      {
-        "degree": "Bachelor of Science",
-        "school_name": "Providence College",
-        "field_of_study": "Marketing"
-      }
-    ],
-    
-    "current_experience": [...],  // NOT used for extraction
-    "certifications": null,
-    "languages": null,
-    "courses": null,
-    "patents": null,
-    "projects": null,
-    "publications": null,
-    "volunteering": null,
-    "awards": null
-  }
-}
-```
-
-**Important Notes:**
-- `latest_experience` (object) is flattened into person_profile — this is the current role snapshot
-- `current_experience` (array) is NOT used — ignore it
-- `experience` (array) is exploded into person_experience table
-- `education` (array) is exploded into person_education table
-
-**Stores To:**
-| Table | Purpose |
-|-------|---------|
-| `raw.person_payloads` | Raw JSONB payload |
-| `extracted.person_profile` | Core profile + latest_experience flattened |
-| `extracted.person_experience` | 1 row per job from experience array |
-| `extracted.person_education` | 1 row per school from education array |
-
-**Upsert Logic:**
-- Upserts on `linkedin_url`
-- Only updates if incoming `source_last_refresh` > existing
-- On upsert: deletes existing experience/education rows, re-inserts new ones
-
-**Response:**
-```json
-{
-  "success": true,
-  "raw_id": "uuid",
-  "person_profile_id": "uuid",
-  "experience_count": 7,
-  "education_count": 2
-}
-```
-
----
-
-## Discovery Endpoints
-
-These endpoints receive lightweight discovery data (no full arrays, just key fields).
-
-### 3. Ingest Clay Find Companies (Discovery)
-
-**Endpoint:**  
-```
-https://bencrane--hq-master-data-ingest-ingest-clay-find-companies.modal.run
-```
-
-**Method:** `POST`
-
-**Workflow:** `clay-find-companies`
-
-**Purpose:** Receives company discovery data from Clay "Find Companies" queries.
-
-**Request Body:**
+**Payload:**
 ```json
 {
   "company_domain": "example.com",
   "workflow_slug": "clay-find-companies",
-  "raw_payload": {
-    "domain": "example.com",
-    "name": "Example Corp",
-    "linkedin_url": "https://www.linkedin.com/company/example",
-    "linkedin_company_id": 12345678,
-    "clay_company_id": 87654321,
-    "size": "51-200 employees",
-    "type": "Privately Held",
-    "country": "US",
-    "location": "San Francisco, CA",
-    "industry": "Software Development",
-    "industries": ["Software Development", "SaaS"],
-    "description": "Example Corp builds...",
-    "annual_revenue": "25M-75M",
-    "total_funding_amount_range_usd": "$100M - $250M",
-    "resolved_domain": { ... },
-    "derived_datapoints": { ... }
-  }
+  "raw_payload": {}
 }
 ```
 
-**Stores To:**
-| Table | Purpose |
-|-------|---------|
-| `raw.company_discovery` | Raw JSONB payload |
-| `extracted.company_discovery` | Flattened fields + JSONB for industries, resolved_domain, derived_datapoints |
-
-**Response:**
-```json
-{
-  "success": true,
-  "raw_id": "uuid",
-  "extracted_id": "uuid"
-}
-```
+**Stores to:** `raw.company_discovery` → `extracted.company_discovery`
 
 ---
 
-### 4. Ingest Clay Find People (Discovery)
+### ingest_clay_find_co_lctn_prsd
 
-**Endpoint:**  
-```
-https://bencrane--hq-master-data-ingest-ingest-clay-find-people.modal.run
-```
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-find-co-lctn-prsd.modal.run`
 
-**Method:** `POST`
+**Purpose:** Receive company discovery data with pre-parsed location.
 
-**Workflow:** `clay-find-people`
-
-**Purpose:** Receives person discovery data from Clay "Find People" queries. Lightweight — no full work history.
-
-**Request Body:**
+**Payload:**
 ```json
 {
-  "linkedin_url": "https://www.linkedin.com/in/johndoe",
+  "company_domain": "example.com",
+  "workflow_slug": "clay-find-companies",
+  "raw_company_payload": {},
+  "raw_company_parsed_location_payload": {},
+  "clay_table_url": "optional"
+}
+```
+
+**Stores to:** `raw.company_discovery_location_parsed` → `extracted.company_discovery_location_parsed`
+
+---
+
+### ingest_all_comp_customers
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-all-comp-customers.modal.run`
+
+**Purpose:** Bulk ingest company customers data.
+
+---
+
+### upsert_core_company
+
+**URL:** `https://bencrane--hq-master-data-ingest-upsert-core-company.modal.run`
+
+**Purpose:** Upsert core company record.
+
+---
+
+### ingest_manual_comp_customer
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-manual-comp-customer.modal.run`
+
+**Purpose:** Manually ingest company customer relationship.
+
+---
+
+## Person Ingest Endpoints
+
+### ingest_clay_person_profile
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-person-profile.modal.run`
+
+**Purpose:** Receive enriched person profile data with full work history.
+
+**Payload:**
+```json
+{
+  "linkedin_url": "https://www.linkedin.com/in/example",
+  "workflow_slug": "clay-person-profile",
+  "raw_payload": {}
+}
+```
+
+**Stores to:** 
+- `raw.person_payloads` 
+- `extracted.person_profile`
+- `extracted.person_experience`
+- `extracted.person_education`
+
+**Notes:** Upserts on `linkedin_url`. Only updates if `source_last_refresh` is newer.
+
+---
+
+### ingest_clay_find_people
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-find-people.modal.run`
+
+**Purpose:** Receive person discovery data from Clay Find People.
+
+**Payload:**
+```json
+{
+  "linkedin_url": "https://www.linkedin.com/in/example",
   "workflow_slug": "clay-find-people",
-  "raw_payload": {
-    "url": "https://www.linkedin.com/in/johndoe",
-    "name": "John Doe",
-    "first_name": "John",
-    "last_name": "Doe",
-    "location_name": "San Francisco, CA",
-    "domain": "acme.com",
-    "latest_experience_title": "VP Marketing",
-    "latest_experience_company": "Acme Corp",
-    "latest_experience_start_date": "2023-01-01",
-    "company_table_id": "tbl_xxx",
-    "company_record_id": "rec_xxx"
-  }
+  "raw_payload": {},
+  "cleaned_first_name": "optional",
+  "cleaned_last_name": "optional",
+  "cleaned_full_name": "optional",
+  "clay_table_url": "optional"
 }
 ```
 
-**Stores To:**
-| Table | Purpose |
-|-------|---------|
-| `raw.person_discovery` | Raw JSONB payload |
-| `extracted.person_discovery` | Flattened fields including Clay reference IDs |
+**Stores to:** `raw.person_discovery` → `extracted.person_discovery`
 
-**Response:**
+**Notes:** Upserts on `linkedin_url`.
+
+---
+
+### ingest_clay_find_ppl_lctn_prsd
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-find-ppl-lctn-prsd.modal.run`
+
+**Purpose:** Receive person discovery data with pre-parsed location.
+
+**Payload:**
 ```json
 {
-  "success": true,
-  "raw_id": "uuid",
-  "extracted_id": "uuid"
+  "linkedin_url": "https://www.linkedin.com/in/example",
+  "workflow_slug": "clay-find-people",
+  "raw_person_payload": {},
+  "raw_person_parsed_location_payload": {},
+  "clay_table_url": "optional"
+}
+```
+
+**Stores to:** `raw.person_discovery_location_parsed` → `extracted.person_discovery_location_parsed`
+
+---
+
+### ingest_ppl_title_enrich
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-ppl-title-enrich.modal.run`
+
+**Purpose:** Receive person data with title enrichment (seniority, function, cleaned title).
+
+**Payload:**
+```json
+{
+  "linkedin_url": "https://www.linkedin.com/in/example",
+  "workflow_slug": "person-title-enrichment",
+  "first_name": "optional",
+  "last_name": "optional",
+  "full_name": "optional",
+  "cleaned_first_name": "optional",
+  "cleaned_last_name": "optional",
+  "cleaned_full_name": "optional",
+  "location_name": "optional",
+  "city": "optional",
+  "state": "optional",
+  "country": "optional",
+  "has_city": false,
+  "has_state": false,
+  "has_country": false,
+  "company_domain": "optional",
+  "latest_title": "optional",
+  "cleaned_job_title": "optional",
+  "latest_company": "optional",
+  "latest_start_date": "optional",
+  "seniority_level": "optional",
+  "job_function": "optional",
+  "clay_table_url": "optional"
+}
+```
+
+**Stores to:** `raw.person_title_enrichment` → `extracted.person_title_enrichment`
+
+---
+
+## Signal Endpoints
+
+### ingest_clay_signal_new_hire
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-signal-new-hire.modal.run`
+
+**Purpose:** Ingest new hire signal data.
+
+**Payload:**
+```json
+{
+  "linkedin_url": "https://www.linkedin.com/in/example",
+  "workflow_slug": "clay-signal-new-hire",
+  "raw_payload": {},
+  "clay_table_url": "optional"
+}
+```
+
+**Stores to:** `raw.signal_new_hire` → `extracted.signal_new_hire`
+
+---
+
+### ingest_clay_signal_job_posting
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-signal-job-posting.modal.run`
+
+**Purpose:** Ingest job posting signal data.
+
+**Stores to:** `raw.signal_job_posting` → `extracted.signal_job_posting`
+
+---
+
+### ingest_clay_signal_job_change
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-signal-job-change.modal.run`
+
+**Purpose:** Ingest job change signal data.
+
+**Stores to:** `raw.signal_job_change` → `extracted.signal_job_change`
+
+---
+
+### ingest_clay_signal_promotion
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-signal-promotion.modal.run`
+
+**Purpose:** Ingest promotion signal data.
+
+**Stores to:** `raw.signal_promotion` → `extracted.signal_promotion`
+
+---
+
+### ingest_clay_signal_news_fundraising
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-signal-news--9963a4.modal.run`
+
+**Purpose:** Ingest news/fundraising signal data.
+
+**Note:** URL truncated due to length.
+
+**Stores to:** `raw.signal_news_fundraising` → `extracted.signal_news_fundraising`
+
+---
+
+## Lookup Endpoints
+
+These query reference tables and return matches. They do NOT store data.
+
+### lookup_person_location
+
+**URL:** `https://bencrane--hq-master-data-ingest-lookup-person-location.modal.run`
+
+**Purpose:** Check if a person location exists in lookup table.
+
+**Table:** `reference.location_lookup`
+
+**Payload:**
+```json
+{
+  "location_name": "San Francisco, California, United States"
+}
+```
+
+**Response (match found):**
+```json
+{
+  "match_status": true,
+  "location_name": "San Francisco, California, United States",
+  "city": "San Francisco",
+  "state": "California",
+  "country": "United States",
+  "has_city": true,
+  "has_state": true,
+  "has_country": true
+}
+```
+
+**Response (no match):**
+```json
+{
+  "match_status": false,
+  "location_name": "...",
+  "city": null,
+  "state": null,
+  "country": null,
+  "has_city": null,
+  "has_state": null,
+  "has_country": null
 }
 ```
 
 ---
 
-## ICP Generation Endpoint
+### lookup_salesnav_location
 
-### 5. Generate Target Client ICP
+**URL:** `https://bencrane--hq-master-data-ingest-lookup-salesnav-location.modal.run`
 
-**Endpoint:**  
-```
-https://bencrane--hq-master-data-ingest-generate-target-client-icp.modal.run
-```
+**Purpose:** Check if a SalesNav person location exists in lookup table.
 
-**Method:** `POST`
+**Table:** `reference.salesnav_location_lookup`
 
-**Workflow:** `ai-generate-target-client-icp`
-
-**Purpose:** Takes target client info, calls OpenAI gpt-4o-mini to generate ICP criteria.
-
-**Status:** ⚠️ Had issues during development — may need debugging
-
-**Request Body:**
+**Payload:**
 ```json
 {
-  "target_client_id": "86f19e12-2d49-4878-a5ea-454d99369c09",
+  "location_raw": "San Francisco, California, United States"
+}
+```
+
+---
+
+### lookup_salesnav_company_location
+
+**URL:** `https://bencrane--hq-master-data-ingest-lookup-salesnav-company--1838bd.modal.run`
+
+**Purpose:** Check if a SalesNav company location exists in lookup table.
+
+**Table:** `reference.salesnav_company_location_lookup`
+
+**Payload:**
+```json
+{
+  "registered_address_raw": "San Francisco, California, United States"
+}
+```
+
+---
+
+### lookup_job_title
+
+**URL:** `https://bencrane--hq-master-data-ingest-lookup-job-title.modal.run`
+
+**Purpose:** Check if a job title exists in lookup table.
+
+**Table:** `reference.job_title_lookup`
+
+**Payload:**
+```json
+{
+  "job_title": "VP of Marketing"
+}
+```
+
+**Response (match found):**
+```json
+{
+  "match_status": true,
+  "job_title": "VP of Marketing",
+  "cleaned_job_title": "VP Marketing",
+  "seniority_level": "VP",
+  "job_function": "Marketing"
+}
+```
+
+---
+
+## Location Lookup Ingest Endpoints
+
+These INSERT data into location lookup tables.
+
+### ingest_clay_company_location_lookup
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-company-loca-251127.modal.run`
+
+**Purpose:** Add a company location to the Clay companies lookup table.
+
+**Table:** `reference.clay_find_companies_location_lookup`
+
+**Payload:**
+```json
+{
+  "location_name": "Seattle, WA",
+  "city": "Seattle",
+  "state": "WA",
+  "country": "United States",
+  "has_city": true,
+  "has_state": true,
+  "has_country": false
+}
+```
+
+**Notes:** Only `location_name` is required. Upserts on `location_name`.
+
+---
+
+### ingest_clay_person_location_lookup
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-clay-person-locat-6675ee.modal.run`
+
+**Purpose:** Add a person location to the Clay people lookup table.
+
+**Table:** `reference.clay_find_people_location_lookup`
+
+**Payload:**
+```json
+{
+  "location_name": "San Francisco, California, United States",
+  "city": "San Francisco",
+  "state": "California",
+  "country": "United States",
+  "has_city": true,
+  "has_state": true,
+  "has_country": true
+}
+```
+
+**Notes:** Only `location_name` is required. Upserts on `location_name`.
+
+---
+
+## Backfill Endpoints
+
+### backfill_person_location
+
+**URL:** `https://bencrane--hq-master-data-ingest-backfill-person-location.modal.run`
+
+**Purpose:** Batch update `extracted.person_discovery` with city/state/country from `reference.location_lookup`.
+
+**Payload:**
+```json
+{
+  "dry_run": true,
+  "limit": null
+}
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `dry_run` | `true` | If true, returns preview without updating |
+| `limit` | `null` | Max records to update. null = all matching |
+
+**Response (dry run):**
+```json
+{
+  "dry_run": true,
+  "records_missing_city": 520678,
+  "lookup_entries": 9371,
+  "matches_in_sample": 862,
+  "sample_size": 1000,
+  "sample_matches": [...],
+  "message": "Set dry_run=False to execute update"
+}
+```
+
+**Response (executed):**
+```json
+{
+  "dry_run": false,
+  "updated_count": 100,
+  "processed_count": 136,
+  "limit": 100,
+  "errors": [],
+  "error_count": 0
+}
+```
+
+**Notes:** Only updates records where `city IS NULL`. Will not overwrite existing data.
+
+---
+
+## Other Endpoints
+
+### ingest_vc_portfolio
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-vc-portfolio.modal.run`
+
+**Purpose:** Ingest VC portfolio company data. Also attempts to match and update `crunchbase_domain_inference.linkedin_company_url`.
+
+**Payload:**
+```json
+{
+  "company_name": "Example Corp",
+  "vc_name": "optional",
+  "domain": "optional",
+  "linkedin_url": "optional",
+  "short_description": "optional",
+  "long_description": "optional",
+  "city": "optional",
+  "state": "optional",
+  "country": "optional",
+  "employee_range": "optional",
+  "founded_date": "optional",
+  "operating_status": "optional",
+  "workflow_slug": "vc-portfolio",
+  "clay_table_url": "optional"
+}
+```
+
+**Notes:** Only `company_name` is required. `workflow_slug` defaults to "vc-portfolio".
+
+**Stores to:** `raw.vc_portfolio_payloads` → `extracted.vc_portfolio`
+
+**Side effect:** If `domain` provided and matches `extracted.crunchbase_domain_inference.inferred_domain` where `linkedin_company_url IS NULL`, updates that record.
+
+---
+
+### ingest_case_study_extraction
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-case-study-extraction.modal.run`
+
+**Purpose:** Ingest case study extraction data.
+
+**Stores to:** `raw.case_study_payloads` → `extracted.case_study`
+
+---
+
+### ingest_icp_verdict
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-icp-verdict.modal.run`
+
+**Purpose:** Ingest ICP verdict data.
+
+**Stores to:** `raw.icp_verdict_payloads` → `extracted.icp_verdict`
+
+---
+
+### infer_crunchbase_domain
+
+**URL:** `https://bencrane--hq-master-data-ingest-infer-crunchbase-domain.modal.run`
+
+**Purpose:** Infer domain from Crunchbase data.
+
+---
+
+### ingest_company_address_parsing
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-company-address-parsing.modal.run`
+
+**Purpose:** Ingest company address parsing data.
+
+---
+
+### command_center_email_enrichment
+
+**URL:** `https://bencrane--hq-master-data-ingest-command-center-email-enrichment.modal.run`
+
+**Purpose:** Email enrichment waterfall processing.
+
+---
+
+### get_email_job
+
+**URL:** `https://bencrane--hq-master-data-ingest-get-email-job.modal.run`
+
+**Purpose:** Get status of email enrichment job.
+
+---
+
+### generate_target_client_icp
+
+**URL:** `https://bencrane--hq-master-data-ingest-generate-target-client-icp.modal.run`
+
+**Purpose:** Generate ICP criteria using OpenAI.
+
+**Payload:**
+```json
+{
+  "target_client_id": "uuid",
   "company_name": "Mutiny",
   "domain": "mutinyhq.com",
   "company_linkedin_url": "https://www.linkedin.com/company/mutinyhq"
 }
 ```
 
-**Expected Response:**
+**Stores to:** `raw.icp_payloads` → `extracted.target_client_icp`
+
+---
+
+## Utility Endpoints
+
+### test_endpoint
+
+**URL:** `https://bencrane--hq-master-data-ingest-test-endpoint.modal.run`
+
+**Purpose:** Echo test for verifying deployment is working.
+
+**Payload:**
 ```json
 {
-  "success": true,
-  "raw_id": "uuid",
-  "extracted_id": "uuid",
-  "icp": {
-    "company_criteria": {
-      "industries": ["Software Development"],
-      "employee_count_min": 100,
-      "employee_count_max": 5000,
-      "countries": ["US", "United States"]
-    },
-    "person_criteria": {
-      "title_contains_any": ["VP", "Director", "Head of"],
-      "title_contains_all": ["Marketing", "Demand Gen", "Growth"]
-    }
-  }
+  "test": "hello"
 }
 ```
 
-**Stores To:**
-| Table | Purpose |
-|-------|---------|
-| `raw.icp_payloads` | Raw OpenAI response |
-| `extracted.target_client_icp` | Flattened ICP criteria |
+**Response:**
+```json
+{
+  "success": true,
+  "received": {"test": "hello"}
+}
+```
+
+---
+
+## Disabled Endpoints
+
+The following endpoints are in the codebase but currently disabled:
+
+| Endpoint | File | Status |
+|----------|------|--------|
+| `ingest_salesnav_scrapes_person` | `ingest/salesnav_person.py` | Temporarily disabled |
 
 ---
 
 ## Workflow Registry
 
-All workflows are registered in `reference.enrichment_workflow_registry`:
+All workflows should be registered in `reference.enrichment_workflow_registry`:
 
-| workflow_slug | provider | platform | payload_type | entity_type |
-|---------------|----------|----------|--------------|-------------|
-| `clay-company-firmographics` | clay | clay | firmographics | company |
-| `clay-person-profile` | clay | clay | profile | person |
-| `clay-find-companies` | clay | clay | discovery | company |
-| `clay-find-people` | clay | clay | discovery | person |
-| `ai-generate-target-client-icp` | openai | modal | icp_criteria | target_client |
-
----
-
-## Quick Reference
-
-| Data Type | Endpoint | Workflow Slug |
-|-----------|----------|---------------|
-| **Company enriched** | ingest-clay-company-firmo | `clay-company-firmographics` |
-| **Person enriched** | ingest-clay-person-profile | `clay-person-profile` |
-| **Company discovery** | ingest-clay-find-companies | `clay-find-companies` |
-| **Person discovery** | ingest-clay-find-people | `clay-find-people` |
-| **ICP generation** | generate-target-client-icp | `ai-generate-target-client-icp` |
-
+| workflow_slug | provider | entity_type |
+|---------------|----------|-------------|
+| `clay-company-firmographics` | clay | company |
+| `clay-find-companies` | clay | company |
+| `clay-person-profile` | clay | person |
+| `clay-find-people` | clay | person |
+| `clay-signal-new-hire` | clay | signal |
+| `clay-signal-job-posting` | clay | signal |
+| `clay-signal-job-change` | clay | signal |
+| `clay-signal-promotion` | clay | signal |
+| `clay-signal-news-fundraising` | clay | signal |
+| `person-title-enrichment` | clay | person |
+| `vc-portfolio` | crunchbase | company |
+| `ai-generate-target-client-icp` | openai | target_client |

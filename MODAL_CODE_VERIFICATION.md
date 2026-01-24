@@ -1,5 +1,9 @@
 # Modal Code Verification
 
+> **⚠️ ARCHIVED DOCUMENT**  
+> This document is from January 6, 2026 and represents a one-time verification.  
+> For current documentation, see [docs/modal-onboarding.md](./docs/modal-onboarding.md).
+
 **Date:** January 6, 2026  
 **Verified by:** Agent  
 **Purpose:** Pre-deployment verification that all code is in place, committed, and properly wired
