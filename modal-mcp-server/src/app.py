@@ -39,7 +39,7 @@ from ingest.company_address import ingest_company_address_parsing
 from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title, ingest_clay_company_location_lookup, ingest_clay_person_location_lookup
 from ingest.vc_portfolio import ingest_vc_portfolio
 from ingest.backfill import backfill_person_location
-# from ingest.salesnav_person import ingest_salesnav_scrapes_person  # Temporarily disabled
+from ingest.salesnav_person import ingest_salesnav_person
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -57,7 +57,7 @@ import extraction.signal_job_posting
 import extraction.signal_job_change
 import extraction.signal_promotion
 import extraction.company_address
-# import extraction.salesnav_person  # Temporarily disabled
+import extraction.salesnav_person
 
 # Simple test endpoint - always keep this
 @app.function(image=image)
@@ -102,5 +102,5 @@ __all__ = [
     "ingest_clay_person_location_lookup",
     "ingest_vc_portfolio",
     "backfill_person_location",
-    # "ingest_salesnav_scrapes_person",  # Temporarily disabled
+    "ingest_salesnav_person",
 ]

@@ -1,13 +1,11 @@
 """
 SalesNav Person Ingestion Endpoint
 
-Ingests person data from SalesNav scrapes with AI-powered location parsing.
-Flow: raw -> AI (Gemini location parsing) -> extracted
+Ingests person data from SalesNav scrapes.
+Location is matched against reference.salesnav_location_lookup table.
 """
 
 import os
-import re
-import json
 import modal
 from pydantic import BaseModel
 from typing import Optional
@@ -16,74 +14,18 @@ from config import app, image
 from extraction.salesnav_person import extract_salesnav_person
 
 
-# Location parsing prompt - strips "Greater", "Metro", "Area" etc. for clean city names
-LOCATION_PARSING_PROMPT = """#CONTEXT#
-
-You are an information extraction system. You will be given a single free-text location string that may represent a city, a state/region, a country, or some combination of those. Your job is to parse the string and extract only what is explicitly present, without inferring missing components.
-
-#OBJECTIVE#
-
-Parse the input location string and return structured fields: city, state, country, hasCity, hasState, hasCountry.
-
-#INSTRUCTIONS#
-
-- Extract explicitly stated components only. Do not infer or guess missing information from context or common knowledge.
-- Normalize whitespace and punctuation; handle duplicates and metropolitan area formats conservatively.
-- If a component (city/state/country) is clearly present, return its value; otherwise return null for that component.
-- Set booleans strictly based on presence: hasCity, hasState, hasCountry should be true only if that component is explicitly present in the input.
-- IMPORTANT: For city names, aggressively strip prefixes/suffixes like "Greater", "Metro", "Metropolitan", "Area", "Bay Area", "Region". Examples:
-  - "Greater Cleveland" -> city = "Cleveland"
-  - "San Francisco Bay Area" -> city = "San Francisco"
-  - "Greater London" -> city = "London"
-  - "New York City Metropolitan Area" -> city = "New York City"
-  - "Dallas-Fort Worth Metroplex" -> city = "Dallas-Fort Worth"
-- For state/region, preserve the explicit form as written (e.g., "CA", "California", "Île-de-France", "Bavaria"). Do not expand abbreviations.
-- For country, preserve the explicit form as written (e.g., "USA", "United States", "UK", "United Kingdom"). Do not standardize or expand.
-- Be conservative with ambiguous tokens (e.g., "Georgia" could be a country or a state). If ambiguity exists and no other disambiguating tokens are present, assign it to the component that is explicitly indicated by formatting or context words; otherwise leave uncertain components as null and only set the boolean for the clearly indicated component. Do not infer.
-- If the input is empty or contains no location content, return null for all three components and set all booleans to false.
-- Output must be a single JSON object with camelCase keys: city, state, country, hasCity, hasState, hasCountry.
-
-#EXAMPLES#
-
-Input: "Seattle, WA, USA"
-Output: {"city":"Seattle","state":"WA","country":"USA","hasCity":true,"hasState":true,"hasCountry":true}
-
-Input: "Greater Cleveland, Ohio"
-Output: {"city":"Cleveland","state":"Ohio","country":null,"hasCity":true,"hasState":true,"hasCountry":false}
-
-Input: "San Francisco Bay Area, California"
-Output: {"city":"San Francisco","state":"California","country":null,"hasCity":true,"hasState":true,"hasCountry":false}
-
-Input: "New York City Metropolitan Area, USA"
-Output: {"city":"New York City","state":null,"country":"USA","hasCity":true,"hasState":false,"hasCountry":true}
-
-Input: "Greater London, United Kingdom"
-Output: {"city":"London","state":null,"country":"United Kingdom","hasCity":true,"hasState":false,"hasCountry":true}
-
-Input: "California"
-Output: {"city":null,"state":"California","country":null,"hasCity":false,"hasState":true,"hasCountry":false}
-
-Input: "United Kingdom"
-Output: {"city":null,"state":null,"country":"United Kingdom","hasCity":false,"hasState":false,"hasCountry":true}
-
-Input: "Georgia"
-Output: {"city":null,"state":null,"country":null,"hasCity":false,"hasState":false,"hasCountry":false}
-
-Input: ""
-Output: {"city":null,"state":null,"country":null,"hasCity":false,"hasState":false,"hasCountry":false}
-
-Now parse this location:
-"""
-
-
 class SalesNavPersonRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    cleaned_first_name: Optional[str] = None
+    cleaned_last_name: Optional[str] = None
+    cleaned_full_name: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
     profile_headline: Optional[str] = None
     profile_summary: Optional[str] = None
     job_title: Optional[str] = None
+    cleaned_job_title: Optional[str] = None
     job_description: Optional[str] = None
     job_started_on: Optional[str] = None
     person_linkedin_sales_nav_url: Optional[str] = None
@@ -101,74 +43,7 @@ class SalesNavPersonRequest(BaseModel):
     sent_to_clay_at: Optional[str] = None
     export_title: Optional[str] = None
     export_timestamp: Optional[str] = None
-
-
-def parse_location_with_gemini(location: str) -> dict:
-    """
-    Parse location string using Gemini 2.0 Flash.
-    Returns dict with city, state, country, hasCity, hasState, hasCountry.
-    """
-    import google.generativeai as genai
-
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return {
-            "city": None, "state": None, "country": None,
-            "hasCity": False, "hasState": False, "hasCountry": False
-        }
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
-
-    prompt = LOCATION_PARSING_PROMPT + f'"{location}"'
-
-    try:
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
-
-        # Clean markdown code blocks if present
-        if response_text.startswith("```"):
-            response_text = re.sub(r"^```(?:json)?\n?", "", response_text)
-            response_text = re.sub(r"\n?```$", "", response_text)
-
-        return json.loads(response_text)
-    except Exception as e:
-        print(f"Gemini parsing error: {e}")
-        return {
-            "city": None, "state": None, "country": None,
-            "hasCity": False, "hasState": False, "hasCountry": False
-        }
-
-
-def clean_name(name: Optional[str]) -> Optional[str]:
-    """
-    Clean name by removing emojis and decorative characters.
-    """
-    if not name:
-        return name
-
-    # Remove emojis and special unicode characters
-    emoji_pattern = re.compile(
-        "["
-        "\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F1E0-\U0001F1FF"  # flags
-        "\U00002702-\U000027B0"  # dingbats
-        "\U000024C2-\U0001F251"  # enclosed characters
-        "\U0001F900-\U0001F9FF"  # supplemental symbols
-        "\U0001FA00-\U0001FA6F"  # chess symbols
-        "\U0001FA70-\U0001FAFF"  # symbols extended
-        "\U00002600-\U000026FF"  # misc symbols
-        "\U00002700-\U000027BF"  # dingbats
-        "]+",
-        flags=re.UNICODE
-    )
-
-    cleaned = emoji_pattern.sub("", name)
-    # Clean up extra whitespace
-    cleaned = " ".join(cleaned.split())
-    return cleaned.strip() if cleaned.strip() else name
+    workflow_slug: Optional[str] = "salesnav-person"
 
 
 def normalize_null_string(value: Optional[str]) -> Optional[str]:
@@ -184,28 +59,19 @@ def parse_boolean_string(value: Optional[str]) -> Optional[bool]:
         return None
     if isinstance(value, bool):
         return value
-    return value.lower() in ("true", "1", "yes")
-
-
-def parse_timestamp(value: Optional[str]) -> Optional[str]:
-    """Parse and validate timestamp string."""
-    if value is None or value == "null" or value == "":
-        return None
-    return value
+    return str(value).lower() in ("true", "1", "yes")
 
 
 @app.function(
     image=image,
-    secrets=[
-        modal.Secret.from_name("supabase-credentials"),
-        modal.Secret.from_name("gemini-api-key"),
-    ],
+    secrets=[modal.Secret.from_name("supabase-credentials")],
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest_salesnav_scrapes_person(request: SalesNavPersonRequest) -> dict:
+def ingest_salesnav_person(request: SalesNavPersonRequest) -> dict:
     """
-    Ingest SalesNav person data with AI location parsing.
-    Flow: raw -> AI (Gemini) -> extracted
+    Ingest SalesNav person data.
+    Matches location against reference.salesnav_location_lookup.
+    Stores raw payload, then extracts to salesnav_scrapes_person.
     """
     from supabase import create_client
 
@@ -214,10 +80,10 @@ def ingest_salesnav_scrapes_person(request: SalesNavPersonRequest) -> dict:
     supabase = create_client(supabase_url, supabase_key)
 
     try:
-        # Build raw payload from request
+        # Build raw payload
         raw_payload = request.model_dump()
 
-        # 1. Store raw payload first
+        # Store raw payload
         raw_insert = (
             supabase.schema("raw")
             .from_("salesnav_scrapes_person_payloads")
@@ -225,48 +91,69 @@ def ingest_salesnav_scrapes_person(request: SalesNavPersonRequest) -> dict:
                 "person_linkedin_sales_nav_url": request.person_linkedin_sales_nav_url,
                 "linkedin_user_profile_urn": request.linkedin_user_profile_urn,
                 "domain": request.domain,
+                "workflow_slug": request.workflow_slug,
                 "raw_payload": raw_payload,
             })
             .execute()
         )
         raw_id = raw_insert.data[0]["id"]
 
-        # 2. Parse location with Gemini
+        # Lookup location from reference table
         location_raw = normalize_null_string(request.location)
         parsed_location = {
-            "city": None, "state": None, "country": None,
-            "hasCity": False, "hasState": False, "hasCountry": False
+            "city": None,
+            "state": None,
+            "country": None,
+            "has_city": False,
+            "has_state": False,
+            "has_country": False,
         }
 
         if location_raw:
-            parsed_location = parse_location_with_gemini(location_raw)
+            lookup_result = (
+                supabase.schema("reference")
+                .from_("salesnav_location_lookup")
+                .select("*")
+                .eq("location_raw", location_raw)
+                .execute()
+            )
+            if lookup_result.data:
+                loc = lookup_result.data[0]
+                parsed_location = {
+                    "city": loc.get("city"),
+                    "state": loc.get("state"),
+                    "country": loc.get("country"),
+                    "has_city": loc.get("has_city", False),
+                    "has_state": loc.get("has_state", False),
+                    "has_country": loc.get("has_country", False),
+                }
 
-        # 3. Clean names (remove emojis)
-        first_name = clean_name(normalize_null_string(request.first_name))
-        last_name = clean_name(normalize_null_string(request.last_name))
-
-        # 4. Extract to extracted table
+        # Extract
         extracted_result = extract_salesnav_person(
             supabase=supabase,
             raw_payload_id=raw_id,
-            first_name=first_name,
-            last_name=last_name,
+            first_name=normalize_null_string(request.first_name),
+            last_name=normalize_null_string(request.last_name),
+            cleaned_first_name=normalize_null_string(request.cleaned_first_name),
+            cleaned_last_name=normalize_null_string(request.cleaned_last_name),
+            cleaned_full_name=normalize_null_string(request.cleaned_full_name),
             email=normalize_null_string(request.email),
             phone_number=normalize_null_string(request.phone_number),
             profile_headline=normalize_null_string(request.profile_headline),
             profile_summary=normalize_null_string(request.profile_summary),
             job_title=normalize_null_string(request.job_title),
+            cleaned_job_title=normalize_null_string(request.cleaned_job_title),
             job_description=normalize_null_string(request.job_description),
             job_started_on=normalize_null_string(request.job_started_on),
             person_linkedin_sales_nav_url=normalize_null_string(request.person_linkedin_sales_nav_url),
             linkedin_user_profile_urn=normalize_null_string(request.linkedin_user_profile_urn),
             location_raw=location_raw,
-            city=parsed_location.get("city"),
-            state=parsed_location.get("state"),
-            country=parsed_location.get("country"),
-            has_city=parsed_location.get("hasCity", False),
-            has_state=parsed_location.get("hasState", False),
-            has_country=parsed_location.get("hasCountry", False),
+            city=parsed_location["city"],
+            state=parsed_location["state"],
+            country=parsed_location["country"],
+            has_city=parsed_location["has_city"],
+            has_state=parsed_location["has_state"],
+            has_country=parsed_location["has_country"],
             company_name=normalize_null_string(request.company_name),
             domain=normalize_null_string(request.domain),
             company_linkedin_url=normalize_null_string(request.company_linkedin_url),
@@ -274,9 +161,9 @@ def ingest_salesnav_scrapes_person(request: SalesNavPersonRequest) -> dict:
             upload_id=normalize_null_string(request.upload_id),
             notes=normalize_null_string(request.notes),
             matching_filters=parse_boolean_string(request.matching_filters),
-            source_created_at=parse_timestamp(request.source_created_at),
+            source_created_at=normalize_null_string(request.source_created_at),
             clay_batch_number=normalize_null_string(request.clay_batch_number),
-            sent_to_clay_at=parse_timestamp(request.sent_to_clay_at),
+            sent_to_clay_at=normalize_null_string(request.sent_to_clay_at),
             export_title=normalize_null_string(request.export_title),
             export_timestamp=normalize_null_string(request.export_timestamp),
         )
@@ -285,7 +172,7 @@ def ingest_salesnav_scrapes_person(request: SalesNavPersonRequest) -> dict:
             "success": True,
             "raw_id": raw_id,
             "extracted_id": extracted_result["id"] if extracted_result else None,
-            "parsed_location": parsed_location,
+            "location_matched": parsed_location["city"] is not None or parsed_location["country"] is not None,
         }
 
     except Exception as e:
