@@ -40,6 +40,11 @@ from ingest.lookup import lookup_person_location, lookup_salesnav_location, look
 from ingest.vc_portfolio import ingest_vc_portfolio
 from ingest.backfill import backfill_person_location
 from ingest.salesnav_person import ingest_salesnav_person
+from ingest.nostra_ecom import ingest_nostra_ecom_company
+from ingest.nostra_ecom_people import ingest_nostra_ecom_person
+from ingest.leadmagic_company import ingest_leadmagic_company
+from ingest.core_company_simple import ingest_core_company_simple
+from ingest.apollo_scrape import ingest_apollo_scrape
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -103,4 +108,9 @@ __all__ = [
     "ingest_vc_portfolio",
     "backfill_person_location",
     "ingest_salesnav_person",
+    "ingest_nostra_ecom_company",
+    "ingest_nostra_ecom_person",
+    "ingest_leadmagic_company",
+    "ingest_core_company_simple",
+    "ingest_apollo_scrape",
 ]
