@@ -38,7 +38,7 @@ from ingest.signal_promotion import ingest_clay_signal_promotion
 from ingest.company_address import ingest_company_address_parsing
 from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title, ingest_clay_company_location_lookup, ingest_clay_person_location_lookup
 from ingest.vc_portfolio import ingest_vc_portfolio
-from ingest.backfill import backfill_person_location
+from ingest.backfill import backfill_person_location, backfill_person_matched_location
 from ingest.salesnav_person import ingest_salesnav_person
 from ingest.nostra_ecom import ingest_nostra_ecom_company
 from ingest.nostra_ecom_people import ingest_nostra_ecom_person
@@ -107,6 +107,7 @@ __all__ = [
     "ingest_clay_person_location_lookup",
     "ingest_vc_portfolio",
     "backfill_person_location",
+    "backfill_person_matched_location",
     "ingest_salesnav_person",
     "ingest_nostra_ecom_company",
     "ingest_nostra_ecom_person",
