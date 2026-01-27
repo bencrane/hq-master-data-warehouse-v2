@@ -47,6 +47,7 @@ from ingest.core_company_simple import ingest_core_company_simple
 from ingest.apollo_scrape import ingest_apollo_scrape
 from ingest.cleaned_company_name import ingest_cleaned_company_name
 from ingest.salesnav_company import ingest_salesnav_company
+from ingest.apollo_instantdata import extract_apollo_instantdata
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -118,4 +119,5 @@ __all__ = [
     "ingest_apollo_scrape",
     "ingest_cleaned_company_name",
     "ingest_salesnav_company",
+    "extract_apollo_instantdata",
 ]
