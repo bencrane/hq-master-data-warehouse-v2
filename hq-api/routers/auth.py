@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Header
-from typing import Optional
+from typing import Optional, List
 from db import get_auth_pool
 from models import Org, User, UserWithOrg, SessionValidation
 
@@ -115,7 +115,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)):
     return UserWithOrg(user=user, org=org, role=role)
 
 
-@router.get("/orgs", response_model=list[Org])
+@router.get("/orgs", response_model=List[Org])
 async def list_orgs():
     """List all organizations (admin endpoint)."""
     pool = get_auth_pool()
