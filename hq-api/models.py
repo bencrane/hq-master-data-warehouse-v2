@@ -129,3 +129,26 @@ class SessionValidation(BaseModel):
     valid: bool
     user_id: Optional[str] = None
     expires_at: Optional[str] = None
+
+
+# Company Models
+class Company(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    id: Optional[str] = None
+    domain: Optional[str] = None
+    name: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    company_city: Optional[str] = None
+    company_state: Optional[str] = None
+    company_country: Optional[str] = None
+    matched_industry: Optional[str] = None
+    employee_range: Optional[str] = None
+    description: Optional[str] = None
+    tagline: Optional[str] = None
+    lead_count: Optional[int] = None
+
+
+class CompaniesResponse(BaseModel):
+    data: List[Company]
+    meta: PaginationMeta
