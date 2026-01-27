@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional, List
 from datetime import date, datetime, timedelta
-from db import core
+from db import core, supabase
 from models import (
     Lead, LeadsResponse, PaginationMeta,
     LeadRecentlyPromoted, LeadsRecentlyPromotedResponse,
@@ -210,43 +210,61 @@ async def get_leads_at_vc_portfolio(
 @router.get("/by-past-employer", response_model=LeadsResponse)
 async def get_leads_by_past_employer(
     domains: str = Query(..., description="Comma-separated list of company domains"),
-    job_function: Optional[str] = Query(None),
-    seniority: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    """Get leads who previously worked at specified companies."""
+    """
+    Get leads who previously worked at specified companies.
+
+    Uses PostgreSQL function core.get_leads_by_past_employer() for efficient querying.
+    """
     domain_list = [d.strip().lower() for d in domains.split(",")]
-    params = {"job_function": job_function, "seniority": seniority}
 
-    # Get linkedin URLs of people who worked at these companies (limit to prevent URL overflow)
-    work_history_query = core().from_("person_work_history").select("linkedin_url")
-    work_history_query = work_history_query.in_("company_domain", domain_list)
-    work_history_query = work_history_query.limit(5000)  # Limit to prevent URL overflow
-    work_history_result = work_history_query.execute()
+    # Call PostgreSQL function via RPC (public wrapper -> core function)
+    result = supabase.rpc(
+        "get_leads_by_past_employer",
+        {"p_domains": domain_list, "p_limit": limit, "p_offset": offset}
+    ).execute()
 
-    if not work_history_result.data:
-        return LeadsResponse(data=[], meta=PaginationMeta(total=0, limit=limit, offset=offset))
-
-    linkedin_urls = list(set([row["linkedin_url"] for row in work_history_result.data]))
-
-    # Further limit URLs to prevent IN clause overflow
-    if len(linkedin_urls) > 500:
-        linkedin_urls = linkedin_urls[:500]
-
-    count_query = core().from_("leads").select("person_id", count="exact", head=True)
-    count_query = count_query.in_("linkedin_url", linkedin_urls)
-    count_query = apply_lead_filters(count_query, params)
-    count_result = count_query.execute()
-    total = count_result.count or 0
-
-    data_query = core().from_("leads").select(LEAD_COLUMNS)
-    data_query = data_query.in_("linkedin_url", linkedin_urls)
-    data_query = apply_lead_filters(data_query, params)
-    data_query = data_query.range(offset, offset + limit - 1)
-    data_result = data_query.execute()
+    # Get count with high limit for total (function handles the logic)
+    count_result = supabase.rpc(
+        "get_leads_by_past_employer",
+        {"p_domains": domain_list, "p_limit": 100000, "p_offset": 0}
+    ).execute()
+    total = len(count_result.data) if count_result.data else 0
 
     return LeadsResponse(
-        data=[Lead(**row) for row in data_result.data],
+        data=[Lead(**row) for row in result.data] if result.data else [],
+        meta=PaginationMeta(total=total, limit=limit, offset=offset)
+    )
+
+
+@router.get("/by-company-customers", response_model=LeadsResponse)
+async def get_leads_by_company_customers(
+    company_domain: str = Query(..., description="Domain of the origin company (e.g., 'forethought.ai')"),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get leads who previously worked at customers of the specified company.
+
+    Looks up the company's customers from core.company_customers, then finds
+    leads who have work history at those customer companies.
+    """
+    # Call PostgreSQL function via RPC (public wrapper -> core function)
+    result = supabase.rpc(
+        "get_leads_by_company_customers",
+        {"p_company_domain": company_domain.strip().lower(), "p_limit": limit, "p_offset": offset}
+    ).execute()
+
+    # Get count with high limit for total
+    count_result = supabase.rpc(
+        "get_leads_by_company_customers",
+        {"p_company_domain": company_domain.strip().lower(), "p_limit": 100000, "p_offset": 0}
+    ).execute()
+    total = len(count_result.data) if count_result.data else 0
+
+    return LeadsResponse(
+        data=[Lead(**row) for row in result.data] if result.data else [],
         meta=PaginationMeta(total=total, limit=limit, offset=offset)
     )

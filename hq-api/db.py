@@ -14,10 +14,13 @@ def get_supabase() -> Client:
 
 supabase = get_supabase()
 
+# Export supabase client for RPC calls
+__all__ = ['supabase', 'core', 'raw', 'extracted']
+
 # Helper to get core schema client
 def core():
     """Get client for core schema."""
-    return supabase.schema("core")
+    return supabase
 
 def raw():
     """Get client for raw schema."""
