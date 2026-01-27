@@ -28,9 +28,9 @@ class ApolloInstantDataRequest(BaseModel):
     company_name: Optional[str] = None
     company_headcount: Optional[str] = None
     industry: Optional[str] = None
-    extra_data: Optional[dict] = None
+    extra_data: Optional[str] = None  # Can be string or dict, will parse
     created_at: Optional[str] = None
-    raw_row: Optional[dict] = None
+    raw_row: Optional[str] = None  # Can be string or dict, will parse
 
 
 def normalize_null_string(value: Optional[str]) -> Optional[str]:
@@ -38,6 +38,21 @@ def normalize_null_string(value: Optional[str]) -> Optional[str]:
     if value is None or value == "null" or value == "":
         return None
     return value
+
+
+def parse_json_field(value) -> Optional[dict]:
+    """Parse JSON field that might be a string or already a dict."""
+    import json
+    if value is None or value == "null" or value == "":
+        return None
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return None
+    return None
 
 
 @app.function(
@@ -69,8 +84,14 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
         raw_record_id = normalize_null_string(request.id)
         source_created_at = normalize_null_string(request.created_at)
 
-        # Build raw_payload from entire request
+        # Parse JSON fields that may come as strings
+        extra_data_parsed = parse_json_field(request.extra_data)
+        raw_row_parsed = parse_json_field(request.raw_row)
+
+        # Build raw_payload from entire request (with parsed JSON)
         raw_payload = request.model_dump()
+        raw_payload["extra_data"] = extra_data_parsed
+        raw_payload["raw_row"] = raw_row_parsed
 
         # 1. Upsert company (if apollo_company_url exists)
         if apollo_company_url:
@@ -101,7 +122,7 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
                             "company_id": company_id,
                             "scrape_settings_id": scrape_settings_id,
                             "raw_record_id": raw_record_id,
-                            "extra_data": request.extra_data,
+                            "extra_data": extra_data_parsed,
                         },
                         on_conflict="company_id,scrape_settings_id"
                     ).execute()
@@ -142,7 +163,7 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
                             "person_id": person_id,
                             "scrape_settings_id": scrape_settings_id,
                             "raw_record_id": raw_record_id,
-                            "extra_data": request.extra_data,
+                            "extra_data": extra_data_parsed,
                         },
                         on_conflict="person_id,scrape_settings_id"
                     ).execute()

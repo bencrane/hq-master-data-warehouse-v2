@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from typing import Optional
 from db import core, raw
 from models import FiltersResponse, FilterOption
 
@@ -66,3 +67,51 @@ async def get_person_states():
     result = core().from_("leads").select("person_state").not_.is_("person_state", "null").limit(10000).execute()
     values = list(set([row["person_state"] for row in result.data if row["person_state"]]))
     return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values)])
+
+
+@router.get("/job-titles", response_model=FiltersResponse)
+async def get_job_titles(
+    q: Optional[str] = Query(None, description="Search query for job title autocomplete"),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """
+    Search job titles for autocomplete.
+
+    Pass `q` param to search (e.g., ?q=VP returns "VP of Sales", "VP Marketing", etc.)
+    Without `q`, returns top job titles by frequency.
+    """
+    if q and len(q) >= 2:
+        # Search with ilike
+        result = (
+            core()
+            .from_("leads")
+            .select("matched_cleaned_job_title")
+            .ilike("matched_cleaned_job_title", f"%{q}%")
+            .not_.is_("matched_cleaned_job_title", "null")
+            .limit(5000)
+            .execute()
+        )
+    else:
+        # Return all (limited)
+        result = (
+            core()
+            .from_("leads")
+            .select("matched_cleaned_job_title")
+            .not_.is_("matched_cleaned_job_title", "null")
+            .limit(5000)
+            .execute()
+        )
+
+    # Count occurrences and dedupe
+    title_counts = {}
+    for row in result.data:
+        title = row["matched_cleaned_job_title"]
+        if title:
+            title_counts[title] = title_counts.get(title, 0) + 1
+
+    # Sort by count (most common first), then alphabetically
+    sorted_titles = sorted(title_counts.items(), key=lambda x: (-x[1], x[0]))[:limit]
+
+    return FiltersResponse(
+        data=[FilterOption(value=title, count=count) for title, count in sorted_titles]
+    )
