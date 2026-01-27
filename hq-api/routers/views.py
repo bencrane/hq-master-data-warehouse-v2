@@ -3,7 +3,7 @@ from db import core
 from models import TargetClientView, TargetClientViewCreate, TargetClientViewResponse
 import re
 
-router = APIRouter(prefix="/api/views", tags=["views"])
+router = APIRouter(prefix="/api/target-views", tags=["target-views"])
 
 
 def domain_to_slug(domain: str) -> str:
