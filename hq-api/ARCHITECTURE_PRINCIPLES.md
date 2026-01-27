@@ -67,6 +67,16 @@ Does the query need parameters beyond filters?
 
 **FastAPI endpoints should be short and consistent. If an endpoint has more than ~20 lines of logic, it's doing too much.**
 
+### Database Connection Strategy:
+
+| Query Type | Connection Method | Why |
+|------------|-------------------|-----|
+| Simple table queries | Supabase client | Convenience, fine for basic CRUD |
+| PostgreSQL functions | **asyncpg (direct)** | Full timeout control, no PostgREST limitations |
+| Views with filters | Either | Depends on complexity |
+
+**Use direct PostgreSQL connections (asyncpg) for calling functions.** PostgREST has timeout constraints that cannot be overridden at the function level.
+
 ### Standard endpoint structure:
 ```python
 @router.get("/endpoint")
@@ -78,13 +88,15 @@ async def get_something(
 ):
     """Docstring describing the endpoint."""
 
-    # 1. Call database (view or function)
-    result = supabase.rpc("function_name", {"param": param1})
-    # OR
-    result = supabase.from_("view_name").select(COLUMNS).execute()
+    # 1. Call database function via asyncpg
+    pool = get_pool()
+    rows = await pool.fetch(
+        "SELECT * FROM core.function_name($1, $2, $3)",
+        param1, limit, offset
+    )
 
     # 2. Return shaped response
-    return Response(data=result.data, meta=Meta(...))
+    return Response(data=[dict(r) for r in rows], meta=Meta(...))
 ```
 
 ### What is NOT allowed in endpoints:

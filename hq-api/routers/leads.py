@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional, List
 from datetime import date, datetime, timedelta
-from db import core, supabase
+from db import core, get_pool
 from models import (
     Lead, LeadsResponse, PaginationMeta,
     LeadRecentlyPromoted, LeadsRecentlyPromotedResponse,
@@ -219,22 +219,23 @@ async def get_leads_by_past_employer(
     Uses PostgreSQL function core.get_leads_by_past_employer() for efficient querying.
     """
     domain_list = [d.strip().lower() for d in domains.split(",")]
+    pool = get_pool()
 
-    # Call PostgreSQL function via RPC (public wrapper -> core function)
-    result = supabase.rpc(
-        "get_leads_by_past_employer",
-        {"p_domains": domain_list, "p_limit": limit, "p_offset": offset}
-    ).execute()
+    # Get data via direct PostgreSQL connection
+    rows = await pool.fetch(
+        "SELECT * FROM core.get_leads_by_past_employer($1, $2, $3)",
+        domain_list, limit, offset
+    )
 
-    # Get count with high limit for total (function handles the logic)
-    count_result = supabase.rpc(
-        "get_leads_by_past_employer",
-        {"p_domains": domain_list, "p_limit": 100000, "p_offset": 0}
-    ).execute()
-    total = len(count_result.data) if count_result.data else 0
+    # Get total count
+    count_row = await pool.fetchrow(
+        "SELECT COUNT(*) FROM core.get_leads_by_past_employer($1, $2, $3)",
+        domain_list, 100000, 0
+    )
+    total = count_row['count'] if count_row else 0
 
     return LeadsResponse(
-        data=[Lead(**row) for row in result.data] if result.data else [],
+        data=[Lead(**dict(row)) for row in rows],
         meta=PaginationMeta(total=total, limit=limit, offset=offset)
     )
 
@@ -251,20 +252,23 @@ async def get_leads_by_company_customers(
     Looks up the company's customers from core.company_customers, then finds
     leads who have work history at those customer companies.
     """
-    # Call PostgreSQL function via RPC (public wrapper -> core function)
-    result = supabase.rpc(
-        "get_leads_by_company_customers",
-        {"p_company_domain": company_domain.strip().lower(), "p_limit": limit, "p_offset": offset}
-    ).execute()
+    pool = get_pool()
+    domain = company_domain.strip().lower()
 
-    # Get count with high limit for total
-    count_result = supabase.rpc(
-        "get_leads_by_company_customers",
-        {"p_company_domain": company_domain.strip().lower(), "p_limit": 100000, "p_offset": 0}
-    ).execute()
-    total = len(count_result.data) if count_result.data else 0
+    # Get data via direct PostgreSQL connection
+    rows = await pool.fetch(
+        "SELECT * FROM core.get_leads_by_company_customers($1, $2, $3)",
+        domain, limit, offset
+    )
+
+    # Get total count
+    count_row = await pool.fetchrow(
+        "SELECT COUNT(*) FROM core.get_leads_by_company_customers($1, $2, $3)",
+        domain, 100000, 0
+    )
+    total = count_row['count'] if count_row else 0
 
     return LeadsResponse(
-        data=[Lead(**row) for row in result.data] if result.data else [],
+        data=[Lead(**dict(row)) for row in rows],
         meta=PaginationMeta(total=total, limit=limit, offset=offset)
     )
