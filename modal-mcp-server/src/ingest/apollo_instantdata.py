@@ -67,6 +67,10 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
         linkedin_url = normalize_null_string(request.linkedin_url)
         scrape_settings_id = normalize_null_string(request.scrape_settings_id)
         raw_record_id = normalize_null_string(request.id)
+        source_created_at = normalize_null_string(request.created_at)
+
+        # Build raw_payload from entire request
+        raw_payload = request.model_dump()
 
         # 1. Upsert company (if apollo_company_url exists)
         if apollo_company_url:
@@ -75,6 +79,7 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
                 "company_name": normalize_null_string(request.company_name),
                 "company_headcount": normalize_null_string(request.company_headcount),
                 "industry": normalize_null_string(request.industry),
+                "source_created_at": source_created_at,
                 "last_seen_at": "now()",
             }
 
@@ -96,6 +101,7 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
                             "company_id": company_id,
                             "scrape_settings_id": scrape_settings_id,
                             "raw_record_id": raw_record_id,
+                            "extra_data": request.extra_data,
                         },
                         on_conflict="company_id,scrape_settings_id"
                     ).execute()
@@ -112,6 +118,9 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
                 "person_location": normalize_null_string(request.person_location),
                 "photo_url": normalize_null_string(request.photo_url),
                 "apollo_person_url": normalize_null_string(request.apollo_person_url),
+                "company_name": normalize_null_string(request.company_name),
+                "source_created_at": source_created_at,
+                "raw_payload": raw_payload,
                 "last_seen_at": "now()",
             }
 
@@ -133,6 +142,7 @@ def extract_apollo_instantdata(request: ApolloInstantDataRequest) -> dict:
                             "person_id": person_id,
                             "scrape_settings_id": scrape_settings_id,
                             "raw_record_id": raw_record_id,
+                            "extra_data": request.extra_data,
                         },
                         on_conflict="person_id,scrape_settings_id"
                     ).execute()

@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS extracted.apollo_companies (
     company_headcount TEXT,
     industry TEXT,
 
+    -- Source tracking
+    source_created_at TIMESTAMPTZ,
+
     -- Tracking
     first_seen_at TIMESTAMPTZ DEFAULT NOW(),
     last_seen_at TIMESTAMPTZ DEFAULT NOW(),
@@ -55,6 +58,11 @@ CREATE TABLE IF NOT EXISTS extracted.apollo_people (
     person_location TEXT,
     photo_url TEXT,
     apollo_person_url TEXT,
+    company_name TEXT,
+
+    -- Store everything
+    source_created_at TIMESTAMPTZ,
+    raw_payload JSONB,
 
     -- Tracking
     first_seen_at TIMESTAMPTZ DEFAULT NOW(),
@@ -87,6 +95,7 @@ CREATE TABLE IF NOT EXISTS extracted.apollo_person_matches (
     person_id UUID NOT NULL REFERENCES extracted.apollo_people(id),
     scrape_settings_id UUID NOT NULL REFERENCES public.apollo_instantdata_scrape_settings(id),
     raw_record_id UUID REFERENCES raw.apollo_instantdata_scrapes(id),
+    extra_data JSONB,
     matched_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Prevent duplicate matches for same person + search
@@ -102,12 +111,16 @@ ON extracted.apollo_person_matches(scrape_settings_id);
 CREATE INDEX IF NOT EXISTS idx_apollo_person_matches_matched_at
 ON extracted.apollo_person_matches(matched_at DESC);
 
+CREATE INDEX IF NOT EXISTS idx_apollo_person_matches_extra_data
+ON extracted.apollo_person_matches USING GIN (extra_data);
+
 -- Tracks which searches matched each company
 CREATE TABLE IF NOT EXISTS extracted.apollo_company_matches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES extracted.apollo_companies(id),
     scrape_settings_id UUID NOT NULL REFERENCES public.apollo_instantdata_scrape_settings(id),
     raw_record_id UUID REFERENCES raw.apollo_instantdata_scrapes(id),
+    extra_data JSONB,
     matched_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Prevent duplicate matches for same company + search
@@ -122,6 +135,9 @@ ON extracted.apollo_company_matches(scrape_settings_id);
 
 CREATE INDEX IF NOT EXISTS idx_apollo_company_matches_matched_at
 ON extracted.apollo_company_matches(matched_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_apollo_company_matches_extra_data
+ON extracted.apollo_company_matches USING GIN (extra_data);
 
 -- =============================================================================
 -- UPDATED_AT TRIGGERS
