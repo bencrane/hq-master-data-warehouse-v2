@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Query
 from typing import Optional, List
 from db import get_auth_pool
-from models import Org, User, UserWithOrg, SessionValidation
+from models import Org, User, UserWithOrg, SessionValidation, MagicLinkRequest, MagicLinkResponse, VerifyMagicLinkResponse
+import secrets
+import os
+from datetime import datetime, timedelta
+import httpx
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -147,3 +151,199 @@ async def get_org_by_slug(slug: str):
         raise HTTPException(status_code=404, detail="Organization not found")
 
     return Org(**row_to_dict(row))
+
+
+@router.post("/send-magic-link", response_model=MagicLinkResponse)
+async def send_magic_link(request: MagicLinkRequest):
+    """
+    Send a magic link to the user's email.
+
+    Checks if the email domain is approved before sending.
+    """
+    email = request.email.lower().strip()
+    domain = email.split("@")[-1] if "@" in email else None
+
+    if not domain:
+        raise HTTPException(status_code=400, detail="Invalid email format")
+
+    pool = get_auth_pool()
+
+    # Check if domain is approved
+    approved = await pool.fetchrow(
+        "SELECT * FROM core.approved_domains WHERE domain = $1",
+        domain
+    )
+
+    if not approved:
+        raise HTTPException(status_code=403, detail="Email domain not approved for access")
+
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=1)
+
+    # Store token
+    await pool.execute(
+        """
+        INSERT INTO core.magic_link_tokens (email, token, expires_at)
+        VALUES ($1, $2, $3)
+        """,
+        email, token, expires_at
+    )
+
+    # Send email via Resend
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    if not resend_api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+
+    verify_url = f"https://app.revenueinfra.com/auth/verify?token={token}"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "Revenue Activation <auth@revenueinfra.com>",
+                "to": [email],
+                "subject": "Sign in to Revenue Activation",
+                "html": f"""
+                <h2>Sign in to Revenue Activation</h2>
+                <p>Click the link below to sign in:</p>
+                <p><a href="{verify_url}">Sign in to Revenue Activation</a></p>
+                <p>This link expires in 1 hour.</p>
+                <p>If you didn't request this, you can ignore this email.</p>
+                """
+            }
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+
+    return MagicLinkResponse(success=True, message="Magic link sent to your email")
+
+
+@router.get("/verify-magic-link", response_model=VerifyMagicLinkResponse)
+async def verify_magic_link(token: str = Query(...)):
+    """
+    Verify a magic link token and create a session.
+
+    Creates user and org if they don't exist.
+    """
+    pool = get_auth_pool()
+
+    # Get and validate token
+    token_row = await pool.fetchrow(
+        """
+        SELECT * FROM core.magic_link_tokens
+        WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL
+        """,
+        token
+    )
+
+    if not token_row:
+        return VerifyMagicLinkResponse(success=False, message="Invalid or expired link")
+
+    email = token_row["email"]
+    domain = email.split("@")[-1]
+
+    # Mark token as used
+    await pool.execute(
+        "UPDATE core.magic_link_tokens SET used_at = NOW() WHERE token = $1",
+        token
+    )
+
+    # Check if user exists
+    user_row = await pool.fetchrow(
+        'SELECT * FROM public."user" WHERE email = $1',
+        email
+    )
+
+    if not user_row:
+        # Create user
+        user_id = secrets.token_urlsafe(16)
+        name = email.split("@")[0].replace(".", " ").title()
+
+        await pool.execute(
+            """
+            INSERT INTO public."user" (id, email, name, "emailVerified", "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, true, NOW(), NOW())
+            """,
+            user_id, email, name
+        )
+
+        # Get approved domain info for org creation
+        approved = await pool.fetchrow(
+            "SELECT * FROM core.approved_domains WHERE domain = $1",
+            domain
+        )
+
+        if approved and approved["auto_create_org"]:
+            # Check if org exists for this domain
+            org_row = await pool.fetchrow(
+                "SELECT * FROM core.orgs WHERE domain = $1",
+                domain
+            )
+
+            if not org_row:
+                # Create org
+                org_name = approved["org_name"] or domain.split(".")[0].title()
+                slug = domain.replace(".", "-")
+
+                org_result = await pool.fetchrow(
+                    """
+                    INSERT INTO core.orgs (name, slug, domain, status, services_enabled, created_at, updated_at)
+                    VALUES ($1, $2, $3, 'active', '{"intent": false, "inbound": false, "outbound": false}', NOW(), NOW())
+                    RETURNING id
+                    """,
+                    org_name, slug, domain
+                )
+                org_id = org_result["id"]
+            else:
+                org_id = org_row["id"]
+
+            # Link user to org
+            await pool.execute(
+                """
+                INSERT INTO core.org_users (org_id, user_id, role, created_at)
+                VALUES ($1, $2::uuid, 'member', NOW())
+                """,
+                org_id, user_id
+            )
+    else:
+        user_id = user_row["id"]
+
+    # Create session
+    session_token = secrets.token_urlsafe(32)
+    session_expires = datetime.utcnow() + timedelta(days=30)
+
+    await pool.execute(
+        """
+        INSERT INTO public.session (id, token, "userId", "expiresAt", "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        """,
+        secrets.token_urlsafe(16), session_token, user_id, session_expires
+    )
+
+    # Get user for response
+    user_row = await pool.fetchrow(
+        'SELECT * FROM public."user" WHERE id = $1',
+        user_id
+    )
+
+    user = User(
+        id=str(user_row["id"]),
+        email=user_row["email"],
+        name=user_row["name"],
+        email_verified=True,
+        is_active=True,
+        created_at=user_row["createdAt"].isoformat() if user_row["createdAt"] else None
+    )
+
+    return VerifyMagicLinkResponse(
+        success=True,
+        token=session_token,
+        user=user,
+        message="Successfully signed in"
+    )

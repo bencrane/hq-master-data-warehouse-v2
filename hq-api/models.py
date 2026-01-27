@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, List, Any
+from pydantic import BaseModel, ConfigDict, Json
+from typing import Optional, List, Any, Union, Dict
 from datetime import date
 
 
@@ -102,7 +102,7 @@ class Org(BaseModel):
     slug: str
     domain: Optional[str] = None
     status: str = "active"
-    services_enabled: Optional[dict] = None
+    services_enabled: Optional[Union[Dict, Json[Dict]]] = None
     max_email_accounts: int = 0
     max_linkedin_accounts: int = 0
     created_at: Optional[str] = None
@@ -129,6 +129,22 @@ class SessionValidation(BaseModel):
     valid: bool
     user_id: Optional[str] = None
     expires_at: Optional[str] = None
+
+
+class MagicLinkRequest(BaseModel):
+    email: str
+
+
+class MagicLinkResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class VerifyMagicLinkResponse(BaseModel):
+    success: bool
+    token: Optional[str] = None
+    user: Optional[User] = None
+    message: Optional[str] = None
 
 
 # Company Models
