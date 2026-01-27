@@ -45,6 +45,7 @@ from ingest.nostra_ecom_people import ingest_nostra_ecom_person
 from ingest.leadmagic_company import ingest_leadmagic_company
 from ingest.core_company_simple import ingest_core_company_simple
 from ingest.apollo_scrape import ingest_apollo_scrape
+from ingest.cleaned_company_name import ingest_cleaned_company_name
 from icp.generation import generate_target_client_icp
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
@@ -114,4 +115,5 @@ __all__ = [
     "ingest_leadmagic_company",
     "ingest_core_company_simple",
     "ingest_apollo_scrape",
+    "ingest_cleaned_company_name",
 ]
