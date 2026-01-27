@@ -398,3 +398,41 @@ Open the app. The first element in the sidebar and the first element in main con
 | Filter Options | `GET /api/filters/{type}` | None |
 
 API Base: `https://hq-master-data-api-production.up.railway.app`
+
+---
+
+## API Types: Auto-Generated from OpenAPI
+
+**Do NOT manually write API types. They are auto-generated.**
+
+The API exposes an OpenAPI spec at `/openapi.json`. TypeScript types are generated from this spec.
+
+### Files:
+- `frontend/api/openapi.json` - OpenAPI spec (source of truth)
+- `frontend/api/types.ts` - Auto-generated TypeScript types
+
+### To regenerate types after API changes:
+```bash
+curl -s "https://hq-master-data-api-production.up.railway.app/openapi.json" > api/openapi.json
+npx openapi-typescript api/openapi.json -o api/types.ts
+```
+
+### Usage in frontend code:
+```tsx
+import type { components, operations } from '@/api/types';
+
+// Use the Lead type
+type Lead = components['schemas']['Lead'];
+
+// Use response types
+type LeadsResponse = components['schemas']['LeadsResponse'];
+
+// Use operation parameters
+type GetLeadsParams = operations['get_leads_api_leads_get']['parameters']['query'];
+```
+
+### Why this approach:
+- Types are always accurate (generated from actual API)
+- No documentation drift
+- Frontend and backend share the same contract
+- Changes to API automatically surface as TypeScript errors
