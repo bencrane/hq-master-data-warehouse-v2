@@ -69,3 +69,27 @@ class FilterOption(BaseModel):
 
 class FiltersResponse(BaseModel):
     data: List[FilterOption]
+
+
+# Target Client Views
+class TargetClientViewCreate(BaseModel):
+    domain: str
+    name: Optional[str] = None
+    filters: dict
+    endpoint: str = "/api/leads"
+
+
+class TargetClientView(BaseModel):
+    id: str
+    domain: str
+    name: Optional[str] = None
+    slug: str
+    filters: dict
+    endpoint: str
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class TargetClientViewResponse(BaseModel):
+    data: TargetClientView
+    url: str
