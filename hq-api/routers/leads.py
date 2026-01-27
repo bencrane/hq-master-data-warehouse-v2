@@ -10,6 +10,16 @@ from models import (
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
+
+def row_to_dict(row):
+    """Convert asyncpg Record to dict, converting UUIDs to strings."""
+    d = dict(row)
+    for k, v in d.items():
+        if hasattr(v, 'hex'):  # UUID object
+            d[k] = str(v)
+    return d
+
+
 # Column selections to avoid SELECT * issues with Supabase
 LEAD_COLUMNS = ",".join([
     "person_id", "linkedin_url", "linkedin_slug", "full_name", "linkedin_url_type",
@@ -235,7 +245,7 @@ async def get_leads_by_past_employer(
     total = count_row['count'] if count_row else 0
 
     return LeadsResponse(
-        data=[Lead(**dict(row)) for row in rows],
+        data=[Lead(**row_to_dict(row)) for row in rows],
         meta=PaginationMeta(total=total, limit=limit, offset=offset)
     )
 
@@ -269,6 +279,6 @@ async def get_leads_by_company_customers(
     total = count_row['count'] if count_row else 0
 
     return LeadsResponse(
-        data=[Lead(**dict(row)) for row in rows],
+        data=[Lead(**row_to_dict(row)) for row in rows],
         meta=PaginationMeta(total=total, limit=limit, offset=offset)
     )
