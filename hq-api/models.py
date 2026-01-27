@@ -93,3 +93,39 @@ class TargetClientView(BaseModel):
 class TargetClientViewResponse(BaseModel):
     data: TargetClientView
     url: str
+
+
+# Auth Models
+class Org(BaseModel):
+    id: str
+    name: str
+    slug: str
+    domain: Optional[str] = None
+    status: str = "active"
+    services_enabled: Optional[dict] = None
+    max_email_accounts: int = 0
+    max_linkedin_accounts: int = 0
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class User(BaseModel):
+    id: str
+    email: str
+    name: Optional[str] = None
+    email_verified: bool = False
+    avatar_url: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[str] = None
+
+
+class UserWithOrg(BaseModel):
+    user: User
+    org: Optional[Org] = None
+    role: Optional[str] = None
+
+
+class SessionValidation(BaseModel):
+    valid: bool
+    user_id: Optional[str] = None
+    expires_at: Optional[str] = None

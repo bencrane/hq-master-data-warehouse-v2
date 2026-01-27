@@ -9,9 +9,11 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
+AUTH_DATABASE_URL = os.getenv("AUTH_DATABASE_URL")
 
-# Connection pool for direct PostgreSQL access
+# Connection pools for direct PostgreSQL access
 _pool: asyncpg.Pool = None
+_auth_pool: asyncpg.Pool = None
 
 def get_supabase() -> Client:
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -21,33 +23,50 @@ def get_supabase() -> Client:
 supabase = get_supabase()
 
 async def init_pool():
-    """Initialize asyncpg connection pool."""
-    global _pool
+    """Initialize asyncpg connection pools."""
+    global _pool, _auth_pool
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL must be set")
     _pool = await asyncpg.create_pool(
         DATABASE_URL,
         min_size=2,
         max_size=10,
-        command_timeout=30,  # 30 second timeout
+        command_timeout=30,
     )
+    # Initialize auth pool if AUTH_DATABASE_URL is set
+    if AUTH_DATABASE_URL:
+        _auth_pool = await asyncpg.create_pool(
+            AUTH_DATABASE_URL,
+            min_size=1,
+            max_size=5,
+            command_timeout=30,
+        )
     return _pool
 
 async def close_pool():
-    """Close the connection pool."""
-    global _pool
+    """Close the connection pools."""
+    global _pool, _auth_pool
     if _pool:
         await _pool.close()
         _pool = None
+    if _auth_pool:
+        await _auth_pool.close()
+        _auth_pool = None
 
 def get_pool() -> asyncpg.Pool:
-    """Get the connection pool."""
+    """Get the main data connection pool."""
     if _pool is None:
         raise RuntimeError("Database pool not initialized. Call init_pool() first.")
     return _pool
 
+def get_auth_pool() -> asyncpg.Pool:
+    """Get the auth database connection pool."""
+    if _auth_pool is None:
+        raise RuntimeError("Auth database pool not initialized. Set AUTH_DATABASE_URL.")
+    return _auth_pool
+
 # Export
-__all__ = ['supabase', 'core', 'raw', 'extracted', 'init_pool', 'close_pool', 'get_pool']
+__all__ = ['supabase', 'core', 'raw', 'extracted', 'init_pool', 'close_pool', 'get_pool', 'get_auth_pool']
 
 # Helper to get core schema client (for simple table queries via Supabase)
 def core():
