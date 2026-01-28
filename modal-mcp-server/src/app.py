@@ -39,6 +39,7 @@ from ingest.company_address import ingest_company_address_parsing
 from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title, ingest_clay_company_location_lookup, ingest_clay_person_location_lookup
 from ingest.vc_portfolio import ingest_vc_portfolio
 from ingest.backfill import backfill_person_location, backfill_person_matched_location
+from ingest.backfill_cleaned_company_name import backfill_cleaned_company_name
 from ingest.salesnav_person import ingest_salesnav_person
 from ingest.nostra_ecom import ingest_nostra_ecom_company
 from ingest.nostra_ecom_people import ingest_nostra_ecom_person
@@ -48,7 +49,10 @@ from ingest.apollo_scrape import ingest_apollo_scrape
 from ingest.cleaned_company_name import ingest_cleaned_company_name
 from ingest.salesnav_company import ingest_salesnav_company
 from ingest.apollo_instantdata import extract_apollo_instantdata
+from ingest.apollo_people_cleaned import ingest_apollo_people_cleaned
+from ingest.apollo_companies_cleaned import ingest_apollo_companies_cleaned
 from icp.generation import generate_target_client_icp
+from cleanup.delete_companies_no_location import delete_companies_no_location
 
 # CRITICAL: Explicitly import extraction module so Modal mounts it.
 # The ingest functions import from extraction.company and extraction.person
@@ -120,4 +124,7 @@ __all__ = [
     "ingest_cleaned_company_name",
     "ingest_salesnav_company",
     "extract_apollo_instantdata",
+    "backfill_cleaned_company_name",
+    "ingest_apollo_people_cleaned",
+    "ingest_apollo_companies_cleaned",
 ]

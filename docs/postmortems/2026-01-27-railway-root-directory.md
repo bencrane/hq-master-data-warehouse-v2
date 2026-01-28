@@ -39,7 +39,9 @@ Railway's **Root Directory** setting was configured to `/` (repository root). Th
 
 ## Resolution
 
-Changed Railway Settings → Source → **Root Directory** from `/` to `/hq-api`
+Changed Railway Settings → Source → **Root Directory** from `/` to `hq-api`
+
+**Note:** Use relative paths WITHOUT a leading slash. `/hq-api` will error with "does not exist" - use `hq-api` instead.
 
 ## Lessons Learned
 

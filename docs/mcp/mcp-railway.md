@@ -24,8 +24,10 @@ When a Railway service deploys code from a **subdirectory** of a monorepo, you M
 
 | Service | Root Directory |
 |---------|----------------|
-| hq-master-data-api | `/hq-api` |
-| modal-mcp-server | `/modal-mcp-server` |
+| hq-master-data-api | `hq-api` |
+| modal-mcp-server | `modal-mcp-server` |
+
+**Important:** Use relative paths WITHOUT a leading slash (e.g., `hq-api` not `/hq-api`).
 
 **Verification:** After any deploy, check `https://your-domain/openapi.json` to confirm new routes appear.
 
