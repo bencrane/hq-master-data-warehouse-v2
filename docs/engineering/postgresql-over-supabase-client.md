@@ -60,9 +60,17 @@ The `user-postgres` MCP server provides direct PostgreSQL access with full contr
 
 ### Connection Details
 
+**Direct PostgreSQL connection string (use this for all database queries):**
+
 ```
-Server: user-postgres
-Connection: postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
+postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres
+```
+
+**For AI agents:** Always use `psql` with this connection string for database queries. Do NOT use the Supabase REST API or service key approach.
+
+```bash
+# Example: Query a table
+psql "postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres" -c "SELECT * FROM raw.company_vc_investors LIMIT 5;"
 ```
 
 ### Key Tools Available

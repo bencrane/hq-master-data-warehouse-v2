@@ -24,6 +24,7 @@ from extraction.company import (
     extract_company_customers_claygent,
     extract_find_companies_location_parsed,
 )
+from extraction.company_mapping import map_company_discovery
 
 
 class CompanyIngestRequest(BaseModel):
@@ -202,11 +203,27 @@ def ingest_clay_find_companies(request: CompanyDiscoveryRequest) -> dict:
 
         extracted_id, status = extraction_result[0], extraction_result[1]
 
+        # Map against lookup tables
+        mapping_result = None
+        if extracted_id:
+            mapping_result = map_company_discovery(
+                supabase=supabase,
+                extracted_id=extracted_id,
+                domain=request.company_domain,
+                location=request.raw_payload.get("location"),
+                industry=request.raw_payload.get("industry"),
+                company_name=request.raw_payload.get("name"),
+            )
+
         return {
             "success": True,
             "raw_id": raw_id,
             "extracted_id": extracted_id,
             "status": status,
+            "mapped_id": mapping_result.get("mapped_id") if mapping_result else None,
+            "matched_city": mapping_result.get("matched_city") if mapping_result else None,
+            "matched_state": mapping_result.get("matched_state") if mapping_result else None,
+            "matched_industry": mapping_result.get("matched_industry") if mapping_result else None,
         }
 
     except Exception as e:

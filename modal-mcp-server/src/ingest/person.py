@@ -21,6 +21,7 @@ from extraction.person import (
     extract_find_people_location_parsed,
     extract_person_title_enrichment,
 )
+from extraction.person_mapping import map_person_discovery
 
 
 class PersonIngestRequest(BaseModel):
@@ -209,10 +210,28 @@ def ingest_clay_find_people(request: PersonDiscoveryRequest) -> dict:
             cleaned_full_name=request.cleaned_full_name,
         )
 
+        # Map against lookup tables
+        mapping_result = None
+        if extracted_id:
+            # Try both field names for job title
+            job_title = request.raw_payload.get("latest_title") or request.raw_payload.get("latest_experience_title")
+            mapping_result = map_person_discovery(
+                supabase=supabase,
+                extracted_id=extracted_id,
+                linkedin_url=request.linkedin_url,
+                location=request.raw_payload.get("location_name"),
+                job_title=job_title,
+            )
+
         return {
             "success": True,
             "raw_id": raw_id,
             "extracted_id": extracted_id,
+            "mapped_id": mapping_result.get("mapped_id") if mapping_result else None,
+            "matched_city": mapping_result.get("matched_city") if mapping_result else None,
+            "matched_state": mapping_result.get("matched_state") if mapping_result else None,
+            "matched_seniority": mapping_result.get("matched_seniority") if mapping_result else None,
+            "matched_job_function": mapping_result.get("matched_job_function") if mapping_result else None,
         }
 
     except Exception as e:
