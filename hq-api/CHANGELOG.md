@@ -164,6 +164,203 @@ idx_company_customers_customer_domain
 
 ---
 
+## 2026-01-28
+
+### Update 003: Lead Data Quality Backfill - 80% Increase in Visible Leads
+
+**What was done:**
+
+1. **Created intermediary table for job title backfill:**
+   - `core.persons_missing_cleaned_title` - staging table for 355,081 people missing cleaned job titles
+   - Used direct PostgreSQL connection (not Supabase client) to avoid statement timeout issues
+
+2. **Backfilled job_function for leads:**
+   - Started at 66% coverage
+   - Applied pattern matching against raw job titles using ILIKE
+   - Patterns: Engineering (engineer, developer, SDE), Sales (sales, account executive, SDR, BDR), Marketing (marketing, growth, demand gen), etc.
+   - Added "Executive Leadership" to `reference.job_functions` for C-suite/Founder roles (not "General")
+   - Final coverage: **96.5%**
+
+3. **Backfilled seniority for leads:**
+   - Started at 61% coverage (773,953 leads with seniority)
+   - Applied pattern matching: C-Suite → C-Level, VP/Vice President → VP, Head of → Head, Director → Director, Manager → Manager, Senior → Senior, Entry/Junior/Associate → Entry Level, Owner/Partner/Principal → Owner
+   - Added "Individual Contributor" to `reference.seniorities`
+   - Final coverage: **98.4%**
+
+4. **Cleaned non-B2B and low-quality records:**
+   - Deleted records with non-B2B job titles (barista, dog walker, delivery driver, model, actress, trainee, retired, etc.)
+   - Deleted records with foreign language job titles
+   - Deleted records for people in non-English-speaking countries (kept: US, Canada, UK, Australia, Ireland, Germany, Netherlands, New Zealand, Singapore, India, Philippines, South Africa)
+
+**Key result:**
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Visible leads in dashboard | ~501,000 | **902,364** | **+80%** |
+| Job function coverage | 66% | 96.5% | +30.5% |
+| Seniority coverage | 61% | 98.4% | +37.4% |
+
+**Key decisions:**
+
+1. **Pattern matching approach over ML:**
+   - Simple ILIKE patterns were sufficient for high coverage
+   - Patterns are transparent and easily adjusted
+   - No external dependencies or model management
+
+2. **Delete low-quality records rather than tag:**
+   - Non-B2B roles (retail, hospitality, gig economy) are not useful for sales
+   - Foreign language titles indicate non-target market
+   - Non-English-speaking countries outside ICP
+   - Cleaner data > larger numbers
+
+3. **"Executive Leadership" vs "General" for C-suite:**
+   - User correction: Founders, CEOs, Chiefs should be "Executive Leadership" not "General"
+   - Added to `reference.job_functions` with sort_order 0 (top priority)
+
+4. **Individual Contributor as separate seniority:**
+   - Not part of Clay taxonomy but useful for targeting ICs
+   - NOT applied to vague single-word titles like "Marketing", "Sales" - those were deleted
+
+**Files changed:**
+```
+reference.job_functions     - Added "Executive Leadership"
+reference.seniorities       - Added "Individual Contributor"
+core.person_job_titles      - Backfilled matched_job_function, matched_seniority
+core.persons_missing_cleaned_title - Created as staging table
+```
+
+**SQL patterns used (for future reference):**
+```sql
+-- Job function pattern matching
+UPDATE core.person_job_titles
+SET matched_job_function = 'Engineering'
+WHERE matched_job_function IS NULL
+AND (matched_cleaned_job_title ILIKE '%engineer%'
+  OR matched_cleaned_job_title ILIKE '%developer%');
+
+-- Seniority pattern matching
+UPDATE core.person_job_titles
+SET matched_seniority = 'C-Level'
+WHERE matched_seniority IS NULL
+AND (matched_cleaned_job_title ILIKE '%chief %'
+  OR matched_cleaned_job_title ILIKE 'ceo%'
+  OR matched_cleaned_job_title ILIKE 'cfo%');
+
+-- Delete non-B2B
+DELETE FROM core.person_job_titles
+WHERE matched_cleaned_job_title ILIKE ANY(ARRAY[
+  '%barista%', '%dog walker%', '%retired%', '%model%'
+]);
+
+-- Delete non-English-speaking countries
+DELETE FROM core.person_job_titles pjt
+USING core.people_full pf
+WHERE pjt.linkedin_url = pf.linkedin_url
+  AND pjt.matched_job_function IS NULL
+  AND pf.person_country NOT ILIKE '%united states%'
+  AND pf.person_country NOT ILIKE '%canada%'
+  -- ... other English-speaking countries
+```
+
+---
+
+### Update 004: Star Schema Design for Company Data (In Progress)
+
+**Context:**
+
+The manual backfill work above took significant effort. The goal now is to **automate matching at ingest time** so that when Clay payloads arrive, they're automatically matched against lookup tables and written to normalized dimension tables.
+
+**Design decision: Star Schema over Stripe-style single table**
+
+Two approaches were considered:
+
+| Approach | Description | Pros | Cons |
+|----------|-------------|------|------|
+| Stripe-style | Single `core.companies` table with all fields and FKs to reference tables | Simple, single source of truth | Hard to track which source provided which field |
+| **Star Schema** | Dimension table per field (names, locations, industries, etc.) with source attribution | Clear provenance, supports multiple sources, easy to coalesce with priority | More tables, more complex joins |
+
+**Decision: Star Schema** - because:
+- Data comes from multiple sources (Clay, Crunchbase, Apollo, LinkedIn)
+- Different sources have different quality (Crunchbase names > Clay names)
+- Need to track which source provided which value
+- Frontend needs single coalesced view, but backend needs source attribution
+- Same pattern will apply to people data
+
+**Schema design:**
+
+Each dimension table has:
+- `domain` - company identifier
+- `source` - data source (clay, crunchbase, apollo, etc.)
+- `raw_*` columns - exactly what the source provided
+- `matched_*` columns - normalized values from lookup tables
+- Composite unique key: `(domain, source)`
+
+**Reference tables created:**
+```sql
+reference.company_types       -- Public Company, Private Company, etc.
+reference.funding_ranges      -- <$1M, $1M-$5M, ..., $1B+
+reference.revenue_ranges      -- <$1M, $1M-$5M, ..., $100B+
+reference.funding_range_lookup -- Maps Clay strings to our ranges
+reference.revenue_range_lookup -- Maps Clay strings to our ranges
+```
+
+**Dimension tables created:**
+```sql
+core.company_names            -- domain, source, raw_name, cleaned_name, linkedin_url
+core.company_employee_ranges  -- domain, source, raw_size, matched_employee_range
+core.company_types            -- domain, source, raw_type, matched_type
+core.company_locations        -- domain, source, raw_location, matched_city/state/country
+core.company_industries       -- domain, source, raw_industry, matched_industry
+core.company_funding          -- domain, source, raw_funding_range, matched_funding_range
+core.company_revenue          -- domain, source, raw_revenue_range, matched_revenue_range
+core.company_descriptions     -- domain, source, description, tagline
+```
+
+**Coalesced view:**
+- `core.companies_full_v2` - joins all dimension tables
+- Coalesces values with priority order (crunchbase > clay > apollo)
+- Single row per company for frontend consumption
+
+**Example Clay payload being handled:**
+```json
+{
+  "name": "Google",
+  "size": "10,001+ employees",
+  "type": "Public Company",
+  "domain": "google.com",
+  "country": "United States",
+  "industry": "Software Development",
+  "location": "Mountain View, CA",
+  "industries": ["Software Development"],
+  "description": "...",
+  "linkedin_url": "https://www.linkedin.com/company/google",
+  "annual_revenue": "100B-1T",
+  "total_funding_amount_range_usd": "$100M - $250M"
+}
+```
+
+**Known issue - existing tables have different schemas:**
+
+Tables `core.company_locations`, `core.company_industries`, `core.company_descriptions` already exist with:
+- Unique constraint on `domain` only (not `domain, source`)
+- Column names like `city` not `matched_city`
+- Missing `raw_*` columns
+
+**Next steps:**
+1. Decide: modify existing tables or create new `_v2` tables
+2. Backfill existing data from `extracted.company_discovery` into dimension tables
+3. Update `modal-mcp-server/src/extraction/company.py` to write to dimension tables at ingest time
+4. Apply same pattern to people data (find-clay-people payloads)
+
+**Blocking question:**
+Are the existing `core.company_*` tables actively used by frontend/API? If so, need migration strategy.
+
+**Files created:**
+```
+supabase/migrations/20260128_company_star_schema.sql
+```
+
+---
+
 ## Template for Future Updates
 
 ```markdown
