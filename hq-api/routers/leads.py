@@ -35,8 +35,12 @@ LEAD_VC_COLUMNS = LEAD_COLUMNS + ",vc_name,vc_company_description"
 
 def apply_lead_filters(query, params: dict):
     """Apply common lead filters to a query."""
-    # Always exclude leads without company_name
+    # Required fields - exclude leads missing any of these
     query = query.not_.is_("company_name", "null")
+    query = query.not_.is_("company_country", "null")
+    query = query.not_.is_("person_country", "null")
+    query = query.not_.is_("matched_job_function", "null")
+    query = query.not_.is_("matched_seniority", "null")
     if params.get("job_function"):
         functions = params["job_function"].split(",")
         query = query.in_("matched_job_function", functions)
