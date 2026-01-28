@@ -195,7 +195,7 @@ async def send_magic_link(request: MagicLinkRequest):
     if not resend_api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
 
-    verify_url = f"https://app.revenueinfra.com/auth/verify?token={token}"
+    verify_url = f"https://app.revenueactivation.com/auth/verify?token={token}"
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
