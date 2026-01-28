@@ -41,6 +41,8 @@ def apply_lead_filters(query, params: dict):
     query = query.not_.is_("person_country", "null")
     query = query.not_.is_("matched_job_function", "null")
     query = query.not_.is_("matched_seniority", "null")
+    # Exclude Miscellaneous job function from dashboard
+    query = query.neq("matched_job_function", "Miscellaneous")
     if params.get("job_function"):
         functions = params["job_function"].split(",")
         query = query.in_("matched_job_function", functions)

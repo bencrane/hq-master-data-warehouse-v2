@@ -74,6 +74,28 @@ async def get_companies(
     )
 
 
+@router.get("/search", response_model=CompaniesResponse)
+async def search_companies(
+    q: str = Query(..., min_length=2, description="Search query (name or domain)"),
+    limit: int = Query(10, ge=1, le=50),
+):
+    """Search companies by name or domain for autocomplete."""
+    # Search by name OR domain matching the query
+    data_query = (
+        core()
+        .from_("companies_full")
+        .select(COMPANY_COLUMNS)
+        .or_(f"name.ilike.%{q}%,domain.ilike.%{q}%")
+        .limit(limit)
+    )
+    data_result = data_query.execute()
+
+    return CompaniesResponse(
+        data=[Company(**row) for row in data_result.data],
+        meta=PaginationMeta(total=len(data_result.data), limit=limit, offset=0)
+    )
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""
