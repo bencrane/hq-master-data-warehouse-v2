@@ -205,7 +205,7 @@ async def send_magic_link(request: MagicLinkRequest):
                 "Content-Type": "application/json"
             },
             json={
-                "from": "Revenue Activation <auth@revenueinfra.com>",
+                "from": "Revenue Activation <team@revenueactivation.com>",
                 "to": [email],
                 "subject": "Sign in to Revenue Activation",
                 "html": f"""
