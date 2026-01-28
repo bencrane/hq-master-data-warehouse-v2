@@ -1,117 +1,165 @@
 from fastapi import APIRouter, Query
-from typing import Optional
-from db import core, raw
-from models import FiltersResponse, FilterOption
+from typing import Optional, List
+from pydantic import BaseModel
+from db import supabase
+
 
 router = APIRouter(prefix="/api/filters", tags=["filters"])
 
 
-@router.get("/job-functions", response_model=FiltersResponse)
-async def get_job_functions():
-    """Get all available job functions for filter dropdowns."""
-    result = core().from_("leads").select("matched_job_function").not_.is_("matched_job_function", "null").limit(10000).execute()
-    values = list(set([row["matched_job_function"] for row in result.data if row["matched_job_function"]]))
-    return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values)])
+class FilterOption(BaseModel):
+    name: str
+    sort_order: int = 0
 
 
-@router.get("/seniorities", response_model=FiltersResponse)
-async def get_seniorities():
-    """Get all available seniority levels for filter dropdowns."""
-    result = core().from_("leads").select("matched_seniority").not_.is_("matched_seniority", "null").limit(10000).execute()
-    values = list(set([row["matched_seniority"] for row in result.data if row["matched_seniority"]]))
-    return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values)])
+class EmployeeRangeOption(BaseModel):
+    name: str
+    min_employees: Optional[int] = None
+    max_employees: Optional[int] = None
+    sort_order: int = 0
 
 
-@router.get("/industries", response_model=FiltersResponse)
-async def get_industries():
-    """Get all available industries for filter dropdowns."""
-    result = core().from_("leads").select("matched_industry").not_.is_("matched_industry", "null").limit(10000).execute()
-    values = list(set([row["matched_industry"] for row in result.data if row["matched_industry"]]))
-    return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values)])
+class SignalOption(BaseModel):
+    name: str
+    display_name: str
+    endpoint: Optional[str] = None
+    sort_order: int = 0
 
 
-@router.get("/employee-ranges", response_model=FiltersResponse)
-async def get_employee_ranges():
-    """Get all available employee ranges for filter dropdowns."""
-    result = core().from_("leads").select("employee_range").not_.is_("employee_range", "null").limit(10000).execute()
-    values = list(set([row["employee_range"] for row in result.data if row["employee_range"]]))
-
-    # Sort by numeric order
-    def sort_key(v):
-        try:
-            return int(v.split("-")[0].replace(",", "").replace("+", ""))
-        except:
-            return 999999
-
-    return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values, key=sort_key)])
+class IndustryOption(BaseModel):
+    name: str
 
 
-@router.get("/vc-firms", response_model=FiltersResponse)
-async def get_vc_firms():
-    """Get all available VC firm names for filter dropdowns."""
-    result = raw().from_("vc_firms").select("name").order("name").execute()
-    return FiltersResponse(data=[FilterOption(value=row["name"], count=0) for row in result.data])
+class AllFiltersResponse(BaseModel):
+    seniorities: List[FilterOption]
+    job_functions: List[FilterOption]
+    employee_ranges: List[EmployeeRangeOption]
+    industries: List[IndustryOption]
+    signals: List[SignalOption]
+    business_models: List[FilterOption]
 
 
-@router.get("/person-countries", response_model=FiltersResponse)
-async def get_person_countries():
-    """Get all available person countries for filter dropdowns."""
-    result = core().from_("leads").select("person_country").not_.is_("person_country", "null").limit(10000).execute()
-    values = list(set([row["person_country"] for row in result.data if row["person_country"]]))
-    return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values)])
+def reference():
+    """Get reference schema client."""
+    return supabase.schema("reference")
 
 
-@router.get("/person-states", response_model=FiltersResponse)
-async def get_person_states():
-    """Get all available person states for filter dropdowns."""
-    result = core().from_("leads").select("person_state").not_.is_("person_state", "null").limit(10000).execute()
-    values = list(set([row["person_state"] for row in result.data if row["person_state"]]))
-    return FiltersResponse(data=[FilterOption(value=v, count=0) for v in sorted(values)])
-
-
-@router.get("/job-titles", response_model=FiltersResponse)
-async def get_job_titles(
-    q: Optional[str] = Query(None, description="Search query for job title autocomplete"),
-    limit: int = Query(20, ge=1, le=100),
-):
+@router.get("", response_model=AllFiltersResponse)
+async def get_all_filters():
     """
-    Search job titles for autocomplete.
+    Get all filter options from reference tables.
 
-    Pass `q` param to search (e.g., ?q=VP returns "VP of Sales", "VP Marketing", etc.)
-    Without `q`, returns top job titles by frequency.
+    This is the canonical source of truth for frontend dropdowns.
+    All values come from reference tables, not from querying data.
     """
-    if q and len(q) >= 2:
-        # Search with ilike
-        result = (
-            core()
-            .from_("leads")
-            .select("matched_cleaned_job_title")
-            .ilike("matched_cleaned_job_title", f"%{q}%")
-            .not_.is_("matched_cleaned_job_title", "null")
-            .limit(5000)
-            .execute()
-        )
-    else:
-        # Return all (limited)
-        result = (
-            core()
-            .from_("leads")
-            .select("matched_cleaned_job_title")
-            .not_.is_("matched_cleaned_job_title", "null")
-            .limit(5000)
-            .execute()
-        )
-
-    # Count occurrences and dedupe
-    title_counts = {}
-    for row in result.data:
-        title = row["matched_cleaned_job_title"]
-        if title:
-            title_counts[title] = title_counts.get(title, 0) + 1
-
-    # Sort by count (most common first), then alphabetically
-    sorted_titles = sorted(title_counts.items(), key=lambda x: (-x[1], x[0]))[:limit]
-
-    return FiltersResponse(
-        data=[FilterOption(value=title, count=count) for title, count in sorted_titles]
+    # Seniorities
+    seniorities_result = (
+        reference()
+        .from_("seniorities")
+        .select("name, sort_order")
+        .order("sort_order")
+        .execute()
     )
+
+    # Job Functions
+    job_functions_result = (
+        reference()
+        .from_("job_functions")
+        .select("name, sort_order")
+        .order("sort_order")
+        .execute()
+    )
+
+    # Employee Ranges
+    employee_ranges_result = (
+        reference()
+        .from_("employee_ranges")
+        .select("name, min_employees, max_employees, sort_order")
+        .order("sort_order")
+        .execute()
+    )
+
+    # Industries (from company_industries)
+    industries_result = (
+        reference()
+        .from_("company_industries")
+        .select("name")
+        .order("name")
+        .execute()
+    )
+
+    # Signals
+    signals_result = (
+        reference()
+        .from_("signals")
+        .select("name, display_name, endpoint, sort_order")
+        .order("sort_order")
+        .execute()
+    )
+
+    # Business Models
+    business_models_result = (
+        reference()
+        .from_("business_models")
+        .select("name, sort_order")
+        .order("sort_order")
+        .execute()
+    )
+
+    return AllFiltersResponse(
+        seniorities=[FilterOption(**row) for row in seniorities_result.data],
+        job_functions=[FilterOption(**row) for row in job_functions_result.data],
+        employee_ranges=[EmployeeRangeOption(**row) for row in employee_ranges_result.data],
+        industries=[IndustryOption(**row) for row in industries_result.data],
+        signals=[SignalOption(**row) for row in signals_result.data],
+        business_models=[FilterOption(**row) for row in business_models_result.data],
+    )
+
+
+@router.get("/seniorities", response_model=List[FilterOption])
+async def get_seniorities():
+    """Get seniority levels from reference table."""
+    result = reference().from_("seniorities").select("name, sort_order").order("sort_order").execute()
+    return [FilterOption(**row) for row in result.data]
+
+
+@router.get("/job-functions", response_model=List[FilterOption])
+async def get_job_functions():
+    """Get job functions from reference table."""
+    result = reference().from_("job_functions").select("name, sort_order").order("sort_order").execute()
+    return [FilterOption(**row) for row in result.data]
+
+
+@router.get("/employee-ranges", response_model=List[EmployeeRangeOption])
+async def get_employee_ranges():
+    """Get employee ranges from reference table."""
+    result = reference().from_("employee_ranges").select("name, min_employees, max_employees, sort_order").order("sort_order").execute()
+    return [EmployeeRangeOption(**row) for row in result.data]
+
+
+@router.get("/industries", response_model=List[IndustryOption])
+async def get_industries():
+    """Get industries from reference table."""
+    result = reference().from_("company_industries").select("name").order("name").execute()
+    return [IndustryOption(**row) for row in result.data]
+
+
+@router.get("/signals", response_model=List[SignalOption])
+async def get_signals():
+    """Get signals from reference table."""
+    result = reference().from_("signals").select("name, display_name, endpoint, sort_order").order("sort_order").execute()
+    return [SignalOption(**row) for row in result.data]
+
+
+@router.get("/business-models", response_model=List[FilterOption])
+async def get_business_models():
+    """Get business models from reference table."""
+    result = reference().from_("business_models").select("name, sort_order").order("sort_order").execute()
+    return [FilterOption(**row) for row in result.data]
+
+
+@router.get("/countries", response_model=List[dict])
+async def get_countries():
+    """Get countries from reference table."""
+    result = reference().from_("countries").select("name, code").order("name").execute()
+    return result.data
