@@ -1,39 +1,8 @@
 # Railway MCP Server Documentation
 
-This document provides a comprehensive guide to the Railway MCP server (`@railway/mcp-server`) configured in this workspace. It allows you to interact with your Railway infrastructure directly through Cursor.
+This document provides a comprehensive 
 
----
-
-## ⚠️ CRITICAL: Monorepo Root Directory Configuration
-
-**READ THIS FIRST if deploying from a subdirectory (like `hq-api/`).**
-
-When a Railway service deploys code from a **subdirectory** of a monorepo, you MUST configure the Root Directory setting:
-
-1. Go to Railway Dashboard → Select Service → **Settings** tab
-2. Under **Source**, find **Root Directory**
-3. Set it to the subdirectory path (e.g., `/hq-api`)
-
-**What happens if you don't:**
-- Railway deploys from the repo root
-- Your app won't start or will use cached/stale code
-- Deployments show "SUCCESS" but routes return 404
-- You will waste hours debugging
-
-**Current Services and Their Root Directories:**
-
-| Service | Root Directory |
-|---------|----------------|
-| hq-master-data-api | `hq-api` |
-| modal-mcp-server | `modal-mcp-server` |
-
-**Important:** Use relative paths WITHOUT a leading slash (e.g., `hq-api` not `/hq-api`).
-
-**Verification:** After any deploy, check `https://your-domain/openapi.json` to confirm new routes appear.
-
-See: `/docs/postmortems/2026-01-27-railway-root-directory.md` for full incident details.
-
----
+guide to the Railway MCP server (`@railway/mcp-server`) configured in this workspace. It allows you to interact with your Railway infrastructure directly through Cursor.
 
 ## Authentication & Connection
 

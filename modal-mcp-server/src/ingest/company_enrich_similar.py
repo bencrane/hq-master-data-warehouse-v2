@@ -11,6 +11,7 @@ Architecture:
 """
 
 import os
+import time
 import modal
 import requests
 from pydantic import BaseModel
@@ -64,10 +65,12 @@ def process_similar_companies_batch(
     companyenrich_key = os.environ["COMPANYENRICH_API_KEY"]
     supabase = create_client(supabase_url, supabase_key)
 
-    try:
-        processed = 0
-        for domain in domains:
-            _process_single_domain(
+    processed = 0
+    errors = []
+
+    for domain in domains:
+        try:
+            _process_single_domain_with_retry(
                 supabase=supabase,
                 companyenrich_key=companyenrich_key,
                 domain=domain,
@@ -76,24 +79,32 @@ def process_similar_companies_batch(
                 batch_id=batch_id,
             )
             processed += 1
+        except Exception as e:
+            # Log error, continue to next domain (don't crash batch)
+            print(f"Error processing {domain}: {e}")
+            errors.append({"domain": domain, "error": str(e)})
 
-            # Update progress every domain
-            supabase.schema("raw").from_("company_enrich_similar_batches").update({
-                "processed_domains": processed
-            }).eq("id", batch_id).execute()
-
-        # Mark batch complete
+        # Update progress every domain (processed + errors = total attempted)
         supabase.schema("raw").from_("company_enrich_similar_batches").update({
-            "status": "completed",
-            "completed_at": datetime.utcnow().isoformat(),
+            "processed_domains": processed + len(errors)
         }).eq("id", batch_id).execute()
 
-    except Exception as e:
-        # Mark batch as failed
-        supabase.schema("raw").from_("company_enrich_similar_batches").update({
-            "status": "failed",
-            "error_message": str(e),
-        }).eq("id", batch_id).execute()
+        # Rate limit: 2 requests per second to avoid hammering the API
+        time.sleep(0.5)
+
+    # Mark batch complete (or completed_with_errors if there were failures)
+    final_status = "completed" if not errors else "completed_with_errors"
+    error_summary = None
+    if errors:
+        error_summary = f"{len(errors)} domains failed: {errors[:10]}"  # First 10 errors
+        if len(errors) > 10:
+            error_summary += f"... and {len(errors) - 10} more"
+
+    supabase.schema("raw").from_("company_enrich_similar_batches").update({
+        "status": final_status,
+        "completed_at": datetime.utcnow().isoformat(),
+        "error_message": error_summary,
+    }).eq("id", batch_id).execute()
 
 
 @app.function(
@@ -263,6 +274,38 @@ def find_similar_companies_single(request: SingleDomainRequest) -> dict:
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def _process_single_domain_with_retry(
+    supabase,
+    companyenrich_key: str,
+    domain: str,
+    similarity_weight: float,
+    country_code: str,
+    batch_id: str = None,
+    max_retries: int = 3,
+) -> dict:
+    """
+    Process a single domain with retry logic for transient errors.
+    Uses exponential backoff between retries.
+    """
+    for attempt in range(max_retries):
+        try:
+            return _process_single_domain(
+                supabase=supabase,
+                companyenrich_key=companyenrich_key,
+                domain=domain,
+                similarity_weight=similarity_weight,
+                country_code=country_code,
+                batch_id=batch_id,
+            )
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                print(f"Attempt {attempt + 1} failed for {domain}: {e}. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise  # Re-raise on final attempt
 
 
 def _process_single_domain(
