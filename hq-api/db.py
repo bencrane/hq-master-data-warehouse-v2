@@ -71,7 +71,7 @@ __all__ = ['supabase', 'core', 'raw', 'extracted', 'init_pool', 'close_pool', 'g
 # Helper to get core schema client (for simple table queries via Supabase)
 def core():
     """Get client for core schema."""
-    return supabase
+    return supabase.schema("core")
 
 def raw():
     """Get client for raw schema."""
