@@ -54,11 +54,14 @@ from ingest.apollo_instantdata import extract_apollo_instantdata
 from ingest.apollo_people_cleaned import ingest_apollo_people_cleaned
 from ingest.apollo_companies_cleaned import ingest_apollo_companies_cleaned
 from ingest.company_enrich_similar import find_similar_companies_batch, find_similar_companies_single, get_similar_companies_batch_status
+from ingest.company_enrich_similar_queue import process_similar_companies_queue, get_similar_companies_queue_status
 from ingest.company_customers_claygent import ingest_company_customers_claygent
 from ingest.company_customers_structured import ingest_company_customers_structured
 from ingest.company_customers_v2 import ingest_company_customers_v2
 from ingest.company_customers_status import get_company_customers_status
 from ingest.company_public import ingest_public_company
+from ingest.vc_domain_lookup import lookup_vc_domain
+from ingest.vc_domain_update import update_vc_domain
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -143,9 +146,13 @@ __all__ = [
     "find_similar_companies_batch",
     "find_similar_companies_single",
     "get_similar_companies_batch_status",
+    "process_similar_companies_queue",
+    "get_similar_companies_queue_status",
     "ingest_company_customers_claygent",
     "ingest_company_customers_structured",
     "ingest_company_customers_v2",
     "get_company_customers_status",
     "ingest_public_company",
+    "lookup_vc_domain",
+    "update_vc_domain",
 ]
