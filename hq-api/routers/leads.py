@@ -106,30 +106,33 @@ async def get_leads(
     offset: int = Query(0, ge=0),
 ):
     """Get leads with optional filters."""
-    params = {
-        "job_function": job_function, "seniority": seniority, "industry": industry,
-        "employee_range": employee_range, "person_city": person_city, "person_state": person_state,
-        "person_country": person_country, "company_city": company_city, "company_state": company_state,
-        "company_country": company_country, "company_domain": company_domain, "company_name": company_name,
-        "job_title": job_title, "full_name": full_name,
-        "job_start_date_gte": str(job_start_date_gte) if job_start_date_gte else None,
-        "job_start_date_lte": str(job_start_date_lte) if job_start_date_lte else None,
-    }
+    try:
+        params = {
+            "job_function": job_function, "seniority": seniority, "industry": industry,
+            "employee_range": employee_range, "person_city": person_city, "person_state": person_state,
+            "person_country": person_country, "company_city": company_city, "company_state": company_state,
+            "company_country": company_country, "company_domain": company_domain, "company_name": company_name,
+            "job_title": job_title, "full_name": full_name,
+            "job_start_date_gte": str(job_start_date_gte) if job_start_date_gte else None,
+            "job_start_date_lte": str(job_start_date_lte) if job_start_date_lte else None,
+        }
 
-    count_query = core().from_("leads").select("person_id", count="exact", head=True)
-    count_query = apply_lead_filters(count_query, params)
-    count_result = count_query.execute()
-    total = count_result.count or 0
+        count_query = core().from_("leads").select("person_id", count="exact", head=True)
+        count_query = apply_lead_filters(count_query, params)
+        count_result = count_query.execute()
+        total = count_result.count or 0
 
-    data_query = core().from_("leads").select(LEAD_COLUMNS)
-    data_query = apply_lead_filters(data_query, params)
-    data_query = data_query.range(offset, offset + limit - 1)
-    data_result = data_query.execute()
+        data_query = core().from_("leads").select(LEAD_COLUMNS)
+        data_query = apply_lead_filters(data_query, params)
+        data_query = data_query.range(offset, offset + limit - 1)
+        data_result = data_query.execute()
 
-    return LeadsResponse(
-        data=[Lead(**row) for row in data_result.data],
-        meta=PaginationMeta(total=total, limit=limit, offset=offset)
-    )
+        return LeadsResponse(
+            data=[Lead(**row) for row in data_result.data],
+            meta=PaginationMeta(total=total, limit=limit, offset=offset)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.get("/recently-promoted", response_model=LeadsRecentlyPromotedResponse)
