@@ -53,6 +53,10 @@ from ingest.salesnav_company import ingest_salesnav_company
 from ingest.apollo_instantdata import extract_apollo_instantdata
 from ingest.apollo_people_cleaned import ingest_apollo_people_cleaned
 from ingest.apollo_companies_cleaned import ingest_apollo_companies_cleaned
+from ingest.company_enrich_similar import find_similar_companies_batch, find_similar_companies_single, get_similar_companies_batch_status
+from ingest.company_customers_claygent import ingest_company_customers_claygent
+from ingest.company_customers_structured import ingest_company_customers_structured
+from ingest.company_customers_v2 import ingest_company_customers_v2
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -134,4 +138,10 @@ __all__ = [
     "backfill_company_descriptions",
     "ingest_apollo_people_cleaned",
     "ingest_apollo_companies_cleaned",
+    "find_similar_companies_batch",
+    "find_similar_companies_single",
+    "get_similar_companies_batch_status",
+    "ingest_company_customers_claygent",
+    "ingest_company_customers_structured",
+    "ingest_company_customers_v2",
 ]
