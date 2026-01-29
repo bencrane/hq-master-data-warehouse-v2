@@ -70,7 +70,8 @@ def process_similar_companies_batch(
 
     for domain in domains:
         try:
-            _process_single_domain_with_retry(
+            # No retry - just try once and move on. Failed domains are logged.
+            _process_single_domain(
                 supabase=supabase,
                 companyenrich_key=companyenrich_key,
                 domain=domain,
@@ -80,8 +81,8 @@ def process_similar_companies_batch(
             )
             processed += 1
         except Exception as e:
-            # Log error, continue to next domain (don't crash batch)
-            print(f"Error processing {domain}: {e}")
+            # Log error, skip this domain, continue to next (don't crash batch)
+            print(f"SKIP {domain}: {e}")
             errors.append({"domain": domain, "error": str(e)})
 
         # Update progress every domain (processed + errors = total attempted)
@@ -274,38 +275,6 @@ def find_similar_companies_single(request: SingleDomainRequest) -> dict:
 
     except Exception as e:
         return {"success": False, "error": str(e)}
-
-
-def _process_single_domain_with_retry(
-    supabase,
-    companyenrich_key: str,
-    domain: str,
-    similarity_weight: float,
-    country_code: str,
-    batch_id: str = None,
-    max_retries: int = 3,
-) -> dict:
-    """
-    Process a single domain with retry logic for transient errors.
-    Uses exponential backoff between retries.
-    """
-    for attempt in range(max_retries):
-        try:
-            return _process_single_domain(
-                supabase=supabase,
-                companyenrich_key=companyenrich_key,
-                domain=domain,
-                similarity_weight=similarity_weight,
-                country_code=country_code,
-                batch_id=batch_id,
-            )
-        except Exception as e:
-            if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
-                print(f"Attempt {attempt + 1} failed for {domain}: {e}. Retrying in {wait_time}s...")
-                time.sleep(wait_time)
-            else:
-                raise  # Re-raise on final attempt
 
 
 def _process_single_domain(
