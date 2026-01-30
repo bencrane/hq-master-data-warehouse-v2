@@ -76,6 +76,8 @@ from ingest.employee_range_inference import infer_company_employee_range
 from ingest.core_company_full import upsert_core_company_full
 from ingest.linkedin_url_inference import infer_company_linkedin_url
 from ingest.meta_description import fetch_meta_description
+from ingest.email_anymailfinder import ingest_email_anymailfinder
+from ingest.email_leadmagic import ingest_email_leadmagic
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -103,6 +105,8 @@ import extraction.vc_investors
 import extraction.company_mapping
 import extraction.person_mapping
 import extraction.cb_vc_portfolio
+import extraction.email_anymailfinder
+import extraction.email_leadmagic
 
 # Simple test endpoint - always keep this
 @app.function(image=image)
@@ -188,4 +192,6 @@ __all__ = [
     "upsert_core_company_full",
     "infer_company_linkedin_url",
     "fetch_meta_description",
+    "ingest_email_anymailfinder",
+    "ingest_email_leadmagic",
 ]

@@ -23,10 +23,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS - allow all origins for now (restrict in production)
+# CORS - allowed origins for revenueactivation.com and revenueradar.com
+ALLOWED_ORIGINS = [
+    # revenueactivation.com
+    "https://revenueactivation.com",
+    "https://app.revenueactivation.com",
+    "https://admin.revenueactivation.com",
+    # radarrevenue.com
+    "https://radarrevenue.com",
+    "https://app.radarrevenue.com",
+    "https://admin.radarrevenue.com",
+    # localhost for development
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
