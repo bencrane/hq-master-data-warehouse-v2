@@ -37,6 +37,9 @@ from ingest.signal_news_fundraising import ingest_clay_signal_news_fundraising
 from ingest.signal_job_posting import ingest_clay_signal_job_posting
 from ingest.signal_job_change import ingest_clay_signal_job_change
 from ingest.signal_promotion import ingest_clay_signal_promotion
+from ingest.signal_job_posting_v2 import ingest_signal_job_posting
+from ingest.signal_job_change_v2 import ingest_signal_job_change
+from ingest.signal_promotion_v2 import ingest_signal_promotion
 from ingest.company_address import ingest_company_address_parsing
 from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title, ingest_clay_company_location_lookup, ingest_clay_person_location_lookup
 from ingest.vc_portfolio import ingest_vc_portfolio
@@ -64,6 +67,7 @@ from ingest.company_customers_status import get_company_customers_status
 from ingest.company_public import ingest_public_company
 from ingest.vc_domain_lookup import lookup_vc_domain
 from ingest.vc_domain_update import update_vc_domain
+from ingest.has_raised_vc import has_raised_vc
 from ingest.cb_vc_portfolio import ingest_cb_vc_portfolio
 from ingest.staging_company_enrich import update_staging_company_linkedin
 from ingest.industry_inference import infer_company_industry
@@ -90,6 +94,9 @@ import extraction.signal_news_fundraising
 import extraction.signal_job_posting
 import extraction.signal_job_change
 import extraction.signal_promotion
+import extraction.signal_job_posting_v2
+import extraction.signal_job_change_v2
+import extraction.signal_promotion_v2
 import extraction.company_address
 import extraction.salesnav_person
 import extraction.vc_investors
@@ -133,6 +140,9 @@ __all__ = [
     "ingest_clay_signal_job_posting",
     "ingest_clay_signal_job_change",
     "ingest_clay_signal_promotion",
+    "ingest_signal_job_posting",
+    "ingest_signal_job_change",
+    "ingest_signal_promotion",
     "ingest_company_address_parsing",
     "lookup_person_location",
     "lookup_salesnav_location",
@@ -169,6 +179,7 @@ __all__ = [
     "ingest_public_company",
     "lookup_vc_domain",
     "update_vc_domain",
+    "has_raised_vc",
     "ingest_cb_vc_portfolio",
     "update_staging_company_linkedin",
     "infer_company_industry",
