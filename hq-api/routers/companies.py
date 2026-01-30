@@ -96,6 +96,58 @@ async def search_companies(
     )
 
 
+@router.get("/lookup")
+async def lookup_company_domain(
+    name: str = Query(..., min_length=2, description="Company name to lookup"),
+):
+    """
+    Lookup company domain by name.
+    Returns the best matching domain for a given company name.
+    """
+    # Search for exact match first (case-insensitive)
+    exact_result = (
+        core()
+        .from_("companies_full")
+        .select("domain, name")
+        .ilike("name", name)
+        .limit(1)
+        .execute()
+    )
+
+    if exact_result.data:
+        return {
+            "found": True,
+            "domain": exact_result.data[0]["domain"],
+            "name": exact_result.data[0]["name"],
+            "match_type": "exact"
+        }
+
+    # Fall back to partial match
+    partial_result = (
+        core()
+        .from_("companies_full")
+        .select("domain, name")
+        .ilike("name", f"%{name}%")
+        .limit(1)
+        .execute()
+    )
+
+    if partial_result.data:
+        return {
+            "found": True,
+            "domain": partial_result.data[0]["domain"],
+            "name": partial_result.data[0]["name"],
+            "match_type": "partial"
+        }
+
+    return {
+        "found": False,
+        "domain": None,
+        "name": None,
+        "match_type": None
+    }
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""

@@ -90,7 +90,80 @@ GET /api/filters/person-countries
 GET /api/filters/person-states
 ```
 
-### Phase 5: Deploy to Railway (Not Started)
+### Phase 5: Company Endpoints (Done)
+
+```
+GET /api/companies
+```
+- Source: `core.companies_full` view
+- Filters: industry, employee_range, city, state, country, domain, name
+
+```
+GET /api/companies/search?q={query}
+```
+- Source: `core.companies_full` view
+- Searches by name OR domain (for autocomplete)
+
+```
+GET /api/companies/lookup?name={company_name}
+```
+- Source: `core.companies_full` view
+- Returns domain for a given company name
+- Response: `{ "found": true, "domain": "example.com", "name": "Example Inc", "match_type": "exact" }`
+- Match types: `exact` (case-insensitive exact match), `partial` (contains match)
+
+```
+GET /api/companies/{domain}
+```
+- Source: `core.companies_full` view + `core.company_descriptions`
+- Returns single company with full details including description and lead count
+
+### Phase 6: Auth Endpoints (Done)
+
+```
+POST /api/auth/send-magic-link
+```
+- Sends magic link email for passwordless login
+- Body: `{ "email": "user@example.com" }`
+
+```
+GET /api/auth/verify-magic-link?token={token}
+```
+- Verifies magic link token and creates session
+- Returns session token and user info
+
+```
+GET /api/auth/session
+```
+- Validates session token from Authorization header
+- Returns: `{ "valid": true, "user_id": "...", "expires_at": "..." }`
+
+```
+GET /api/auth/me
+```
+- Returns current user with org info
+- Requires valid session token
+
+```
+GET /api/auth/orgs
+```
+- Lists all organizations
+
+```
+GET /api/auth/orgs/{slug}
+```
+- Get organization by slug
+
+### Phase 7: Target Views Endpoints (Done)
+
+```
+GET /api/target-views
+POST /api/target-views
+GET /api/target-views/{id}
+```
+- CRUD for saved filter views
+
+### Phase 8: Deploy to Railway (Done)
 
 ---
 
@@ -123,7 +196,10 @@ hq-api/
 ├── models.py            # Pydantic response models
 ├── routers/
 │   ├── leads.py         # /api/leads endpoints
-│   └── filters.py       # /api/filters endpoints
+│   ├── filters.py       # /api/filters endpoints
+│   ├── companies.py     # /api/companies endpoints
+│   ├── auth.py          # /api/auth endpoints
+│   └── views.py         # /api/target-views endpoints
 ├── requirements.txt
 ├── railway.toml         # Railway deploy config
 ├── .env                 # Credentials (not committed)
@@ -156,16 +232,17 @@ All list endpoints return:
 |-------|--------|
 | Phase 1: Core leads endpoint | Done |
 | Phase 2: Signal endpoints | Done |
-| Phase 3: Compound endpoints | In Progress - needs PostgreSQL function |
+| Phase 3: Compound endpoints | In Progress |
 | Phase 4: Filter endpoints | Done |
-| Phase 5: Railway deploy | Not Started |
+| Phase 5: Company endpoints | Done |
+| Phase 6: Auth endpoints | Done |
+| Phase 7: Target views endpoints | Done |
+| Phase 8: Railway deploy | Done |
 
 ---
 
 ## Next Steps
 
-1. Create `core.get_leads_by_past_employer()` PostgreSQL function
-2. Update `/api/leads/by-past-employer` to use the function
-3. Test all endpoints
-4. Deploy to Railway
-5. Document API for frontend developers
+1. Add auth middleware to protect endpoints
+2. Implement per-org data isolation
+3. Add RBAC enforcement
