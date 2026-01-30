@@ -33,6 +33,7 @@ ALLOWED_ORIGINS = [
     "https://radarrevenue.com",
     "https://app.radarrevenue.com",
     "https://admin.radarrevenue.com",
+    "https://hq.radarrevenue.com",
     # localhost for development
     "http://localhost:3000",
     "http://localhost:5173",
