@@ -42,6 +42,9 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173",
     # admin tools
     "https://find-similar-companies-admin.vercel.app",
+    "https://opsinternal.com",
+    "https://www.opsinternal.com",
+    "https://app.opsinternal.com",
 ]
 
 app.add_middleware(
