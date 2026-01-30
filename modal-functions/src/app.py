@@ -42,6 +42,11 @@ from ingest.signal_job_change_v2 import ingest_signal_job_change
 from ingest.signal_promotion_v2 import ingest_signal_promotion
 from ingest.company_address import ingest_company_address_parsing
 from ingest.lookup import lookup_person_location, lookup_salesnav_location, lookup_salesnav_company_location, lookup_job_title, ingest_clay_company_location_lookup, ingest_clay_person_location_lookup
+from ingest.lookup_company_name import lookup_company_name
+from ingest.lookup_company_icp import lookup_company_icp
+from ingest.lookup_company_customers import lookup_company_customers
+from ingest.create_target_client_view import create_target_client_view
+from ingest.upsert_icp_criteria import upsert_icp_criteria
 from ingest.vc_portfolio import ingest_vc_portfolio
 from ingest.vc_investors import ingest_company_vc_investors
 from ingest.backfill import backfill_person_location, backfill_person_matched_location
@@ -78,6 +83,10 @@ from ingest.linkedin_url_inference import infer_company_linkedin_url
 from ingest.meta_description import fetch_meta_description
 from ingest.email_anymailfinder import ingest_email_anymailfinder
 from ingest.email_leadmagic import ingest_email_leadmagic
+from ingest.icp_industries import ingest_icp_industries
+from ingest.icp_job_titles import ingest_icp_job_titles
+from ingest.icp_value_proposition import ingest_icp_value_proposition
+from ingest.icp_fit_criterion import ingest_icp_fit_criterion
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -107,6 +116,10 @@ import extraction.person_mapping
 import extraction.cb_vc_portfolio
 import extraction.email_anymailfinder
 import extraction.email_leadmagic
+import extraction.icp_industries
+import extraction.icp_job_titles
+import extraction.icp_value_proposition
+import extraction.icp_fit_criterion
 
 # Simple test endpoint - always keep this
 @app.function(image=image)
@@ -194,4 +207,8 @@ __all__ = [
     "fetch_meta_description",
     "ingest_email_anymailfinder",
     "ingest_email_leadmagic",
+    "ingest_icp_industries",
+    "ingest_icp_job_titles",
+    "ingest_icp_value_proposition",
+    "ingest_icp_fit_criterion",
 ]
