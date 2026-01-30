@@ -1,8 +1,20 @@
-# API Endpoint Protocol
+# API Endpoint Protocol (Frontend-Facing Endpoints)
 
-## CRITICAL: Read This Before Creating Any Endpoint
+## CRITICAL: Read This Before Creating Any Endpoint That The Frontend Will Call
 
-This document defines the MANDATORY protocol for creating API endpoints. Follow this exactly every time.
+This document defines the MANDATORY protocol for creating API endpoints **that the frontend will call**.
+
+This does NOT apply to:
+- Clay webhook endpoints (those go directly to Modal)
+- Internal batch processing endpoints
+- Admin-only backend operations
+
+This DOES apply to:
+- Any endpoint the Next.js frontend needs to fetch data from
+- Any endpoint that powers a UI component
+- Any endpoint that a user action triggers
+
+Follow this exactly every time.
 
 ---
 
