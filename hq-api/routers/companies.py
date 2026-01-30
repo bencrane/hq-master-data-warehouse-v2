@@ -291,6 +291,134 @@ async def get_company_customers(
     }
 
 
+@router.get("/{domain}/icp")
+async def get_company_icp(domain: str):
+    """
+    Get ICP criteria and data for a company.
+    Returns industries, job titles, countries, employee ranges, value proposition, and customer domains.
+    """
+    # Try core.icp_criteria first (unified table)
+    criteria_result = (
+        core()
+        .from_("icp_criteria")
+        .select("*")
+        .eq("domain", domain)
+        .maybe_single()
+        .execute()
+    )
+
+    # Get customer domains
+    customers_result = (
+        core()
+        .from_("company_customers")
+        .select("customer_domain")
+        .eq("origin_company_domain", domain)
+        .execute()
+    )
+    customer_domains = [
+        c["customer_domain"] for c in (customers_result.data or [])
+        if c.get("customer_domain")
+    ]
+
+    if criteria_result.data:
+        data = criteria_result.data
+        return {
+            "success": True,
+            "domain": domain,
+            "company_name": data.get("company_name"),
+            "customer_domains": customer_domains,
+            "industries": data.get("industries"),
+            "countries": data.get("countries"),
+            "employee_ranges": data.get("employee_ranges"),
+            "funding_stages": data.get("funding_stages"),
+            "job_titles": data.get("job_titles"),
+            "seniorities": data.get("seniorities"),
+            "job_functions": data.get("job_functions"),
+            "value_proposition": data.get("value_proposition"),
+            "core_benefit": data.get("core_benefit"),
+            "target_customer": data.get("target_customer"),
+            "key_differentiator": data.get("key_differentiator"),
+        }
+
+    # Fallback to extracted tables
+    # Get company name
+    company_result = (
+        core()
+        .from_("companies")
+        .select("name, cleaned_name")
+        .eq("domain", domain)
+        .maybe_single()
+        .execute()
+    )
+    company_name = None
+    if company_result.data:
+        company_name = company_result.data.get("cleaned_name") or company_result.data.get("name")
+
+    # Get ICP industries
+    industries_result = (
+        extracted()
+        .from_("icp_industries")
+        .select("matched_industries")
+        .eq("domain", domain)
+        .maybe_single()
+        .execute()
+    )
+    industries = industries_result.data.get("matched_industries") if industries_result.data else None
+
+    # Get ICP job titles - flatten
+    job_titles_result = (
+        extracted()
+        .from_("icp_job_titles")
+        .select("primary_titles, influencer_titles, extended_titles")
+        .eq("domain", domain)
+        .maybe_single()
+        .execute()
+    )
+    job_titles = None
+    if job_titles_result.data:
+        primary = job_titles_result.data.get("primary_titles") or []
+        influencer = job_titles_result.data.get("influencer_titles") or []
+        extended = job_titles_result.data.get("extended_titles") or []
+        job_titles = primary + influencer + extended
+
+    # Get value proposition
+    value_prop_result = (
+        extracted()
+        .from_("icp_value_proposition")
+        .select("value_proposition, core_benefit, target_customer, key_differentiator")
+        .eq("domain", domain)
+        .maybe_single()
+        .execute()
+    )
+    value_proposition = None
+    core_benefit = None
+    target_customer = None
+    key_differentiator = None
+    if value_prop_result.data:
+        value_proposition = value_prop_result.data.get("value_proposition")
+        core_benefit = value_prop_result.data.get("core_benefit")
+        target_customer = value_prop_result.data.get("target_customer")
+        key_differentiator = value_prop_result.data.get("key_differentiator")
+
+    return {
+        "success": True,
+        "domain": domain,
+        "company_name": company_name,
+        "customer_domains": customer_domains,
+        "industries": industries,
+        "countries": None,
+        "employee_ranges": None,
+        "funding_stages": None,
+        "job_titles": job_titles,
+        "seniorities": None,
+        "job_functions": None,
+        "value_proposition": value_proposition,
+        "core_benefit": core_benefit,
+        "target_customer": target_customer,
+        "key_differentiator": key_differentiator,
+    }
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""
