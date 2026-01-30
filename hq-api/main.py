@@ -23,17 +23,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS - allowed origins for revenueactivation.com and revenueradar.com
+# CORS - allowed origins for revenueactivation.com and radarrevenue.com
 ALLOWED_ORIGINS = [
     # revenueactivation.com
     "https://revenueactivation.com",
     "https://app.revenueactivation.com",
     "https://admin.revenueactivation.com",
+    "https://hq.revenueactivation.com",
+    "https://demo.revenueactivation.com",
     # radarrevenue.com
     "https://radarrevenue.com",
     "https://app.radarrevenue.com",
     "https://admin.radarrevenue.com",
     "https://hq.radarrevenue.com",
+    "https://demo.radarrevenue.com",
     # localhost for development
     "http://localhost:3000",
     "http://localhost:5173",
