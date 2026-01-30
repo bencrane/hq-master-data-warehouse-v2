@@ -40,6 +40,8 @@ ALLOWED_ORIGINS = [
     # localhost for development
     "http://localhost:3000",
     "http://localhost:5173",
+    # admin tools
+    "https://find-similar-companies-admin.vercel.app",
 ]
 
 app.add_middleware(
