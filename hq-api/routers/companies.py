@@ -303,7 +303,7 @@ async def get_company_icp(domain: str):
         .from_("icp_criteria")
         .select("*")
         .eq("domain", domain)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
 
@@ -320,8 +320,8 @@ async def get_company_icp(domain: str):
         if c.get("customer_domain")
     ]
 
-    if criteria_result.data:
-        data = criteria_result.data
+    if criteria_result.data and len(criteria_result.data) > 0:
+        data = criteria_result.data[0]
         return {
             "success": True,
             "domain": domain,
@@ -347,12 +347,12 @@ async def get_company_icp(domain: str):
         .from_("companies")
         .select("name, cleaned_name")
         .eq("domain", domain)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
     company_name = None
-    if company_result.data:
-        company_name = company_result.data.get("cleaned_name") or company_result.data.get("name")
+    if company_result.data and len(company_result.data) > 0:
+        company_name = company_result.data[0].get("cleaned_name") or company_result.data[0].get("name")
 
     # Get ICP industries
     industries_result = (
@@ -360,10 +360,10 @@ async def get_company_icp(domain: str):
         .from_("icp_industries")
         .select("matched_industries")
         .eq("domain", domain)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    industries = industries_result.data.get("matched_industries") if industries_result.data else None
+    industries = industries_result.data[0].get("matched_industries") if industries_result.data and len(industries_result.data) > 0 else None
 
     # Get ICP job titles - flatten
     job_titles_result = (
@@ -371,14 +371,14 @@ async def get_company_icp(domain: str):
         .from_("icp_job_titles")
         .select("primary_titles, influencer_titles, extended_titles")
         .eq("domain", domain)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
     job_titles = None
-    if job_titles_result.data:
-        primary = job_titles_result.data.get("primary_titles") or []
-        influencer = job_titles_result.data.get("influencer_titles") or []
-        extended = job_titles_result.data.get("extended_titles") or []
+    if job_titles_result.data and len(job_titles_result.data) > 0:
+        primary = job_titles_result.data[0].get("primary_titles") or []
+        influencer = job_titles_result.data[0].get("influencer_titles") or []
+        extended = job_titles_result.data[0].get("extended_titles") or []
         job_titles = primary + influencer + extended
 
     # Get value proposition
@@ -387,18 +387,18 @@ async def get_company_icp(domain: str):
         .from_("icp_value_proposition")
         .select("value_proposition, core_benefit, target_customer, key_differentiator")
         .eq("domain", domain)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
     value_proposition = None
     core_benefit = None
     target_customer = None
     key_differentiator = None
-    if value_prop_result.data:
-        value_proposition = value_prop_result.data.get("value_proposition")
-        core_benefit = value_prop_result.data.get("core_benefit")
-        target_customer = value_prop_result.data.get("target_customer")
-        key_differentiator = value_prop_result.data.get("key_differentiator")
+    if value_prop_result.data and len(value_prop_result.data) > 0:
+        value_proposition = value_prop_result.data[0].get("value_proposition")
+        core_benefit = value_prop_result.data[0].get("core_benefit")
+        target_customer = value_prop_result.data[0].get("target_customer")
+        key_differentiator = value_prop_result.data[0].get("key_differentiator")
 
     return {
         "success": True,
