@@ -1,7 +1,14 @@
+import os
+import httpx
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 from db import core, extracted
 from models import Company, CompaniesResponse, PaginationMeta
+
+MODAL_SIMILAR_COMPANIES_URL = os.getenv(
+    "MODAL_SIMILAR_COMPANIES_URL",
+    "https://bencrane--hq-master-data-ingest-find-similar-companies-single.modal.run"
+)
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
 
@@ -417,6 +424,104 @@ async def get_company_icp(domain: str):
         "target_customer": target_customer,
         "key_differentiator": key_differentiator,
     }
+
+
+@router.get("/{domain}/similar")
+async def get_similar_companies(
+    domain: str,
+    refresh: bool = Query(False, description="Force refresh from API even if cached"),
+    limit: int = Query(25, ge=1, le=100),
+):
+    """
+    Get similar companies for a domain.
+
+    First checks the database cache. If no data exists (or refresh=True),
+    calls the Modal function to fetch from companyenrich.com API.
+    """
+    domain = domain.lower().strip()
+
+    # Check cache first (unless refresh requested)
+    if not refresh:
+        cached_result = (
+            extracted()
+            .from_("company_enrich_similar")
+            .select("company_name, company_domain, company_industry, company_description, similarity_score")
+            .eq("input_domain", domain)
+            .order("similarity_score", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+        if cached_result.data and len(cached_result.data) > 0:
+            return {
+                "success": True,
+                "domain": domain,
+                "source": "cache",
+                "similar_companies": cached_result.data,
+                "count": len(cached_result.data),
+            }
+
+    # No cache or refresh requested - call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                MODAL_SIMILAR_COMPANIES_URL,
+                json={
+                    "domain": domain,
+                    "similarity_weight": 0.0,
+                    "country_code": None,
+                },
+            )
+
+            if response.status_code != 200:
+                return {
+                    "success": False,
+                    "domain": domain,
+                    "error": f"Modal function returned {response.status_code}",
+                    "detail": response.text[:500],
+                }
+
+            modal_result = response.json()
+
+            if not modal_result.get("success"):
+                return {
+                    "success": False,
+                    "domain": domain,
+                    "error": modal_result.get("error", "Unknown error from Modal"),
+                }
+
+            # Fetch the newly stored results from DB
+            fresh_result = (
+                extracted()
+                .from_("company_enrich_similar")
+                .select("company_name, company_domain, company_industry, company_description, similarity_score")
+                .eq("input_domain", domain)
+                .order("similarity_score", desc=True)
+                .limit(limit)
+                .execute()
+            )
+
+            return {
+                "success": True,
+                "domain": domain,
+                "source": "api",
+                "similar_companies": fresh_result.data,
+                "count": len(fresh_result.data) if fresh_result.data else 0,
+            }
+
+    except httpx.TimeoutException:
+        return {
+            "success": False,
+            "domain": domain,
+            "error": "Request to companyenrich API timed out (60s limit)",
+            "suggestion": "Try again later or check if domain is valid",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "domain": domain,
+            "error": str(e),
+        }
 
 
 @router.get("/{domain}", response_model=Company)
