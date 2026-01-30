@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import leads, filters, views, auth, companies
+from routers import leads, filters, views, auth, companies, enrichment
 from db import init_pool, close_pool
 
 
@@ -62,6 +62,7 @@ app.include_router(filters.router)
 app.include_router(views.router)
 app.include_router(auth.router)
 app.include_router(companies.router)
+app.include_router(enrichment.router)
 
 
 @app.get("/")
