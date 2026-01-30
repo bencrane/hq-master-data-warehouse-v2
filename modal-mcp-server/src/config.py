@@ -20,6 +20,8 @@ image = (
         "openai",
         "google-generativeai",
         "httpx",
+        "requests",
+        "beautifulsoup4",
     )
     .add_local_python_source("config", "ingest", "extraction", "icp")
 )

@@ -27,6 +27,8 @@ from config import app, image
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
 from ingest.case_study import ingest_case_study_extraction
+from ingest.case_study_buyer import extract_case_study_buyer
+from ingest.case_study_champions import ingest_case_study_buyers
 from ingest.waterfall import command_center_email_enrichment, get_email_job
 from ingest.icp_verdict import ingest_icp_verdict
 from ingest.crunchbase_domain import infer_crunchbase_domain
@@ -62,6 +64,14 @@ from ingest.company_customers_status import get_company_customers_status
 from ingest.company_public import ingest_public_company
 from ingest.vc_domain_lookup import lookup_vc_domain
 from ingest.vc_domain_update import update_vc_domain
+from ingest.cb_vc_portfolio import ingest_cb_vc_portfolio
+from ingest.staging_company_enrich import update_staging_company_linkedin
+from ingest.industry_inference import infer_company_industry
+from ingest.country_inference import infer_company_country
+from ingest.employee_range_inference import infer_company_employee_range
+from ingest.core_company_full import upsert_core_company_full
+from ingest.linkedin_url_inference import infer_company_linkedin_url
+from ingest.meta_description import fetch_meta_description
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -72,6 +82,7 @@ from cleanup.delete_companies_no_location import delete_companies_no_location
 import extraction.company
 import extraction.person
 import extraction.case_study
+import extraction.case_study_champions
 import extraction.icp_verdict
 import extraction.crunchbase_domain
 import extraction.signal_new_hire
@@ -84,6 +95,7 @@ import extraction.salesnav_person
 import extraction.vc_investors
 import extraction.company_mapping
 import extraction.person_mapping
+import extraction.cb_vc_portfolio
 
 # Simple test endpoint - always keep this
 @app.function(image=image)
@@ -109,6 +121,8 @@ __all__ = [
     "ingest_clay_person_profile",
     "ingest_clay_find_people",
     "ingest_case_study_extraction",
+    "extract_case_study_buyer",
+    "ingest_case_study_buyers",
     "ingest_icp_verdict",
     "generate_target_client_icp",
     "command_center_email_enrichment",
@@ -155,4 +169,12 @@ __all__ = [
     "ingest_public_company",
     "lookup_vc_domain",
     "update_vc_domain",
+    "ingest_cb_vc_portfolio",
+    "update_staging_company_linkedin",
+    "infer_company_industry",
+    "infer_company_country",
+    "infer_company_employee_range",
+    "upsert_core_company_full",
+    "infer_company_linkedin_url",
+    "fetch_meta_description",
 ]
