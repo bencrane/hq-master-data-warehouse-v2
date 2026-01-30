@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
-from db import core
+from db import core, extracted
 from models import Company, CompaniesResponse, PaginationMeta
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
@@ -145,6 +145,149 @@ async def lookup_company_domain(
         "domain": None,
         "name": None,
         "match_type": None
+    }
+
+
+@router.get("/{domain}/customer-insights")
+async def get_company_customer_insights(domain: str):
+    """
+    Get insights about a company's customers:
+    - Industries of customer companies
+    - Job titles of people featured in case studies/testimonials
+    """
+    # 1. Get customer domains
+    customers_result = (
+        core()
+        .from_("company_customers")
+        .select("customer_domain")
+        .eq("origin_company_domain", domain)
+        .execute()
+    )
+
+    customer_domains = list(set(
+        row["customer_domain"] for row in customers_result.data
+        if row.get("customer_domain")
+    ))
+
+    # 2. Get industries from companies_full for these customers
+    industries = []
+    if customer_domains:
+        industries_result = (
+            core()
+            .from_("companies_full")
+            .select("matched_industry")
+            .in_("domain", customer_domains)
+            .execute()
+        )
+        # Get unique non-null industries
+        industries = list(set(
+            row["matched_industry"] for row in industries_result.data
+            if row.get("matched_industry")
+        ))
+        industries.sort()
+
+    # 3. Get case study champions' job titles
+    # Query case_study_details to find case studies for this origin company,
+    # then get champions from those case studies
+    case_studies_result = (
+        extracted()
+        .from_("case_study_details")
+        .select("id")
+        .eq("origin_company_domain", domain)
+        .execute()
+    )
+
+    job_titles = []
+    champions = []
+    if case_studies_result.data:
+        case_study_ids = [row["id"] for row in case_studies_result.data]
+
+        champions_result = (
+            extracted()
+            .from_("case_study_champions")
+            .select("full_name, job_title, company_name")
+            .in_("case_study_id", case_study_ids)
+            .execute()
+        )
+
+        # Extract unique job titles
+        job_titles = list(set(
+            row["job_title"] for row in champions_result.data
+            if row.get("job_title")
+        ))
+        job_titles.sort()
+
+        # Also return the full champion list for reference
+        champions = champions_result.data
+
+    return {
+        "origin_domain": domain,
+        "customer_count": len(customer_domains),
+        "customer_industries": industries,
+        "case_study_job_titles": job_titles,
+        "case_study_champions": champions
+    }
+
+
+@router.get("/{domain}/customers")
+async def get_company_customers(
+    domain: str,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get customer companies for a given company domain.
+    Returns enriched customer data including name, domain, industry, employee range, and country.
+    """
+    # Get customer domains from company_customers table
+    customers_result = (
+        core()
+        .from_("company_customers")
+        .select("customer_domain")
+        .eq("origin_company_domain", domain)
+        .execute()
+    )
+
+    if not customers_result.data:
+        return {
+            "data": [],
+            "meta": {"total": 0, "limit": limit, "offset": offset, "origin_domain": domain}
+        }
+
+    # Extract unique customer domains
+    customer_domains = list(set(
+        row["customer_domain"] for row in customers_result.data
+        if row.get("customer_domain")
+    ))
+
+    if not customer_domains:
+        return {
+            "data": [],
+            "meta": {"total": 0, "limit": limit, "offset": offset, "origin_domain": domain}
+        }
+
+    total = len(customer_domains)
+
+    # Apply pagination to domains list
+    paginated_domains = customer_domains[offset:offset + limit]
+
+    # Get enriched company data for these domains
+    enriched_result = (
+        core()
+        .from_("companies_full")
+        .select("name, domain, matched_industry, employee_range, company_country")
+        .in_("domain", paginated_domains)
+        .execute()
+    )
+
+    return {
+        "data": enriched_result.data,
+        "meta": {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "origin_domain": domain
+        }
     }
 
 
