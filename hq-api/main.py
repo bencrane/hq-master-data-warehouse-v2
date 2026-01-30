@@ -45,6 +45,7 @@ ALLOWED_ORIGINS = [
     "https://opsinternal.com",
     "https://www.opsinternal.com",
     "https://app.opsinternal.com",
+    "https://admin.opsinternal.com",
 ]
 
 app.add_middleware(
