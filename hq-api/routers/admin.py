@@ -318,6 +318,10 @@ ALLOWED_TABLES = {
     "raw.claygent_customers_raw",
     "raw.claygent_customers_structured_raw",
     "raw.claygent_customers_v2_raw",
+    # Raw - Phase 3: Signals (3 tables)
+    "raw.signal_job_change_payloads",
+    "raw.signal_job_posting_payloads",
+    "raw.signal_promotion_payloads",
 }
 
 
