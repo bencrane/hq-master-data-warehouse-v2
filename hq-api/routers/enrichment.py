@@ -20,8 +20,9 @@ MODAL_PROCESS_QUEUE_URL = os.getenv(
 
 
 class BatchSubmitRequest(BaseModel):
-    domains: List[str]
     batch_size: int = 200
+    similarity_weight: float = 0.0  # 0.0 = balanced, higher = more industry weight
+    country_code: Optional[str] = None  # e.g., "US", "GB" - filter results by country
 
 
 @router.get("/similar-companies/pending")
@@ -91,48 +92,81 @@ async def get_pending_similar_companies(
 @router.post("/similar-companies/batch")
 async def submit_similar_companies_batch(request: BatchSubmitRequest):
     """
-    Submit domains for similar companies enrichment.
+    Process pending domains for similar companies enrichment.
 
-    Inserts domains into the queue table and triggers processing.
-    Returns immediately with batch info - processing happens async.
+    Queries pending domains directly, inserts into queue, triggers processing.
+    Frontend just specifies batch_size - no need to send domains.
     """
-    if not request.domains:
-        return {
-            "success": False,
-            "error": "No domains provided",
-        }
-
-    # Dedupe and clean domains
-    domains = list(set(d.lower().strip() for d in request.domains if d and d.strip()))
-
-    if not domains:
-        return {
-            "success": False,
-            "error": "No valid domains after cleaning",
-        }
-
     try:
-        # Insert domains into queue table
-        queue_records = [
-            {"domain": domain, "status": "pending"}
-            for domain in domains
+        # Get customer domains directly from DB
+        customers_result = (
+            core()
+            .from_("company_customers")
+            .select("customer_domain")
+            .not_.is_("customer_domain", "null")
+            .execute()
+        )
+
+        if not customers_result.data:
+            return {"success": False, "error": "No customer domains found"}
+
+        customer_domains = list(set(
+            row["customer_domain"] for row in customers_result.data
+            if row.get("customer_domain") and row["customer_domain"].strip()
+        ))
+
+        # Get domains already enriched
+        existing_result = (
+            extracted()
+            .from_("company_enrich_similar")
+            .select("input_domain")
+            .execute()
+        )
+        existing_domains = set(
+            row["input_domain"] for row in existing_result.data
+            if row.get("input_domain")
+        )
+
+        # Get domains already in queue
+        queued_result = (
+            raw()
+            .from_("company_enrich_similar_queue")
+            .select("domain")
+            .execute()
+        )
+        queued_domains = set(
+            row["domain"] for row in queued_result.data
+            if row.get("domain")
+        )
+
+        # Find domains that need processing (not enriched, not already queued)
+        pending_domains = [
+            d for d in customer_domains
+            if d not in existing_domains and d not in queued_domains
         ]
 
-        # Insert in chunks to avoid payload size limits
-        chunk_size = 500
-        inserted_count = 0
-        for i in range(0, len(queue_records), chunk_size):
-            chunk = queue_records[i:i + chunk_size]
-            raw().from_("company_enrich_similar_queue").insert(chunk).execute()
-            inserted_count += len(chunk)
+        if not pending_domains:
+            return {
+                "success": True,
+                "message": "No new domains to process - all are either enriched or already queued",
+                "queued_domains": 0,
+            }
 
-        # Trigger Modal to process the queue
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        # Limit to batch_size
+        domains_to_queue = pending_domains[:request.batch_size]
+
+        # Insert into queue
+        queue_records = [{"domain": d, "status": "pending"} for d in domains_to_queue]
+        raw().from_("company_enrich_similar_queue").insert(queue_records).execute()
+
+        # Trigger Modal to process
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 MODAL_PROCESS_QUEUE_URL,
                 json={
-                    "batch_size": min(request.batch_size, len(domains)),
-                    "similarity_weight": 0.0,
+                    "batch_size": len(domains_to_queue),
+                    "similarity_weight": request.similarity_weight,
+                    "country_code": request.country_code,
                 },
             )
 
@@ -140,33 +174,22 @@ async def submit_similar_companies_batch(request: BatchSubmitRequest):
                 return {
                     "success": False,
                     "error": f"Failed to trigger processing: {response.status_code}",
-                    "queued_domains": inserted_count,
-                    "detail": response.text[:500],
+                    "queued_domains": len(domains_to_queue),
                 }
 
             modal_result = response.json()
 
         return {
             "success": True,
-            "queued_domains": inserted_count,
+            "queued_domains": len(domains_to_queue),
+            "remaining_pending": len(pending_domains) - len(domains_to_queue),
             "batch_id": modal_result.get("batch_id"),
             "domains_processing": modal_result.get("domains_to_process", 0),
             "estimated_time_seconds": modal_result.get("estimated_time_seconds"),
-            "message": "Batch submitted. Poll /batch/{batch_id}/status for progress.",
         }
 
-    except httpx.TimeoutException:
-        return {
-            "success": False,
-            "error": "Timeout triggering batch processing",
-            "queued_domains": inserted_count if 'inserted_count' in locals() else 0,
-            "suggestion": "Domains are queued. Try triggering processing again.",
-        }
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-        }
+        return {"success": False, "error": str(e)}
 
 
 @router.get("/similar-companies/batch/{batch_id}/status")
