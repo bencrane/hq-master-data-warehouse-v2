@@ -2460,7 +2460,7 @@
           "gaps"
         ],
         "summary": "Get Gap Recipe Count",
-        "description": "Get the count of records matching a gap recipe.",
+        "description": "Get the count of records matching a gap recipe, optionally filtered by country.",
         "operationId": "get_gap_recipe_count_api_admin_gaps_recipes__recipe_id__count_get",
         "parameters": [
           {
@@ -2473,6 +2473,24 @@
               "title": "Recipe Id"
             },
             "description": "The recipe ID"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by country: 'United States', 'not United States', or omit for all",
+              "title": "Country"
+            },
+            "description": "Filter by country: 'United States', 'not United States', or omit for all"
           }
         ],
         "responses": {
@@ -2506,7 +2524,7 @@
           "gaps"
         ],
         "summary": "Get Gap Recipe Sample",
-        "description": "Get sample records matching a gap recipe.",
+        "description": "Get sample records matching a gap recipe, optionally filtered by country.",
         "operationId": "get_gap_recipe_sample_api_admin_gaps_recipes__recipe_id__sample_get",
         "parameters": [
           {
@@ -2533,6 +2551,24 @@
               "title": "Limit"
             },
             "description": "Number of sample records to return"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by country: 'United States', 'not United States', or omit for all",
+              "title": "Country"
+            },
+            "description": "Filter by country: 'United States', 'not United States', or omit for all"
           }
         ],
         "responses": {
@@ -7366,9 +7402,21 @@
             "enum": [
               "P0",
               "P1",
-              "P2"
+              "P2",
+              "P3"
             ],
             "title": "Priority"
+          },
+          "country_join": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Join"
           }
         },
         "type": "object",

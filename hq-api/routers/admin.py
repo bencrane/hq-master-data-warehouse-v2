@@ -362,6 +362,117 @@ def row_to_dict(row):
 
 
 # ============================================================
+# ARCHIVED: Backfill Candidates - gaps we can fix from existing data
+# Status: Timing out through asyncpg (works in psql). Archived 2026-01-31.
+# ============================================================
+#
+# class BackfillCountResponse(BaseModel):
+#     backfill_type: str
+#     label: str
+#     description: str
+#     count: int
+#     gap_table: str
+#     source_table: str
+#
+#
+# class BackfillSampleResponse(BaseModel):
+#     backfill_type: str
+#     label: str
+#     count: int
+#     sample: List[dict]
+#     limit: int
+#
+#
+# @router.get("/backfill/location/count", response_model=BackfillCountResponse, tags=["backfill"])
+# async def get_backfill_location_count():
+#     """
+#     Get count of companies missing location in core.company_locations
+#     that have location data available in extracted.company_discovery.
+#     """
+#     pool = get_pool()
+#
+#     query = """
+#         SELECT COUNT(DISTINCT c.domain)
+#         FROM core.companies c
+#         WHERE NOT EXISTS (
+#             SELECT 1 FROM core.company_locations cl WHERE cl.domain = c.domain
+#         )
+#         AND EXISTS (
+#             SELECT 1 FROM extracted.company_discovery d
+#             WHERE d.domain = c.domain
+#             AND (d.matched_country IS NOT NULL OR d.country IS NOT NULL)
+#         )
+#     """
+#
+#     count = await pool.fetchval(query)
+#
+#     return BackfillCountResponse(
+#         backfill_type="location",
+#         label="Companies missing location (backfill available)",
+#         description="Companies missing location in core.company_locations that have location data in extracted.company_discovery",
+#         count=count,
+#         gap_table="core.company_locations",
+#         source_table="extracted.company_discovery"
+#     )
+#
+#
+# @router.get("/backfill/location/sample", response_model=BackfillSampleResponse, tags=["backfill"])
+# async def get_backfill_location_sample(
+#     limit: int = Query(10, ge=1, le=100, description="Number of sample records to return")
+# ):
+#     """
+#     Get sample companies missing location with their available discovery data.
+#     Returns the company domain along with the location data from extracted.company_discovery.
+#     """
+#     pool = get_pool()
+#
+#     query = """
+#         SELECT
+#             c.domain,
+#             c.name as company_name,
+#             d.country as discovery_country,
+#             d.matched_country,
+#             d.city as discovery_city,
+#             d.matched_city,
+#             d.state as discovery_state,
+#             d.matched_state,
+#             d.location as discovery_location_raw
+#         FROM core.companies c
+#         INNER JOIN extracted.company_discovery d ON d.domain = c.domain
+#         WHERE NOT EXISTS (
+#             SELECT 1 FROM core.company_locations cl WHERE cl.domain = c.domain
+#         )
+#         AND (d.matched_country IS NOT NULL OR d.country IS NOT NULL)
+#         LIMIT $1
+#     """
+#
+#     rows = await pool.fetch(query, limit)
+#
+#     # Get total count
+#     count_query = """
+#         SELECT COUNT(DISTINCT c.domain)
+#         FROM core.companies c
+#         WHERE NOT EXISTS (
+#             SELECT 1 FROM core.company_locations cl WHERE cl.domain = c.domain
+#         )
+#         AND EXISTS (
+#             SELECT 1 FROM extracted.company_discovery d
+#             WHERE d.domain = c.domain
+#             AND (d.matched_country IS NOT NULL OR d.country IS NOT NULL)
+#         )
+#     """
+#     count = await pool.fetchval(count_query)
+#
+#     return BackfillSampleResponse(
+#         backfill_type="location",
+#         label="Companies missing location (backfill available)",
+#         count=count,
+#         sample=[row_to_dict(row) for row in rows],
+#         limit=limit
+#     )
+
+
+# ============================================================
 # extracted.company_discovery
 # ============================================================
 
