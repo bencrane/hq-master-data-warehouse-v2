@@ -124,10 +124,59 @@ GAP_RECIPES: List[GapRecipe] = [
         comparison="not_in_target",
         priority="P1"
     ),
+    # P2 - Additional data quality gaps
+    GapRecipe(
+        id="companies-missing-description",
+        label="Companies missing description",
+        description="Companies in core.companies that don't have a description in core.company_descriptions.",
+        source_table="core.companies",
+        target_table="core.company_descriptions",
+        join_column="domain",
+        comparison="not_in_target",
+        priority="P2"
+    ),
+    GapRecipe(
+        id="companies-missing-employee-range",
+        label="Companies missing employee range",
+        description="Companies in core.companies that don't have employee range data in core.company_employee_range.",
+        source_table="core.companies",
+        target_table="core.company_employee_range",
+        join_column="domain",
+        comparison="not_in_target",
+        priority="P2"
+    ),
+    GapRecipe(
+        id="people-missing-tenure",
+        label="People missing tenure",
+        description="People in core.people that don't have job start date/tenure data in core.person_tenure.",
+        source_table="core.people",
+        target_table="core.person_tenure",
+        join_column="linkedin_url",
+        comparison="not_in_target",
+        priority="P2"
+    ),
+    GapRecipe(
+        id="customers-without-find-similar",
+        label="Customer companies not enriched with find-similar",
+        description="Unique customer domains from core.company_customers that haven't had find-similar-companies run on them yet.",
+        source_table="core.company_customers",
+        target_table="extracted.company_enrich_similar",
+        join_column="customer_domain:input_domain",  # Special syntax: source_col:target_col
+        comparison="not_in_target",
+        priority="P2"
+    ),
 ]
 
 # Index recipes by ID for fast lookup
 RECIPES_BY_ID = {r.id: r for r in GAP_RECIPES}
+
+
+def parse_join_columns(join_column: str) -> tuple[str, str]:
+    """Parse join_column which may be 'col' or 'source_col:target_col'."""
+    if ":" in join_column:
+        source_col, target_col = join_column.split(":")
+        return source_col, target_col
+    return join_column, join_column
 
 
 @router.get("/gaps/recipes", response_model=GapRecipeListResponse, tags=["gaps"])
@@ -145,26 +194,27 @@ async def get_gap_recipe_count(recipe_id: str = Path(..., description="The recip
     recipe = RECIPES_BY_ID[recipe_id]
     pool = get_pool()
 
-    # Build the query based on comparison type
-    source_schema, source_table = recipe.source_table.split(".")
-    target_schema, target_table = recipe.target_table.split(".")
+    # Parse join columns (handles both 'col' and 'source_col:target_col' formats)
+    source_col, target_col = parse_join_columns(recipe.join_column)
 
     if recipe.comparison == "not_in_target":
         query = f"""
             SELECT COUNT(*) FROM {recipe.source_table} s
-            WHERE s.{recipe.join_column} IS NOT NULL
+            WHERE s.{source_col} IS NOT NULL
+            AND s.{source_col} != ''
             AND NOT EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
-                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+                WHERE t.{target_col} = s.{source_col}
             )
         """
     else:  # in_target
         query = f"""
             SELECT COUNT(*) FROM {recipe.source_table} s
-            WHERE s.{recipe.join_column} IS NOT NULL
+            WHERE s.{source_col} IS NOT NULL
+            AND s.{source_col} != ''
             AND EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
-                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+                WHERE t.{target_col} = s.{source_col}
             )
         """
 
@@ -191,24 +241,29 @@ async def get_gap_recipe_sample(
     recipe = RECIPES_BY_ID[recipe_id]
     pool = get_pool()
 
+    # Parse join columns (handles both 'col' and 'source_col:target_col' formats)
+    source_col, target_col = parse_join_columns(recipe.join_column)
+
     # Build the query based on comparison type
     if recipe.comparison == "not_in_target":
         query = f"""
             SELECT s.* FROM {recipe.source_table} s
-            WHERE s.{recipe.join_column} IS NOT NULL
+            WHERE s.{source_col} IS NOT NULL
+            AND s.{source_col} != ''
             AND NOT EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
-                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+                WHERE t.{target_col} = s.{source_col}
             )
             LIMIT $1
         """
     else:  # in_target
         query = f"""
             SELECT s.* FROM {recipe.source_table} s
-            WHERE s.{recipe.join_column} IS NOT NULL
+            WHERE s.{source_col} IS NOT NULL
+            AND s.{source_col} != ''
             AND EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
-                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+                WHERE t.{target_col} = s.{source_col}
             )
             LIMIT $1
         """
