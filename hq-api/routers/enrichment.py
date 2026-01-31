@@ -21,8 +21,8 @@ MODAL_PROCESS_QUEUE_URL = os.getenv(
 
 class BatchSubmitRequest(BaseModel):
     batch_size: int = 200
-    similarity_weight: float = 0.0  # 0.0 = balanced, higher = more industry weight
-    country_code: Optional[str] = None  # e.g., "US", "GB" - filter results by country
+    similarity_weight: float = 0.0  # -1 to 1. Positive = more similar, Negative = more established
+    country_code: Optional[str] = None  # 2-letter code e.g., "US", "GB"
 
 
 @router.get("/similar-companies/pending")
