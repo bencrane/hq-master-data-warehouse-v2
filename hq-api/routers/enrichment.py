@@ -250,6 +250,25 @@ async def get_batch_status(batch_id: str):
         }
 
 
+@router.delete("/similar-companies/queue/clear")
+async def clear_queue():
+    """
+    Clear completed and errored items from the queue.
+    Leaves 'processing' items alone.
+    """
+    try:
+        # Delete done items
+        raw().from_("company_enrich_similar_queue").delete().eq("status", "done").execute()
+        # Delete error items
+        raw().from_("company_enrich_similar_queue").delete().eq("status", "error").execute()
+        # Delete pending items (old ones that never got processed)
+        raw().from_("company_enrich_similar_queue").delete().eq("status", "pending").execute()
+
+        return {"success": True, "message": "Queue cleared (done/error/pending removed, processing items left)"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @router.get("/similar-companies/queue/status")
 async def get_queue_status():
     """
