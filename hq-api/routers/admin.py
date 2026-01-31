@@ -292,8 +292,20 @@ ALLOWED_TABLES = {
     "staging.forethought_icp_leads",
     "staging.forethought_icp_people",
     "staging.withcoverage_champions",
-    # Raw
-    "raw.claygent_customers_v2_raw",
+    # Raw - Phase 1: Core Discovery & Scrapes (13 tables)
+    "raw.apollo_instantdata_scrapes",
+    "raw.apollo_scrape",
+    "raw.company_discovery",
+    "raw.company_discovery_location_parsed",
+    "raw.company_payloads",
+    "raw.instant_data_scraper",
+    "raw.person_discovery",
+    "raw.person_discovery_location_parsed",
+    "raw.person_payloads",
+    "raw.person_title_enrichment",
+    "raw.salesnav_scrapes",
+    "raw.salesnav_scrapes_company_address_payloads",
+    "raw.salesnav_scrapes_person_payloads",
 }
 
 
