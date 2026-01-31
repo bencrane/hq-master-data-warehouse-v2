@@ -236,6 +236,27 @@ async def get_company_customer_insights(domain: str):
     }
 
 
+@router.get("/{domain}/has-customers")
+async def check_has_customers(domain: str):
+    """
+    Simple check: does this company have customer data?
+    Returns: { "has_customers": true/false, "count": N }
+    """
+    result = (
+        core()
+        .from_("company_customers")
+        .select("customer_domain", count="exact", head=True)
+        .eq("origin_company_domain", domain)
+        .execute()
+    )
+    count = result.count or 0
+    return {
+        "domain": domain,
+        "has_customers": count > 0,
+        "count": count
+    }
+
+
 @router.get("/{domain}/customers")
 async def get_company_customers(
     domain: str,
