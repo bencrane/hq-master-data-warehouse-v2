@@ -278,6 +278,9 @@ ALLOWED_TABLES = {
     "reference.signals",
     "reference.us_cities",
     "reference.us_states",
+    # Derived - 2 tables
+    "derived.company_icp_industries_from_customers",
+    "derived.icp_job_titles_from_champions",
     # Raw
     "raw.claygent_customers_v2_raw",
 }
