@@ -2,8 +2,56 @@
 
 Log of significant changes to Modal infrastructure.
 
-For detailed API documentation, see [MODAL_ENDPOINTS.md](./MODAL_ENDPOINTS.md).  
+For detailed API documentation, see [MODAL_ENDPOINTS.md](./MODAL_ENDPOINTS.md).
 For onboarding, see [modal-onboarding.md](./modal-onboarding.md).
+
+---
+
+## 2026-01-31
+
+### Endpoint Rewrite: ingest_company_customers_structured
+
+Completely rewrote the endpoint to accept a **flat payload structure** instead of nested `claygent_output`. This fixed issues where Clay was sending structured data that wasn't being parsed correctly.
+
+**New payload format:**
+```json
+{
+  "origin_company_domain": "andela.com",
+  "origin_company_name": "Andela",
+  "response": "...",
+  "customers": [{"url": "...", "companyName": "Resy", "hasCaseStudy": true}],
+  "reasoning": "...",
+  "confidence": "high",
+  "stepsTaken": [...]
+}
+```
+
+- Endpoint now accepts raw `dict` instead of Pydantic model
+- Handles both nested and flat formats
+- Properly extracts customers to `extracted.claygent_customers_structured`
+
+### Data Coalescing
+
+- Coalesced **9,004+ records** from `extracted.claygent_customers_structured` to `core.company_customers`
+- Used direct postgres connection for bulk INSERT with `ON CONFLICT DO NOTHING`
+
+### Case Study Buyer Extraction
+
+- Tested `gemini-2.0-flash-lite` as alternative model (poor domain extraction results)
+- Reverted to `gemini-2.5-flash-lite` which performs significantly better
+- Processed 12,392 raw case study records → 12,972 extracted buyers
+
+### Database Stats (end of session)
+
+- `extracted.claygent_customers_structured`: 11,406 records
+- `core.company_customers`: 9,000+ records
+- `raw.case_study_buyers_payloads`: 12,392 records
+- `extracted.case_study_buyers`: 12,972 records
+- Snowflake alumni in DB: 952 (past_employer) / 1,367 (work_history)
+
+### hq-api Changes
+
+- Added `POST /api/companies/check-has-customers` endpoint (accepts domain via payload, strips trailing slashes)
 
 ---
 
