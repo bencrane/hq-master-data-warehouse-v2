@@ -37,7 +37,10 @@ class GapRecipe(BaseModel):
     target_table: str
     join_column: str
     comparison: Literal["not_in_target", "in_target"]
-    priority: Literal["P0", "P1", "P2"]
+    priority: Literal["P0", "P1", "P2", "P3"]
+    # Optional: how to join for country filtering. Format: "location_table:join_col:country_col"
+    # e.g., "core.company_locations:domain:country" means JOIN core.company_locations ON domain, filter by country
+    country_join: Optional[str] = None
 
 
 class GapRecipeListResponse(BaseModel):
@@ -165,6 +168,18 @@ GAP_RECIPES: List[GapRecipe] = [
         comparison="not_in_target",
         priority="P2"
     ),
+    # P3 - VC-backed companies gaps
+    GapRecipe(
+        id="vc-backed-without-customers",
+        label="VC-backed companies without customers",
+        description="Companies that have raised VC funding but we haven't yet identified their customers.",
+        source_table="core.company_vc_backed",
+        target_table="core.company_customers",
+        join_column="domain:origin_company_domain",
+        comparison="not_in_target",
+        priority="P3",
+        country_join="core.company_locations:domain:country"
+    ),
 ]
 
 # Index recipes by ID for fast lookup
@@ -179,6 +194,36 @@ def parse_join_columns(join_column: str) -> tuple[str, str]:
     return join_column, join_column
 
 
+def build_country_filter(country_join: Optional[str], country: Optional[str], source_col: str) -> tuple[str, str]:
+    """
+    Build JOIN and WHERE clauses for country filtering.
+
+    country_join format: "location_table:join_col:country_col"
+    country values: None (no filter), "United States", "not United States"
+
+    Returns: (join_clause, where_clause)
+    """
+    if not country_join or not country:
+        return "", ""
+
+    parts = country_join.split(":")
+    if len(parts) != 3:
+        return "", ""
+
+    location_table, join_col, country_col = parts
+
+    join_clause = f"INNER JOIN {location_table} loc ON loc.{join_col} = s.{source_col}"
+
+    if country == "United States":
+        where_clause = f"AND loc.{country_col} = 'United States'"
+    elif country == "not United States":
+        where_clause = f"AND loc.{country_col} != 'United States' AND loc.{country_col} IS NOT NULL"
+    else:
+        where_clause = ""
+
+    return join_clause, where_clause
+
+
 @router.get("/gaps/recipes", response_model=GapRecipeListResponse, tags=["gaps"])
 async def get_gap_recipes():
     """Get all available gap analysis recipes."""
@@ -186,8 +231,11 @@ async def get_gap_recipes():
 
 
 @router.get("/gaps/recipes/{recipe_id}/count", response_model=GapCountResponse, tags=["gaps"])
-async def get_gap_recipe_count(recipe_id: str = Path(..., description="The recipe ID")):
-    """Get the count of records matching a gap recipe."""
+async def get_gap_recipe_count(
+    recipe_id: str = Path(..., description="The recipe ID"),
+    country: Optional[str] = Query(None, description="Filter by country: 'United States', 'not United States', or omit for all")
+):
+    """Get the count of records matching a gap recipe, optionally filtered by country."""
     if recipe_id not in RECIPES_BY_ID:
         raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
 
@@ -197,11 +245,18 @@ async def get_gap_recipe_count(recipe_id: str = Path(..., description="The recip
     # Parse join columns (handles both 'col' and 'source_col:target_col' formats)
     source_col, target_col = parse_join_columns(recipe.join_column)
 
+    # Build country filter if applicable
+    country_join_clause, country_where_clause = build_country_filter(
+        recipe.country_join, country, source_col
+    )
+
     if recipe.comparison == "not_in_target":
         query = f"""
             SELECT COUNT(*) FROM {recipe.source_table} s
+            {country_join_clause}
             WHERE s.{source_col} IS NOT NULL
             AND s.{source_col} != ''
+            {country_where_clause}
             AND NOT EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
                 WHERE t.{target_col} = s.{source_col}
@@ -210,8 +265,10 @@ async def get_gap_recipe_count(recipe_id: str = Path(..., description="The recip
     else:  # in_target
         query = f"""
             SELECT COUNT(*) FROM {recipe.source_table} s
+            {country_join_clause}
             WHERE s.{source_col} IS NOT NULL
             AND s.{source_col} != ''
+            {country_where_clause}
             AND EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
                 WHERE t.{target_col} = s.{source_col}
@@ -232,9 +289,10 @@ async def get_gap_recipe_count(recipe_id: str = Path(..., description="The recip
 @router.get("/gaps/recipes/{recipe_id}/sample", response_model=GapSampleResponse, tags=["gaps"])
 async def get_gap_recipe_sample(
     recipe_id: str = Path(..., description="The recipe ID"),
-    limit: int = Query(10, ge=1, le=100, description="Number of sample records to return")
+    limit: int = Query(10, ge=1, le=100, description="Number of sample records to return"),
+    country: Optional[str] = Query(None, description="Filter by country: 'United States', 'not United States', or omit for all")
 ):
-    """Get sample records matching a gap recipe."""
+    """Get sample records matching a gap recipe, optionally filtered by country."""
     if recipe_id not in RECIPES_BY_ID:
         raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
 
@@ -244,12 +302,19 @@ async def get_gap_recipe_sample(
     # Parse join columns (handles both 'col' and 'source_col:target_col' formats)
     source_col, target_col = parse_join_columns(recipe.join_column)
 
+    # Build country filter if applicable
+    country_join_clause, country_where_clause = build_country_filter(
+        recipe.country_join, country, source_col
+    )
+
     # Build the query based on comparison type
     if recipe.comparison == "not_in_target":
         query = f"""
             SELECT s.* FROM {recipe.source_table} s
+            {country_join_clause}
             WHERE s.{source_col} IS NOT NULL
             AND s.{source_col} != ''
+            {country_where_clause}
             AND NOT EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
                 WHERE t.{target_col} = s.{source_col}
@@ -259,8 +324,10 @@ async def get_gap_recipe_sample(
     else:  # in_target
         query = f"""
             SELECT s.* FROM {recipe.source_table} s
+            {country_join_clause}
             WHERE s.{source_col} IS NOT NULL
             AND s.{source_col} != ''
+            {country_where_clause}
             AND EXISTS (
                 SELECT 1 FROM {recipe.target_table} t
                 WHERE t.{target_col} = s.{source_col}
@@ -270,7 +337,7 @@ async def get_gap_recipe_sample(
 
     rows = await pool.fetch(query, limit)
 
-    # Get count too
+    # Get count too (remove LIMIT for count)
     count_query = query.replace("SELECT s.*", "SELECT COUNT(*)").replace("LIMIT $1", "")
     count = await pool.fetchval(count_query)
 
