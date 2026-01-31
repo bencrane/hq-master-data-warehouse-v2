@@ -2400,6 +2400,122 @@ async def get_core_target_client_views(
 
 
 # ============================================================
+# Top VC Portfolio Companies Missing Customers
+# ============================================================
+
+class TopVCMissingCustomersResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    data: List[dict]
+
+
+@router.get("/top-vc-portfolio/missing-customers/count")
+async def get_top_vc_missing_customers_count():
+    """
+    Get count of companies backed by top 70 VCs that are missing customer data.
+    Uses reference.top_vcs for the curated list of top VCs.
+    """
+    pool = get_pool()
+
+    query = """
+        SELECT COUNT(DISTINCT cvi.company_domain)
+        FROM core.company_vc_investors cvi
+        INNER JOIN reference.top_vcs tv ON tv.domain = cvi.vc_domain
+        WHERE NOT EXISTS (
+            SELECT 1 FROM core.company_customers cc
+            WHERE cc.origin_company_domain = cvi.company_domain
+        )
+    """
+
+    count = await pool.fetchval(query)
+
+    return {
+        "count": count,
+        "description": "Companies backed by top 70 VCs missing customer data"
+    }
+
+
+@router.get("/top-vc-portfolio/missing-customers", response_model=TopVCMissingCustomersResponse)
+async def get_top_vc_missing_customers(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    vc_domain: Optional[str] = Query(None, description="Filter by specific VC domain")
+):
+    """
+    Get companies backed by top 70 VCs that are missing customer data.
+    Returns company info along with their VC investors from the top 70 list.
+    """
+    pool = get_pool()
+
+    # Build WHERE clause
+    where_conditions = ["""
+        NOT EXISTS (
+            SELECT 1 FROM core.company_customers cc
+            WHERE cc.origin_company_domain = cvi.company_domain
+        )
+    """]
+    params = []
+    param_idx = 1
+
+    if vc_domain:
+        where_conditions.append(f"tv.domain = ${param_idx}")
+        params.append(vc_domain)
+        param_idx += 1
+
+    where_clause = " AND ".join(where_conditions)
+
+    # Count query
+    count_query = f"""
+        SELECT COUNT(DISTINCT cvi.company_domain)
+        FROM core.company_vc_investors cvi
+        INNER JOIN reference.top_vcs tv ON tv.domain = cvi.vc_domain
+        WHERE {where_clause}
+    """
+    total = await pool.fetchval(count_query, *params)
+
+    # Data query - get unique companies with their top VC investors aggregated
+    data_query = f"""
+        SELECT
+            cvi.company_domain as domain,
+            cvi.company_name as name,
+            ARRAY_AGG(DISTINCT tv.name ORDER BY tv.name) as top_vc_investors,
+            ARRAY_AGG(DISTINCT tv.domain ORDER BY tv.domain) as top_vc_domains
+        FROM core.company_vc_investors cvi
+        INNER JOIN reference.top_vcs tv ON tv.domain = cvi.vc_domain
+        WHERE {where_clause}
+        GROUP BY cvi.company_domain, cvi.company_name
+        ORDER BY cvi.company_name
+        LIMIT ${param_idx} OFFSET ${param_idx + 1}
+    """
+    params.extend([limit, offset])
+
+    rows = await pool.fetch(data_query, *params)
+
+    return TopVCMissingCustomersResponse(
+        total=total,
+        limit=limit,
+        offset=offset,
+        data=[dict(row) for row in rows]
+    )
+
+
+@router.get("/top-vc-portfolio/list")
+async def get_top_vcs():
+    """
+    Get the list of top 70 VCs from reference.top_vcs.
+    """
+    pool = get_pool()
+
+    rows = await pool.fetch("SELECT name, domain FROM reference.top_vcs ORDER BY name")
+
+    return {
+        "count": len(rows),
+        "vcs": [dict(row) for row in rows]
+    }
+
+
+# ============================================================
 # Generic endpoint for any schema/table (must be LAST to not override specific routes)
 # ============================================================
 

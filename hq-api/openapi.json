@@ -6944,6 +6944,121 @@
         }
       }
     },
+    "/api/admin/top-vc-portfolio/missing-customers/count": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Top Vc Missing Customers Count",
+        "description": "Get count of companies backed by top 70 VCs that are missing customer data.\nUses reference.top_vcs for the curated list of top VCs.",
+        "operationId": "get_top_vc_missing_customers_count_api_admin_top_vc_portfolio_missing_customers_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/top-vc-portfolio/missing-customers": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Top Vc Missing Customers",
+        "description": "Get companies backed by top 70 VCs that are missing customer data.\nReturns company info along with their VC investors from the top 70 list.",
+        "operationId": "get_top_vc_missing_customers_api_admin_top_vc_portfolio_missing_customers_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "vc_domain",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by specific VC domain",
+              "title": "Vc Domain"
+            },
+            "description": "Filter by specific VC domain"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopVCMissingCustomersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/top-vc-portfolio/list": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Top Vcs",
+        "description": "Get the list of top 70 VCs from reference.top_vcs.",
+        "operationId": "get_top_vcs_api_admin_top_vc_portfolio_list_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/{schema_name}/{table_name}/count": {
       "get": {
         "tags": [
@@ -8955,6 +9070,38 @@
           "url"
         ],
         "title": "TargetClientViewResponse"
+      },
+      "TopVCMissingCustomersResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "limit",
+          "offset",
+          "data"
+        ],
+        "title": "TopVCMissingCustomersResponse"
       },
       "User": {
         "properties": {
