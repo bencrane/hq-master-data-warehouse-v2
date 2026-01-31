@@ -285,6 +285,13 @@ ALLOWED_TABLES = {
     "mapped.case_study_champions",
     "mapped.company_discovery",
     "mapped.person_discovery",
+    # Staging - 6 tables
+    "staging.case_study_urls_to_process",
+    "staging.companies_to_enrich",
+    "staging.forethought_icp_companies",
+    "staging.forethought_icp_leads",
+    "staging.forethought_icp_people",
+    "staging.withcoverage_champions",
     # Raw
     "raw.claygent_customers_v2_raw",
 }
