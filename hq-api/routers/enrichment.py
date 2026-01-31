@@ -251,20 +251,25 @@ async def get_batch_status(batch_id: str):
 
 
 @router.delete("/similar-companies/queue/clear")
-async def clear_queue():
+async def clear_queue(include_processing: bool = False):
     """
-    Clear completed and errored items from the queue.
-    Leaves 'processing' items alone.
+    Clear items from the queue.
+    By default leaves 'processing' items alone.
+    Set include_processing=true to clear stuck processing items too.
     """
     try:
         # Delete done items
         raw().from_("company_enrich_similar_queue").delete().eq("status", "done").execute()
         # Delete error items
         raw().from_("company_enrich_similar_queue").delete().eq("status", "error").execute()
-        # Delete pending items (old ones that never got processed)
+        # Delete pending items
         raw().from_("company_enrich_similar_queue").delete().eq("status", "pending").execute()
 
-        return {"success": True, "message": "Queue cleared (done/error/pending removed, processing items left)"}
+        if include_processing:
+            raw().from_("company_enrich_similar_queue").delete().eq("status", "processing").execute()
+            return {"success": True, "message": "Queue fully cleared (including stuck processing items)"}
+
+        return {"success": True, "message": "Queue cleared (done/error/pending removed)"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
