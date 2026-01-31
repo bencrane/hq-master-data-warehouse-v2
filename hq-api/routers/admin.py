@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Query, HTTPException
-from typing import Optional, List, Any
+from fastapi import APIRouter, Query, HTTPException, Path
+from typing import Optional, List, Any, Literal
 from pydantic import BaseModel
 from db import get_pool
 
@@ -23,6 +23,209 @@ class TableDataResponse(BaseModel):
     table_name: str
     data: List[dict]
     meta: PaginationMeta
+
+
+# ============================================================
+# Gap Analysis Recipes
+# ============================================================
+
+class GapRecipe(BaseModel):
+    id: str
+    label: str
+    description: str
+    source_table: str
+    target_table: str
+    join_column: str
+    comparison: Literal["not_in_target", "in_target"]
+    priority: Literal["P0", "P1", "P2"]
+
+
+class GapRecipeListResponse(BaseModel):
+    recipes: List[GapRecipe]
+
+
+class GapCountResponse(BaseModel):
+    recipe_id: str
+    label: str
+    count: int
+    source_table: str
+    target_table: str
+
+
+class GapSampleResponse(BaseModel):
+    recipe_id: str
+    label: str
+    count: int
+    sample: List[dict]
+    limit: int
+
+
+# Define all gap recipes
+GAP_RECIPES: List[GapRecipe] = [
+    # P0 - Pipeline health: extraction to core
+    GapRecipe(
+        id="extracted-companies-not-in-core",
+        label="Companies stuck in extraction",
+        description="Companies in extracted.company_discovery that haven't made it to core.companies. These may have data quality issues preventing promotion to core.",
+        source_table="extracted.company_discovery",
+        target_table="core.companies",
+        join_column="domain",
+        comparison="not_in_target",
+        priority="P0"
+    ),
+    GapRecipe(
+        id="extracted-people-not-in-core",
+        label="People stuck in extraction",
+        description="People in extracted.person_discovery that haven't made it to core.people. These may be missing required fields or have invalid LinkedIn URLs.",
+        source_table="extracted.person_discovery",
+        target_table="core.people",
+        join_column="linkedin_url",
+        comparison="not_in_target",
+        priority="P0"
+    ),
+    # P1 - Data quality: core records missing enrichment
+    GapRecipe(
+        id="companies-missing-industry",
+        label="Companies missing industry",
+        description="Companies in core.companies that don't have an industry classification in core.company_industries.",
+        source_table="core.companies",
+        target_table="core.company_industries",
+        join_column="domain",
+        comparison="not_in_target",
+        priority="P1"
+    ),
+    GapRecipe(
+        id="companies-missing-location",
+        label="Companies missing location",
+        description="Companies in core.companies that don't have location data in core.company_locations.",
+        source_table="core.companies",
+        target_table="core.company_locations",
+        join_column="domain",
+        comparison="not_in_target",
+        priority="P1"
+    ),
+    GapRecipe(
+        id="people-missing-job-title",
+        label="People missing job title",
+        description="People in core.people that don't have job title data in core.person_job_titles.",
+        source_table="core.people",
+        target_table="core.person_job_titles",
+        join_column="linkedin_url",
+        comparison="not_in_target",
+        priority="P1"
+    ),
+    GapRecipe(
+        id="people-missing-location",
+        label="People missing location",
+        description="People in core.people that don't have location data in core.person_locations.",
+        source_table="core.people",
+        target_table="core.person_locations",
+        join_column="linkedin_url",
+        comparison="not_in_target",
+        priority="P1"
+    ),
+]
+
+# Index recipes by ID for fast lookup
+RECIPES_BY_ID = {r.id: r for r in GAP_RECIPES}
+
+
+@router.get("/gaps/recipes", response_model=GapRecipeListResponse, tags=["gaps"])
+async def get_gap_recipes():
+    """Get all available gap analysis recipes."""
+    return GapRecipeListResponse(recipes=GAP_RECIPES)
+
+
+@router.get("/gaps/recipes/{recipe_id}/count", response_model=GapCountResponse, tags=["gaps"])
+async def get_gap_recipe_count(recipe_id: str = Path(..., description="The recipe ID")):
+    """Get the count of records matching a gap recipe."""
+    if recipe_id not in RECIPES_BY_ID:
+        raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
+
+    recipe = RECIPES_BY_ID[recipe_id]
+    pool = get_pool()
+
+    # Build the query based on comparison type
+    source_schema, source_table = recipe.source_table.split(".")
+    target_schema, target_table = recipe.target_table.split(".")
+
+    if recipe.comparison == "not_in_target":
+        query = f"""
+            SELECT COUNT(*) FROM {recipe.source_table} s
+            WHERE s.{recipe.join_column} IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM {recipe.target_table} t
+                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+            )
+        """
+    else:  # in_target
+        query = f"""
+            SELECT COUNT(*) FROM {recipe.source_table} s
+            WHERE s.{recipe.join_column} IS NOT NULL
+            AND EXISTS (
+                SELECT 1 FROM {recipe.target_table} t
+                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+            )
+        """
+
+    count = await pool.fetchval(query)
+
+    return GapCountResponse(
+        recipe_id=recipe.id,
+        label=recipe.label,
+        count=count,
+        source_table=recipe.source_table,
+        target_table=recipe.target_table
+    )
+
+
+@router.get("/gaps/recipes/{recipe_id}/sample", response_model=GapSampleResponse, tags=["gaps"])
+async def get_gap_recipe_sample(
+    recipe_id: str = Path(..., description="The recipe ID"),
+    limit: int = Query(10, ge=1, le=100, description="Number of sample records to return")
+):
+    """Get sample records matching a gap recipe."""
+    if recipe_id not in RECIPES_BY_ID:
+        raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
+
+    recipe = RECIPES_BY_ID[recipe_id]
+    pool = get_pool()
+
+    # Build the query based on comparison type
+    if recipe.comparison == "not_in_target":
+        query = f"""
+            SELECT s.* FROM {recipe.source_table} s
+            WHERE s.{recipe.join_column} IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM {recipe.target_table} t
+                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+            )
+            LIMIT $1
+        """
+    else:  # in_target
+        query = f"""
+            SELECT s.* FROM {recipe.source_table} s
+            WHERE s.{recipe.join_column} IS NOT NULL
+            AND EXISTS (
+                SELECT 1 FROM {recipe.target_table} t
+                WHERE t.{recipe.join_column} = s.{recipe.join_column}
+            )
+            LIMIT $1
+        """
+
+    rows = await pool.fetch(query, limit)
+
+    # Get count too
+    count_query = query.replace("SELECT s.*", "SELECT COUNT(*)").replace("LIMIT $1", "")
+    count = await pool.fetchval(count_query)
+
+    return GapSampleResponse(
+        recipe_id=recipe.id,
+        label=recipe.label,
+        count=count,
+        sample=[row_to_dict(row) for row in rows],
+        limit=limit
+    )
 
 
 def row_to_dict(row):
