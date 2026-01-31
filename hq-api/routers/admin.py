@@ -187,11 +187,57 @@ ALLOWED_TABLES = {
     "core.company_public",
     "core.company_employee_ranges",
     "core.target_client_views",
-    # Extracted
-    "extracted.company_discovery",
-    "extracted.person_discovery",
+    # Extracted - All 50 tables
+    "extracted.apollo_companies_cleaned",
+    "extracted.apollo_instantdata_companies",
+    "extracted.apollo_instantdata_people",
+    "extracted.apollo_people_cleaned",
+    "extracted.apollo_scrape",
+    "extracted.case_study_buyers",
+    "extracted.case_study_champions",
+    "extracted.case_study_details",
+    "extracted.cb_vc_portfolio",
+    "extracted.clay_job_change",
+    "extracted.clay_job_function_mapping",
+    "extracted.clay_job_posting",
+    "extracted.clay_new_hire",
+    "extracted.clay_news_fundraising",
+    "extracted.clay_promotion",
+    "extracted.clay_seniority_mapping",
+    "extracted.claygent_customers",
+    "extracted.claygent_customers_structured",
     "extracted.claygent_customers_v2",
+    "extracted.cleaned_company_names",
+    "extracted.company_customer_claygent",
+    "extracted.company_discovery",
+    "extracted.company_discovery_location_parsed",
+    "extracted.company_enrich_similar",
+    "extracted.company_firmographics",
+    "extracted.company_vc_investors",
+    "extracted.crunchbase_domain_inference",
+    "extracted.email_anymailfinder",
+    "extracted.email_leadmagic",
+    "extracted.icp_fit_criterion",
+    "extracted.icp_industries",
+    "extracted.icp_job_titles",
+    "extracted.icp_value_proposition",
+    "extracted.icp_verdict",
+    "extracted.instant_data_scraper",
+    "extracted.leadmagic_company_enrichment",
+    "extracted.nostra_ecom_companies",
+    "extracted.nostra_ecom_people",
+    "extracted.person_discovery",
+    "extracted.person_discovery_location_parsed",
+    "extracted.person_education",
     "extracted.person_experience",
+    "extracted.person_profile",
+    "extracted.person_title_enrichment",
+    "extracted.salesnav_scrapes_companies",
+    "extracted.salesnav_scrapes_person",
+    "extracted.signal_job_change",
+    "extracted.signal_job_posting",
+    "extracted.signal_promotion",
+    "extracted.vc_portfolio",
     # Raw
     "raw.claygent_customers_v2_raw",
 }
@@ -1805,3 +1851,31 @@ async def get_core_target_client_views(
 
     return TableDataResponse(schema_name="core", table_name="target_client_views",
         data=[row_to_dict(row) for row in rows], meta=PaginationMeta(total=total, limit=limit, offset=offset))
+
+
+# ============================================================
+# Generic endpoint for any schema/table (must be LAST to not override specific routes)
+# ============================================================
+
+@router.get("/{schema_name}/{table_name}/count", response_model=TableCountResponse)
+async def get_generic_table_count(schema_name: str, table_name: str):
+    """
+    Generic count endpoint for any allowed table.
+    This endpoint must be defined LAST so specific routes take precedence.
+    """
+    full_name = f"{schema_name}.{table_name}"
+
+    if full_name not in ALLOWED_TABLES:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Table {full_name} not in allowed list"
+        )
+
+    pool = get_pool()
+    count = await pool.fetchval(f"SELECT COUNT(*) FROM {schema_name}.{table_name}")
+
+    return TableCountResponse(
+        schema_name=schema_name,
+        table_name=table_name,
+        count=count
+    )
