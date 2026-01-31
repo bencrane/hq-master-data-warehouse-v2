@@ -322,6 +322,15 @@ ALLOWED_TABLES = {
     "raw.signal_job_change_payloads",
     "raw.signal_job_posting_payloads",
     "raw.signal_promotion_payloads",
+    # Raw - Phase 4: Company Enrichment (8 tables)
+    "raw.company_customer_claygent_payloads",
+    "raw.company_enrich_similar_batches",
+    "raw.company_enrich_similar_queue",
+    "raw.company_enrich_similar_raw",
+    "raw.company_vc_investors",
+    "raw.crunchbase_domain_inference_payloads",
+    "raw.leadmagic_company_enrichment",
+    "raw.manual_company_customers",
 }
 
 
