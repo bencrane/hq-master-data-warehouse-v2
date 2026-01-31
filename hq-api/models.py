@@ -168,3 +168,30 @@ class Company(BaseModel):
 class CompaniesResponse(BaseModel):
     data: List[Company]
     meta: PaginationMeta
+
+
+# Person Models
+class Person(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    id: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    linkedin_slug: Optional[str] = None
+    full_name: Optional[str] = None
+    core_company_id: Optional[str] = None
+    linkedin_url_type: Optional[str] = None
+    linkedin_user_profile_urn: Optional[str] = None
+    person_city: Optional[str] = None
+    person_state: Optional[str] = None
+    person_country: Optional[str] = None
+    matched_cleaned_job_title: Optional[str] = None
+    matched_job_function: Optional[str] = None
+    matched_seniority: Optional[str] = None
+    job_start_date: Optional[date] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class PeopleResponse(BaseModel):
+    data: List[Person]
+    meta: PaginationMeta
