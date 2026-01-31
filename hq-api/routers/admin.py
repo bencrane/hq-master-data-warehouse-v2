@@ -331,6 +331,25 @@ ALLOWED_TABLES = {
     "raw.crunchbase_domain_inference_payloads",
     "raw.leadmagic_company_enrichment",
     "raw.manual_company_customers",
+    # Raw - Phase 5: ICP, Case Studies, Email, VC, Misc (18 tables)
+    "raw.case_study_buyers_payloads",
+    "raw.case_study_extraction_payloads",
+    "raw.cb_vc_portfolio_payloads",
+    "raw.email_anymailfinder",
+    "raw.email_leadmagic",
+    "raw.email_waterfall_jobs",
+    "raw.icp_fit_criterion",
+    "raw.icp_industries",
+    "raw.icp_job_titles",
+    "raw.icp_payloads",
+    "raw.icp_value_proposition",
+    "raw.icp_verdict_payloads",
+    "raw.nostra_ecom_companies",
+    "raw.nostra_ecom_people",
+    "raw.vc_crunchbase_portfolios",
+    "raw.vc_firms",
+    "raw.vc_portfolio_companies",
+    "raw.vc_portfolio_payloads",
 }
 
 
