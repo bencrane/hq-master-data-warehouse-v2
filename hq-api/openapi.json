@@ -2430,6 +2430,135 @@
         }
       }
     },
+    "/api/admin/gaps/recipes": {
+      "get": {
+        "tags": [
+          "admin",
+          "gaps"
+        ],
+        "summary": "Get Gap Recipes",
+        "description": "Get all available gap analysis recipes.",
+        "operationId": "get_gap_recipes_api_admin_gaps_recipes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GapRecipeListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/gaps/recipes/{recipe_id}/count": {
+      "get": {
+        "tags": [
+          "admin",
+          "gaps"
+        ],
+        "summary": "Get Gap Recipe Count",
+        "description": "Get the count of records matching a gap recipe.",
+        "operationId": "get_gap_recipe_count_api_admin_gaps_recipes__recipe_id__count_get",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The recipe ID",
+              "title": "Recipe Id"
+            },
+            "description": "The recipe ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GapCountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/gaps/recipes/{recipe_id}/sample": {
+      "get": {
+        "tags": [
+          "admin",
+          "gaps"
+        ],
+        "summary": "Get Gap Recipe Sample",
+        "description": "Get sample records matching a gap recipe.",
+        "operationId": "get_gap_recipe_sample_api_admin_gaps_recipes__recipe_id__sample_get",
+        "parameters": [
+          {
+            "name": "recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The recipe ID",
+              "title": "Recipe Id"
+            },
+            "description": "The recipe ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of sample records to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of sample records to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GapSampleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/extracted/company_discovery/count": {
       "get": {
         "tags": [
@@ -7164,6 +7293,149 @@
           "name"
         ],
         "title": "FilterOption"
+      },
+      "GapCountResponse": {
+        "properties": {
+          "recipe_id": {
+            "type": "string",
+            "title": "Recipe Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "source_table": {
+            "type": "string",
+            "title": "Source Table"
+          },
+          "target_table": {
+            "type": "string",
+            "title": "Target Table"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe_id",
+          "label",
+          "count",
+          "source_table",
+          "target_table"
+        ],
+        "title": "GapCountResponse"
+      },
+      "GapRecipe": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "source_table": {
+            "type": "string",
+            "title": "Source Table"
+          },
+          "target_table": {
+            "type": "string",
+            "title": "Target Table"
+          },
+          "join_column": {
+            "type": "string",
+            "title": "Join Column"
+          },
+          "comparison": {
+            "type": "string",
+            "enum": [
+              "not_in_target",
+              "in_target"
+            ],
+            "title": "Comparison"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "P0",
+              "P1",
+              "P2"
+            ],
+            "title": "Priority"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "description",
+          "source_table",
+          "target_table",
+          "join_column",
+          "comparison",
+          "priority"
+        ],
+        "title": "GapRecipe"
+      },
+      "GapRecipeListResponse": {
+        "properties": {
+          "recipes": {
+            "items": {
+              "$ref": "#/components/schemas/GapRecipe"
+            },
+            "type": "array",
+            "title": "Recipes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipes"
+        ],
+        "title": "GapRecipeListResponse"
+      },
+      "GapSampleResponse": {
+        "properties": {
+          "recipe_id": {
+            "type": "string",
+            "title": "Recipe Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "sample": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sample"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe_id",
+          "label",
+          "count",
+          "sample",
+          "limit"
+        ],
+        "title": "GapSampleResponse"
       },
       "HTTPValidationError": {
         "properties": {
