@@ -306,6 +306,18 @@ ALLOWED_TABLES = {
     "raw.salesnav_scrapes",
     "raw.salesnav_scrapes_company_address_payloads",
     "raw.salesnav_scrapes_person_payloads",
+    # Raw - Phase 2: Clay Webhooks (11 tables)
+    "raw.clay_cleaned_company_names",
+    "raw.clay_job_change_payloads",
+    "raw.clay_job_function_mapping",
+    "raw.clay_job_posting_payloads",
+    "raw.clay_new_hire_payloads",
+    "raw.clay_news_fundraising_payloads",
+    "raw.clay_promotion_payloads",
+    "raw.clay_seniority_mapping",
+    "raw.claygent_customers_raw",
+    "raw.claygent_customers_structured_raw",
+    "raw.claygent_customers_v2_raw",
 }
 
 
