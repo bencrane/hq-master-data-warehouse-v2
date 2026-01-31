@@ -47,8 +47,14 @@ class CompanyCustomersStructuredRequest(BaseModel):
     origin_company_domain: str
     origin_company_name: Optional[str] = None
     origin_company_linkedin_url: Optional[str] = None
+    # Accept customers at root level (Clay's actual format)
+    customers: Optional[List[CustomerItem]] = None
+    response: Optional[str] = None
+    reasoning: Optional[str] = None
+    confidence: Optional[str] = None
+    stepsTaken: Optional[List[str]] = None
+    # Also accept nested format
     claygent_output: Optional[StructuredClaygentOutput] = None
-    # Alternative field names Clay might use
     customers_claygent: Optional[StructuredClaygentOutput] = None
     batch_name: Optional[str] = None
 
@@ -69,22 +75,24 @@ def ingest_company_customers_structured(request: CompanyCustomersStructuredReque
     supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
     supabase = create_client(supabase_url, supabase_key)
 
-    # Get claygent output from either field name
-    claygent = request.claygent_output or request.customers_claygent
-
-    if not claygent:
-        return {
-            "success": False,
-            "error": "No claygent_output or customers_claygent found",
-            "domain": request.origin_company_domain,
-        }
-
     try:
         # Normalize domain
         domain = request.origin_company_domain.lower().strip()
 
-        # Get customers list (may be empty or None)
-        customers_list = claygent.customers or []
+        # Get customers - check root level first, then nested
+        customers_list = request.customers or []
+        confidence = request.confidence
+        reasoning = request.reasoning
+        steps = request.stepsTaken
+
+        # Fall back to nested format if root level empty
+        if not customers_list:
+            claygent = request.claygent_output or request.customers_claygent
+            if claygent:
+                customers_list = claygent.customers or []
+                confidence = claygent.confidence
+                reasoning = claygent.reasoning
+                steps = claygent.stepsTaken
 
         # Store raw payload
         raw_insert = (
@@ -95,15 +103,15 @@ def ingest_company_customers_structured(request: CompanyCustomersStructuredReque
                 "origin_company_name": request.origin_company_name,
                 "origin_company_linkedin_url": request.origin_company_linkedin_url,
                 "batch_name": request.batch_name,
-                "confidence": claygent.confidence,
+                "confidence": confidence,
                 "raw_payload": {
                     "customers": [
                         {"url": c.url, "companyName": c.companyName, "hasCaseStudy": c.hasCaseStudy}
                         for c in customers_list
                     ],
-                    "reasoning": claygent.reasoning,
-                    "confidence": claygent.confidence,
-                    "stepsTaken": claygent.stepsTaken,
+                    "reasoning": reasoning,
+                    "confidence": confidence,
+                    "stepsTaken": steps,
                 },
             })
             .execute()
@@ -124,7 +132,7 @@ def ingest_company_customers_structured(request: CompanyCustomersStructuredReque
                 "customer_name": customer.companyName,
                 "case_study_url": customer.url,
                 "has_case_study": customer.hasCaseStudy,
-                "confidence": claygent.confidence,
+                "confidence": confidence,
             }).execute()
             extracted_count += 1
             customer_names.append(customer.companyName)
@@ -135,7 +143,7 @@ def ingest_company_customers_structured(request: CompanyCustomersStructuredReque
             "domain": domain,
             "customers_extracted": extracted_count,
             "customer_names": customer_names,
-            "confidence": claygent.confidence,
+            "confidence": confidence,
         }
 
     except Exception as e:
