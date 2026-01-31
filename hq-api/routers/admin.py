@@ -281,6 +281,10 @@ ALLOWED_TABLES = {
     # Derived - 2 tables
     "derived.company_icp_industries_from_customers",
     "derived.icp_job_titles_from_champions",
+    # Mapped - 3 tables
+    "mapped.case_study_champions",
+    "mapped.company_discovery",
+    "mapped.person_discovery",
     # Raw
     "raw.claygent_customers_v2_raw",
 }
