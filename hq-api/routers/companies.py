@@ -257,7 +257,7 @@ async def check_has_customers(domain: str):
     }
 
 
-@router.post("/has-customers")
+@router.post("/check-has-customers")
 async def check_has_customers_post(payload: dict):
     """
     Simple check via POST: does this company have customer data?
