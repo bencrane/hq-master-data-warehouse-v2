@@ -257,6 +257,32 @@ async def check_has_customers(domain: str):
     }
 
 
+@router.post("/has-customers")
+async def check_has_customers_post(payload: dict):
+    """
+    Simple check via POST: does this company have customer data?
+    Payload: { "domain": "example.com" }
+    Returns: { "has_customers": true/false, "count": N }
+    """
+    domain = payload.get("domain", "").lower().strip().rstrip("/")
+    if not domain:
+        return {"error": "domain is required", "has_customers": False, "count": 0}
+
+    result = (
+        core()
+        .from_("company_customers")
+        .select("customer_domain", count="exact", head=True)
+        .eq("origin_company_domain", domain)
+        .execute()
+    )
+    count = result.count or 0
+    return {
+        "domain": domain,
+        "has_customers": count > 0,
+        "count": count
+    }
+
+
 @router.get("/{domain}/customers")
 async def get_company_customers(
     domain: str,
