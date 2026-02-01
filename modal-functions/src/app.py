@@ -87,6 +87,12 @@ from ingest.icp_industries import ingest_icp_industries
 from ingest.icp_job_titles import ingest_icp_job_titles
 from ingest.icp_value_proposition import ingest_icp_value_proposition
 from ingest.icp_fit_criterion import ingest_icp_fit_criterion
+from ingest.builtwith import ingest_builtwith
+from ingest.predictleads_techstack import ingest_predictleads_techstack
+from ingest.job_posting import ingest_job_posting
+from ingest.company_classification import ingest_company_classification
+from ingest.linkedin_ads import ingest_linkedin_ads
+from ingest.google_ads import ingest_google_ads
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -211,4 +217,10 @@ __all__ = [
     "ingest_icp_job_titles",
     "ingest_icp_value_proposition",
     "ingest_icp_fit_criterion",
+    "ingest_builtwith",
+    "ingest_predictleads_techstack",
+    "ingest_job_posting",
+    "ingest_company_classification",
+    "ingest_linkedin_ads",
+    "ingest_google_ads",
 ]
