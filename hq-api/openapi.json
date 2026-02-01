@@ -282,6 +282,24 @@
             }
           },
           {
+            "name": "business_model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by business model: B2B, B2C, or Both",
+              "title": "Business Model"
+            },
+            "description": "Filter by business model: B2B, B2C, or Both"
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,

@@ -102,6 +102,7 @@ async def get_leads(
     full_name: Optional[str] = Query(None),
     job_start_date_gte: Optional[date] = Query(None),
     job_start_date_lte: Optional[date] = Query(None),
+    business_model: Optional[str] = Query(None, description="Filter by business model: B2B, B2C, or Both"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -117,13 +118,36 @@ async def get_leads(
             "job_start_date_lte": str(job_start_date_lte) if job_start_date_lte else None,
         }
 
+        # Get domains matching business model filter if specified
+        business_model_domains = None
+        if business_model:
+            bm_query = core().from_("company_business_model").select("domain")
+            if business_model.upper() == "B2B":
+                bm_query = bm_query.eq("is_b2b", True)
+            elif business_model.upper() == "B2C":
+                bm_query = bm_query.eq("is_b2c", True)
+            elif business_model.upper() == "BOTH":
+                bm_query = bm_query.eq("is_b2b", True).eq("is_b2c", True)
+            bm_result = bm_query.execute()
+            business_model_domains = [row["domain"] for row in bm_result.data]
+            if not business_model_domains:
+                # No matching domains, return empty result
+                return LeadsResponse(
+                    data=[],
+                    meta=PaginationMeta(total=0, limit=limit, offset=offset)
+                )
+
         count_query = core().from_("leads").select("person_id", count="exact", head=True)
         count_query = apply_lead_filters(count_query, params)
+        if business_model_domains is not None:
+            count_query = count_query.in_("company_domain", business_model_domains)
         count_result = count_query.execute()
         total = count_result.count or 0
 
         data_query = core().from_("leads").select(LEAD_COLUMNS)
         data_query = apply_lead_filters(data_query, params)
+        if business_model_domains is not None:
+            data_query = data_query.in_("company_domain", business_model_domains)
         data_query = data_query.range(offset, offset + limit - 1)
         data_result = data_query.execute()
 
