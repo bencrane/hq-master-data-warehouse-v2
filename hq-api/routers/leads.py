@@ -159,6 +159,76 @@ async def get_leads(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
+@router.get("/quick", response_model=LeadsResponse)
+async def get_leads_quick(
+    job_function: Optional[str] = Query(None, description="Filter by job function (comma-separated)"),
+    seniority: Optional[str] = Query(None, description="Filter by seniority (comma-separated)"),
+    industry: Optional[str] = Query(None, description="Filter by industry (comma-separated)"),
+    employee_range: Optional[str] = Query(None, description="Filter by employee range (comma-separated)"),
+    person_city: Optional[str] = Query(None),
+    person_state: Optional[str] = Query(None),
+    person_country: Optional[str] = Query(None),
+    company_city: Optional[str] = Query(None),
+    company_state: Optional[str] = Query(None),
+    company_country: Optional[str] = Query(None),
+    company_domain: Optional[str] = Query(None),
+    company_name: Optional[str] = Query(None),
+    job_title: Optional[str] = Query(None),
+    full_name: Optional[str] = Query(None),
+    job_start_date_gte: Optional[date] = Query(None),
+    job_start_date_lte: Optional[date] = Query(None),
+    business_model: Optional[str] = Query(None, description="Filter by business model: B2B, B2C, or Both"),
+    limit: int = Query(50, ge=1, le=500, description="Max results to return (up to 500)"),
+):
+    """
+    Fast leads endpoint for demos - skips the expensive count query.
+    Returns up to `limit` results quickly without pagination metadata.
+    """
+    try:
+        params = {
+            "job_function": job_function, "seniority": seniority, "industry": industry,
+            "employee_range": employee_range, "person_city": person_city, "person_state": person_state,
+            "person_country": person_country, "company_city": company_city, "company_state": company_state,
+            "company_country": company_country, "company_domain": company_domain, "company_name": company_name,
+            "job_title": job_title, "full_name": full_name,
+            "job_start_date_gte": str(job_start_date_gte) if job_start_date_gte else None,
+            "job_start_date_lte": str(job_start_date_lte) if job_start_date_lte else None,
+        }
+
+        # Get domains matching business model filter if specified
+        business_model_domains = None
+        if business_model:
+            bm_query = core().from_("company_business_model").select("domain")
+            if business_model.upper() == "B2B":
+                bm_query = bm_query.eq("is_b2b", True)
+            elif business_model.upper() == "B2C":
+                bm_query = bm_query.eq("is_b2c", True)
+            elif business_model.upper() == "BOTH":
+                bm_query = bm_query.eq("is_b2b", True).eq("is_b2c", True)
+            bm_result = bm_query.execute()
+            business_model_domains = [row["domain"] for row in bm_result.data]
+            if not business_model_domains:
+                return LeadsResponse(
+                    data=[],
+                    meta=PaginationMeta(total=0, limit=limit, offset=0)
+                )
+
+        # Skip count query - just fetch data directly
+        data_query = core().from_("leads").select(LEAD_COLUMNS)
+        data_query = apply_lead_filters(data_query, params)
+        if business_model_domains is not None:
+            data_query = data_query.in_("company_domain", business_model_domains)
+        data_query = data_query.limit(limit)
+        data_result = data_query.execute()
+
+        return LeadsResponse(
+            data=[Lead(**row) for row in data_result.data],
+            meta=PaginationMeta(total=len(data_result.data), limit=limit, offset=0)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
 @router.get("/recently-promoted", response_model=LeadsRecentlyPromotedResponse)
 async def get_leads_recently_promoted(
     promoted_within_days: int = Query(180),
