@@ -95,6 +95,21 @@ from ingest.linkedin_ads import ingest_linkedin_ads
 from ingest.google_ads import ingest_google_ads
 from ingest.meta_ads import ingest_meta_ads
 from ingest.sales_motion import infer_sales_motion
+from ingest.free_trial import infer_free_trial
+from ingest.pricing_visibility import infer_pricing_visibility
+from ingest.pricing_model import infer_pricing_model
+from ingest.billing_default import infer_billing_default
+from ingest.number_of_tiers import infer_number_of_tiers
+from ingest.add_ons_offered import infer_add_ons_offered
+from ingest.enterprise_tier_exists import infer_enterprise_tier_exists
+from ingest.security_compliance_gating import infer_security_gating
+from ingest.annual_commitment_required import infer_annual_commitment
+from ingest.plan_naming_style import infer_plan_naming_style
+from ingest.custom_pricing_mentioned import infer_custom_pricing_mentioned
+from ingest.money_back_guarantee import infer_money_back_guarantee
+from ingest.comparison_page_exists import infer_comparison_page_exists
+from ingest.minimum_seats import infer_minimum_seats
+from ingest.webinars import infer_webinars
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -227,4 +242,19 @@ __all__ = [
     "ingest_google_ads",
     "ingest_meta_ads",
     "infer_sales_motion",
+    "infer_free_trial",
+    "infer_pricing_visibility",
+    "infer_pricing_model",
+    "infer_billing_default",
+    "infer_number_of_tiers",
+    "infer_add_ons_offered",
+    "infer_enterprise_tier_exists",
+    "infer_security_gating",
+    "infer_annual_commitment",
+    "infer_plan_naming_style",
+    "infer_custom_pricing_mentioned",
+    "infer_money_back_guarantee",
+    "infer_comparison_page_exists",
+    "infer_minimum_seats",
+    "infer_webinars",
 ]

@@ -1,7 +1,7 @@
 """
-Sales Motion Inference
+Billing Default Inference
 
-Uses Gemini to analyze a company's pricing page and classify their sales motion.
+Uses Gemini to analyze a company's pricing page and determine default billing period.
 
 Expects:
 {
@@ -12,8 +12,7 @@ Expects:
 
 Returns:
 {
-  "sales_motion": "self_serve" | "sales_led" | "hybrid",
-  "contact_sales_cta": "yes" | "no",
+  "billing_default": "monthly" | "annual" | "both_annual_emphasized" | "both_monthly_emphasized",
   "explanation": "reason for classification"
 }
 """
@@ -32,13 +31,12 @@ from config import app, image
     ],
 )
 @modal.fastapi_endpoint(method="POST")
-def infer_sales_motion(request: dict) -> dict:
+def infer_billing_default(request: dict) -> dict:
     import requests
     from bs4 import BeautifulSoup
     import google.generativeai as genai
     from supabase import create_client
 
-    # Setup clients
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
     supabase_url = os.environ["SUPABASE_URL"]
     supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
@@ -58,7 +56,7 @@ def infer_sales_motion(request: dict) -> dict:
         # 1. Store raw payload
         raw_insert = (
             supabase.schema("raw")
-            .from_("sales_motion_payloads")
+            .from_("billing_default_payloads")
             .insert({
                 "domain": domain,
                 "pricing_page_url": pricing_page_url,
@@ -90,19 +88,14 @@ def infer_sales_motion(request: dict) -> dict:
 
         # Parse HTML and extract text
         soup = BeautifulSoup(response.text, "html.parser")
-
-        # Remove script and style elements
         for script in soup(["script", "style", "nav", "footer", "header"]):
             script.decompose()
-
-        page_text = soup.get_text(separator=" ", strip=True)
-        # Truncate to avoid token limits
-        page_text = page_text[:8000]
+        page_text = soup.get_text(separator=" ", strip=True)[:8000]
 
         # 3. Send to Gemini for classification
         company_context = f"Company: {company_name}" if company_name else f"Domain: {domain}"
 
-        prompt = f"""Analyze this pricing page content and classify the company's sales motion.
+        prompt = f"""Analyze this pricing page content and determine the default billing period.
 
 {company_context}
 Pricing Page URL: {pricing_page_url}
@@ -110,17 +103,14 @@ Pricing Page URL: {pricing_page_url}
 Pricing Page Content:
 {page_text}
 
-Classify the sales motion as ONE of:
-- self_serve: Customers can sign up, see pricing, and pay online without talking to sales
-- sales_led: Customers must contact sales, book a demo, or request a quote to get pricing
-- hybrid: Company offers both self-serve options AND sales-assisted options
-
-Also determine if there is a "Contact Sales" CTA:
-- yes: Page has "Contact Sales", "Talk to Sales", "Contact Us", "Get a Demo", "Book a Demo", or similar CTA
-- no: No contact sales CTA visible
+Classify as ONE of:
+- monthly: Only monthly billing shown, or monthly is the default/emphasized option
+- annual: Only annual billing shown, or annual is the default/emphasized option
+- both_annual_emphasized: Both options available but annual is pre-selected, highlighted, or shows "save X%" prominently
+- both_monthly_emphasized: Both options available but monthly is pre-selected or shown first without annual emphasis
 
 Respond in this exact JSON format:
-{{"sales_motion": "self_serve|sales_led|hybrid", "contact_sales_cta": "yes|no", "explanation": "1-2 sentence explanation"}}
+{{"billing_default": "monthly|annual|both_annual_emphasized|both_monthly_emphasized", "explanation": "1-2 sentence explanation"}}
 
 Only return the JSON, nothing else."""
 
@@ -130,7 +120,6 @@ Only return the JSON, nothing else."""
         # Parse Gemini response
         import json
         response_text = gemini_response.text.strip()
-        # Clean up markdown code blocks if present
         if response_text.startswith("```"):
             response_text = response_text.split("```")[1]
             if response_text.startswith("json"):
@@ -139,44 +128,29 @@ Only return the JSON, nothing else."""
 
         try:
             result = json.loads(response_text)
-            sales_motion = result.get("sales_motion", "").lower()
-            contact_sales_cta = result.get("contact_sales_cta", "").lower()
+            billing_default = result.get("billing_default", "").lower()
             explanation = result.get("explanation", "")
         except json.JSONDecodeError:
-            # Fallback parsing
-            sales_motion = "unknown"
-            contact_sales_cta = "unknown"
+            billing_default = "unknown"
             explanation = response_text
-            if "self_serve" in response_text.lower() or "self-serve" in response_text.lower():
-                sales_motion = "self_serve"
-            elif "sales_led" in response_text.lower() or "sales-led" in response_text.lower():
-                sales_motion = "sales_led"
-            elif "hybrid" in response_text.lower():
-                sales_motion = "hybrid"
 
-        # Validate sales_motion value
-        if sales_motion not in ["self_serve", "sales_led", "hybrid"]:
-            sales_motion = "unknown"
-
-        # Validate contact_sales_cta value
-        if contact_sales_cta not in ["yes", "no"]:
-            contact_sales_cta = "unknown"
+        valid_values = ["monthly", "annual", "both_annual_emphasized", "both_monthly_emphasized"]
+        if billing_default not in valid_values:
+            billing_default = "unknown"
 
         # 4. Insert into extracted
-        supabase.schema("extracted").from_("company_sales_motion").insert({
+        supabase.schema("extracted").from_("company_billing_default").insert({
             "raw_payload_id": raw_payload_id,
             "domain": domain,
             "pricing_page_url": pricing_page_url,
-            "sales_motion": sales_motion,
-            "contact_sales_cta": contact_sales_cta,
+            "billing_default": billing_default,
             "explanation": explanation,
         }).execute()
 
         # 5. Upsert into core
-        supabase.schema("core").from_("company_sales_motion").upsert({
+        supabase.schema("core").from_("company_billing_default").upsert({
             "domain": domain,
-            "sales_motion": sales_motion,
-            "contact_sales_cta": contact_sales_cta,
+            "billing_default": billing_default,
             "explanation": explanation,
             "last_checked_at": "now()",
         }, on_conflict="domain").execute()
@@ -185,8 +159,7 @@ Only return the JSON, nothing else."""
             "success": True,
             "domain": domain,
             "raw_payload_id": str(raw_payload_id),
-            "sales_motion": sales_motion,
-            "contact_sales_cta": contact_sales_cta,
+            "billing_default": billing_default,
             "explanation": explanation,
         }
 

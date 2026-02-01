@@ -1,7 +1,7 @@
 """
-Sales Motion Inference
+Plan Naming Style Inference
 
-Uses Gemini to analyze a company's pricing page and classify their sales motion.
+Uses Gemini to analyze a company's pricing page and determine how they name their tiers.
 
 Expects:
 {
@@ -12,8 +12,7 @@ Expects:
 
 Returns:
 {
-  "sales_motion": "self_serve" | "sales_led" | "hybrid",
-  "contact_sales_cta": "yes" | "no",
+  "plan_naming_style": "generic" | "persona_based" | "feature_based" | "other",
   "explanation": "reason for classification"
 }
 """
@@ -32,13 +31,12 @@ from config import app, image
     ],
 )
 @modal.fastapi_endpoint(method="POST")
-def infer_sales_motion(request: dict) -> dict:
+def infer_plan_naming_style(request: dict) -> dict:
     import requests
     from bs4 import BeautifulSoup
     import google.generativeai as genai
     from supabase import create_client
 
-    # Setup clients
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
     supabase_url = os.environ["SUPABASE_URL"]
     supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
@@ -58,7 +56,7 @@ def infer_sales_motion(request: dict) -> dict:
         # 1. Store raw payload
         raw_insert = (
             supabase.schema("raw")
-            .from_("sales_motion_payloads")
+            .from_("plan_naming_style_payloads")
             .insert({
                 "domain": domain,
                 "pricing_page_url": pricing_page_url,
@@ -90,19 +88,14 @@ def infer_sales_motion(request: dict) -> dict:
 
         # Parse HTML and extract text
         soup = BeautifulSoup(response.text, "html.parser")
-
-        # Remove script and style elements
         for script in soup(["script", "style", "nav", "footer", "header"]):
             script.decompose()
-
-        page_text = soup.get_text(separator=" ", strip=True)
-        # Truncate to avoid token limits
-        page_text = page_text[:8000]
+        page_text = soup.get_text(separator=" ", strip=True)[:8000]
 
         # 3. Send to Gemini for classification
         company_context = f"Company: {company_name}" if company_name else f"Domain: {domain}"
 
-        prompt = f"""Analyze this pricing page content and classify the company's sales motion.
+        prompt = f"""Analyze this pricing page content and determine the plan naming style.
 
 {company_context}
 Pricing Page URL: {pricing_page_url}
@@ -110,17 +103,14 @@ Pricing Page URL: {pricing_page_url}
 Pricing Page Content:
 {page_text}
 
-Classify the sales motion as ONE of:
-- self_serve: Customers can sign up, see pricing, and pay online without talking to sales
-- sales_led: Customers must contact sales, book a demo, or request a quote to get pricing
-- hybrid: Company offers both self-serve options AND sales-assisted options
-
-Also determine if there is a "Contact Sales" CTA:
-- yes: Page has "Contact Sales", "Talk to Sales", "Contact Us", "Get a Demo", "Book a Demo", or similar CTA
-- no: No contact sales CTA visible
+Classify the plan naming style as ONE of:
+- generic: Standard tier names like "Free", "Basic", "Starter", "Pro", "Plus", "Premium", "Enterprise", "Growth"
+- persona_based: Named after target users like "Individual", "Team", "Business", "Developer", "Agency", "Freelancer", "Small Business"
+- feature_based: Named after key features or capabilities like "Analytics", "Automation", "Scale", "Core", "Complete"
+- other: Creative, branded, or unique names that don't fit above categories
 
 Respond in this exact JSON format:
-{{"sales_motion": "self_serve|sales_led|hybrid", "contact_sales_cta": "yes|no", "explanation": "1-2 sentence explanation"}}
+{{"plan_naming_style": "generic|persona_based|feature_based|other", "explanation": "1-2 sentence explanation listing the plan names"}}
 
 Only return the JSON, nothing else."""
 
@@ -130,7 +120,6 @@ Only return the JSON, nothing else."""
         # Parse Gemini response
         import json
         response_text = gemini_response.text.strip()
-        # Clean up markdown code blocks if present
         if response_text.startswith("```"):
             response_text = response_text.split("```")[1]
             if response_text.startswith("json"):
@@ -139,44 +128,29 @@ Only return the JSON, nothing else."""
 
         try:
             result = json.loads(response_text)
-            sales_motion = result.get("sales_motion", "").lower()
-            contact_sales_cta = result.get("contact_sales_cta", "").lower()
+            plan_naming_style = result.get("plan_naming_style", "").lower()
             explanation = result.get("explanation", "")
         except json.JSONDecodeError:
-            # Fallback parsing
-            sales_motion = "unknown"
-            contact_sales_cta = "unknown"
+            plan_naming_style = "unknown"
             explanation = response_text
-            if "self_serve" in response_text.lower() or "self-serve" in response_text.lower():
-                sales_motion = "self_serve"
-            elif "sales_led" in response_text.lower() or "sales-led" in response_text.lower():
-                sales_motion = "sales_led"
-            elif "hybrid" in response_text.lower():
-                sales_motion = "hybrid"
 
-        # Validate sales_motion value
-        if sales_motion not in ["self_serve", "sales_led", "hybrid"]:
-            sales_motion = "unknown"
-
-        # Validate contact_sales_cta value
-        if contact_sales_cta not in ["yes", "no"]:
-            contact_sales_cta = "unknown"
+        valid_values = ["generic", "persona_based", "feature_based", "other"]
+        if plan_naming_style not in valid_values:
+            plan_naming_style = "unknown"
 
         # 4. Insert into extracted
-        supabase.schema("extracted").from_("company_sales_motion").insert({
+        supabase.schema("extracted").from_("company_plan_naming_style").insert({
             "raw_payload_id": raw_payload_id,
             "domain": domain,
             "pricing_page_url": pricing_page_url,
-            "sales_motion": sales_motion,
-            "contact_sales_cta": contact_sales_cta,
+            "plan_naming_style": plan_naming_style,
             "explanation": explanation,
         }).execute()
 
         # 5. Upsert into core
-        supabase.schema("core").from_("company_sales_motion").upsert({
+        supabase.schema("core").from_("company_plan_naming_style").upsert({
             "domain": domain,
-            "sales_motion": sales_motion,
-            "contact_sales_cta": contact_sales_cta,
+            "plan_naming_style": plan_naming_style,
             "explanation": explanation,
             "last_checked_at": "now()",
         }, on_conflict="domain").execute()
@@ -185,8 +159,7 @@ Only return the JSON, nothing else."""
             "success": True,
             "domain": domain,
             "raw_payload_id": str(raw_payload_id),
-            "sales_motion": sales_motion,
-            "contact_sales_cta": contact_sales_cta,
+            "plan_naming_style": plan_naming_style,
             "explanation": explanation,
         }
 
