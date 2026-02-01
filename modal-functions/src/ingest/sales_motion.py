@@ -127,15 +127,6 @@ Only return the JSON, nothing else."""
         model = genai.GenerativeModel("gemini-3-flash-preview")
         gemini_response = model.generate_content(prompt)
 
-        # Extract token usage
-        usage = gemini_response.usage_metadata
-        input_tokens = usage.prompt_token_count if usage else 0
-        output_tokens = usage.candidates_token_count if usage else 0
-        total_tokens = usage.total_token_count if usage else 0
-
-        # Calculate estimated cost (Gemini Flash pricing: $0.10/1M input, $0.40/1M output)
-        cost_usd = (input_tokens * 0.10 / 1_000_000) + (output_tokens * 0.40 / 1_000_000)
-
         # Parse Gemini response
         import json
         response_text = gemini_response.text.strip()
@@ -197,12 +188,6 @@ Only return the JSON, nothing else."""
             "sales_motion": sales_motion,
             "contact_sales_cta": contact_sales_cta,
             "explanation": explanation,
-            "tokens": {
-                "input": input_tokens,
-                "output": output_tokens,
-                "total": total_tokens,
-            },
-            "cost_usd": round(cost_usd, 6),
         }
 
     except Exception as e:
