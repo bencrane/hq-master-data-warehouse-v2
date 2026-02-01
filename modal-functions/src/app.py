@@ -93,6 +93,8 @@ from ingest.job_posting import ingest_job_posting
 from ingest.company_classification import ingest_company_classification
 from ingest.linkedin_ads import ingest_linkedin_ads
 from ingest.google_ads import ingest_google_ads
+from ingest.meta_ads import ingest_meta_ads
+from ingest.sales_motion import infer_sales_motion
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -223,4 +225,6 @@ __all__ = [
     "ingest_company_classification",
     "ingest_linkedin_ads",
     "ingest_google_ads",
+    "ingest_meta_ads",
+    "infer_sales_motion",
 ]

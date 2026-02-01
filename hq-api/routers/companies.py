@@ -687,6 +687,224 @@ async def get_companies_by_job_title(
     }
 
 
+@router.get("/by-google-ads")
+async def get_companies_running_google_ads(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get companies running Google ads.
+    """
+    # Get count
+    count_result = (
+        core()
+        .from_("company_google_ads")
+        .select("id", count="exact", head=True)
+        .eq("is_running_ads", True)
+        .execute()
+    )
+    total = count_result.count or 0
+
+    # Get domains running ads
+    ads_result = (
+        core()
+        .from_("company_google_ads")
+        .select("domain, ad_count, advertiser_id, last_checked_at")
+        .eq("is_running_ads", True)
+        .order("ad_count", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+
+    domains = [row["domain"] for row in ads_result.data]
+
+    # Get company details
+    companies = []
+    if domains:
+        companies_result = (
+            core()
+            .from_("companies_full")
+            .select(COMPANY_COLUMNS)
+            .in_("domain", domains)
+            .execute()
+        )
+        # Merge with ad data
+        company_map = {c["domain"]: c for c in companies_result.data}
+        for ad_row in ads_result.data:
+            if ad_row["domain"] in company_map:
+                merged = {**company_map[ad_row["domain"]], "ad_count": ad_row["ad_count"]}
+                companies.append(merged)
+
+    return {
+        "data": companies,
+        "meta": {"total": total, "limit": limit, "offset": offset}
+    }
+
+
+@router.get("/by-linkedin-ads")
+async def get_companies_running_linkedin_ads(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get companies running LinkedIn ads.
+    """
+    # Get count
+    count_result = (
+        core()
+        .from_("company_linkedin_ads")
+        .select("id", count="exact", head=True)
+        .eq("is_running_ads", True)
+        .execute()
+    )
+    total = count_result.count or 0
+
+    # Get domains running ads
+    ads_result = (
+        core()
+        .from_("company_linkedin_ads")
+        .select("domain, ad_count, page_id, last_checked_at")
+        .eq("is_running_ads", True)
+        .order("ad_count", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+
+    domains = [row["domain"] for row in ads_result.data]
+
+    # Get company details
+    companies = []
+    if domains:
+        companies_result = (
+            core()
+            .from_("companies_full")
+            .select(COMPANY_COLUMNS)
+            .in_("domain", domains)
+            .execute()
+        )
+        company_map = {c["domain"]: c for c in companies_result.data}
+        for ad_row in ads_result.data:
+            if ad_row["domain"] in company_map:
+                merged = {**company_map[ad_row["domain"]], "ad_count": ad_row["ad_count"]}
+                companies.append(merged)
+
+    return {
+        "data": companies,
+        "meta": {"total": total, "limit": limit, "offset": offset}
+    }
+
+
+@router.get("/by-meta-ads")
+async def get_companies_running_meta_ads(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get companies running Meta (Facebook/Instagram) ads.
+    """
+    # Get count
+    count_result = (
+        core()
+        .from_("company_meta_ads")
+        .select("id", count="exact", head=True)
+        .eq("is_running_ads", True)
+        .execute()
+    )
+    total = count_result.count or 0
+
+    # Get domains running ads
+    ads_result = (
+        core()
+        .from_("company_meta_ads")
+        .select("domain, ad_count, page_id, platforms, last_checked_at")
+        .eq("is_running_ads", True)
+        .order("ad_count", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+
+    domains = [row["domain"] for row in ads_result.data]
+
+    # Get company details
+    companies = []
+    if domains:
+        companies_result = (
+            core()
+            .from_("companies_full")
+            .select(COMPANY_COLUMNS)
+            .in_("domain", domains)
+            .execute()
+        )
+        company_map = {c["domain"]: c for c in companies_result.data}
+        for ad_row in ads_result.data:
+            if ad_row["domain"] in company_map:
+                merged = {
+                    **company_map[ad_row["domain"]],
+                    "ad_count": ad_row["ad_count"],
+                    "platforms": ad_row["platforms"],
+                }
+                companies.append(merged)
+
+    return {
+        "data": companies,
+        "meta": {"total": total, "limit": limit, "offset": offset}
+    }
+
+
+@router.get("/{domain}/ads")
+async def get_company_ads(domain: str):
+    """
+    Get all ad platform data for a specific company.
+    Returns Google, LinkedIn, and Meta ad status and counts.
+    """
+    domain = domain.lower().strip()
+
+    # Google Ads
+    google_result = (
+        core()
+        .from_("company_google_ads")
+        .select("is_running_ads, ad_count, advertiser_id, last_checked_at")
+        .eq("domain", domain)
+        .limit(1)
+        .execute()
+    )
+    google_ads = google_result.data[0] if google_result.data else None
+
+    # LinkedIn Ads
+    linkedin_result = (
+        core()
+        .from_("company_linkedin_ads")
+        .select("is_running_ads, ad_count, page_id, last_checked_at")
+        .eq("domain", domain)
+        .limit(1)
+        .execute()
+    )
+    linkedin_ads = linkedin_result.data[0] if linkedin_result.data else None
+
+    # Meta Ads
+    meta_result = (
+        core()
+        .from_("company_meta_ads")
+        .select("is_running_ads, ad_count, page_id, platforms, last_checked_at")
+        .eq("domain", domain)
+        .limit(1)
+        .execute()
+    )
+    meta_ads = meta_result.data[0] if meta_result.data else None
+
+    return {
+        "domain": domain,
+        "google_ads": google_ads,
+        "linkedin_ads": linkedin_ads,
+        "meta_ads": meta_ads,
+        "is_running_any_ads": any([
+            google_ads and google_ads.get("is_running_ads"),
+            linkedin_ads and linkedin_ads.get("is_running_ads"),
+            meta_ads and meta_ads.get("is_running_ads"),
+        ])
+    }
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""
