@@ -163,3 +163,43 @@ async def get_countries():
     """Get countries from reference table."""
     result = reference().from_("countries").select("name, code").order("name").execute()
     return result.data
+
+
+@router.get("/technologies")
+async def get_technologies(
+    q: Optional[str] = Query(None, description="Search query for autocomplete"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """
+    Get tech stack technologies from reference table.
+    Used for autocomplete in the Technologies filter.
+    """
+    query = reference().from_("predictleads_technologies").select("title, technology_domain, categories")
+
+    if q:
+        query = query.ilike("title", f"%{q}%")
+
+    query = query.order("title").limit(limit)
+    result = query.execute()
+
+    return [{"name": row["title"], "domain": row.get("technology_domain"), "categories": row.get("categories")} for row in result.data]
+
+
+@router.get("/job-titles")
+async def get_job_titles(
+    q: Optional[str] = Query(None, description="Search query for autocomplete"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """
+    Get normalized job titles from reference table.
+    Used for autocomplete in the Hiring For filter.
+    """
+    query = reference().from_("job_titles").select("normalized_title")
+
+    if q:
+        query = query.ilike("normalized_title", f"%{q}%")
+
+    query = query.order("normalized_title").limit(limit)
+    result = query.execute()
+
+    return [{"name": row["normalized_title"]} for row in result.data]

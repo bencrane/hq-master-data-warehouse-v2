@@ -1007,6 +1007,130 @@
         }
       }
     },
+    "/api/filters/technologies": {
+      "get": {
+        "tags": [
+          "filters"
+        ],
+        "summary": "Get Technologies",
+        "description": "Get tech stack technologies from reference table.\nUsed for autocomplete in the Technologies filter.",
+        "operationId": "get_technologies_api_filters_technologies_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search query for autocomplete",
+              "title": "Q"
+            },
+            "description": "Search query for autocomplete"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/filters/job-titles": {
+      "get": {
+        "tags": [
+          "filters"
+        ],
+        "summary": "Get Job Titles",
+        "description": "Get normalized job titles from reference table.\nUsed for autocomplete in the Hiring For filter.",
+        "operationId": "get_job_titles_api_filters_job_titles_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search query for autocomplete",
+              "title": "Q"
+            },
+            "description": "Search query for autocomplete"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/target-views": {
       "post": {
         "tags": [
@@ -1939,6 +2063,138 @@
               "minimum": 1,
               "default": 25,
               "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/by-technology": {
+      "get": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Companies By Technology",
+        "description": "Get companies using a specific technology.\nSearches the PredictLeads tech stack data.",
+        "operationId": "get_companies_by_technology_api_companies_by_technology_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Technology name (e.g., Salesforce, Snowflake)",
+              "title": "Name"
+            },
+            "description": "Technology name (e.g., Salesforce, Snowflake)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/by-job-title": {
+      "get": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Companies By Job Title",
+        "description": "Get companies hiring for a specific job title.\nSearches the job postings data by normalized_title.",
+        "operationId": "get_companies_by_job_title_api_companies_by_job_title_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Job title (e.g., Software Engineer, Sales)",
+              "title": "Title"
+            },
+            "description": "Job title (e.g., Software Engineer, Sales)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
             }
           }
         ],

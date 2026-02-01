@@ -1,8 +1,8 @@
 import os
 import httpx
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional
-from db import core, extracted
+from typing import Optional, List
+from db import core, extracted, get_pool
 from models import Company, CompaniesResponse, PaginationMeta
 
 MODAL_SIMILAR_COMPANIES_URL = os.getenv(
@@ -569,6 +569,122 @@ async def get_similar_companies(
             "domain": domain,
             "error": str(e),
         }
+
+
+@router.get("/by-technology")
+async def get_companies_by_technology(
+    name: str = Query(..., description="Technology name (e.g., Salesforce, Snowflake)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get companies using a specific technology.
+    Searches the PredictLeads tech stack data.
+    """
+    pool = get_pool()
+
+    # Get domains using this technology
+    query = """
+        SELECT DISTINCT c.domain
+        FROM core.company_predictleads_technologies c
+        JOIN reference.predictleads_technologies r ON r.id = c.technology_id
+        WHERE r.title ILIKE $1
+        ORDER BY c.domain
+        LIMIT $2 OFFSET $3
+    """
+    count_query = """
+        SELECT COUNT(DISTINCT c.domain)
+        FROM core.company_predictleads_technologies c
+        JOIN reference.predictleads_technologies r ON r.id = c.technology_id
+        WHERE r.title ILIKE $1
+    """
+
+    async with pool.acquire() as conn:
+        total = await conn.fetchval(count_query, f"%{name}%")
+        rows = await conn.fetch(query, f"%{name}%", limit, offset)
+
+    domains = [row["domain"] for row in rows]
+
+    # Get company details for these domains
+    if domains:
+        companies_result = (
+            core()
+            .from_("companies_full")
+            .select(COMPANY_COLUMNS)
+            .in_("domain", domains)
+            .execute()
+        )
+        companies = companies_result.data
+    else:
+        companies = []
+
+    return {
+        "data": companies,
+        "meta": {
+            "total": total or 0,
+            "limit": limit,
+            "offset": offset,
+            "technology": name,
+        }
+    }
+
+
+@router.get("/by-job-title")
+async def get_companies_by_job_title(
+    title: str = Query(..., description="Job title (e.g., Software Engineer, Sales)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get companies hiring for a specific job title.
+    Searches the job postings data by normalized_title.
+    """
+    pool = get_pool()
+
+    # Get domains with this job title
+    query = """
+        SELECT DISTINCT c.domain
+        FROM core.company_job_postings c
+        JOIN reference.job_titles r ON r.id = c.job_title_id
+        WHERE r.normalized_title ILIKE $1
+        ORDER BY c.domain
+        LIMIT $2 OFFSET $3
+    """
+    count_query = """
+        SELECT COUNT(DISTINCT c.domain)
+        FROM core.company_job_postings c
+        JOIN reference.job_titles r ON r.id = c.job_title_id
+        WHERE r.normalized_title ILIKE $1
+    """
+
+    async with pool.acquire() as conn:
+        total = await conn.fetchval(count_query, f"%{title}%")
+        rows = await conn.fetch(query, f"%{title}%", limit, offset)
+
+    domains = [row["domain"] for row in rows]
+
+    # Get company details for these domains
+    if domains:
+        companies_result = (
+            core()
+            .from_("companies_full")
+            .select(COMPANY_COLUMNS)
+            .in_("domain", domains)
+            .execute()
+        )
+        companies = companies_result.data
+    else:
+        companies = []
+
+    return {
+        "data": companies,
+        "meta": {
+            "total": total or 0,
+            "limit": limit,
+            "offset": offset,
+            "job_title": title,
+        }
+    }
 
 
 @router.get("/{domain}", response_model=Company)
