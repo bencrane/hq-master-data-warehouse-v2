@@ -5,11 +5,12 @@ Wraps Modal functions for data enrichment operations.
 """
 
 import os
+import json
 import httpx
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
-from db import core, extracted, raw
+from typing import List, Optional, Any
+from db import core, extracted, raw, get_pool
 
 router = APIRouter(prefix="/api/enrichment", tags=["enrichment"])
 
@@ -303,3 +304,98 @@ async def get_queue_status():
             "success": False,
             "error": str(e),
         }
+
+
+# ============================================================================
+# BuiltWith Tech Stack Ingestion
+# ============================================================================
+
+class BuiltWithIngestRequest(BaseModel):
+    domain: str
+    builtwith_payload: List[Any]  # Raw array of technology objects from BuiltWith
+    clay_table_url: Optional[str] = None
+
+
+@router.post("/builtwith")
+async def ingest_builtwith(request: BuiltWithIngestRequest):
+    """
+    Ingest BuiltWith tech stack data for a domain.
+
+    Flow:
+    1. Store raw payload → raw.builtwith_payloads
+    2. Extract each tech → extracted.company_builtwith
+    3. Auto-populate → reference.technologies (ON CONFLICT DO NOTHING)
+    4. Map to core → core.company_technologies
+    """
+    pool = get_pool()
+
+    try:
+        async with pool.acquire() as conn:
+            # 1. Insert raw payload
+            raw_payload_id = await conn.fetchval("""
+                INSERT INTO raw.builtwith_payloads (domain, payload, clay_table_url)
+                VALUES ($1, $2::jsonb, $3)
+                RETURNING id
+            """, request.domain, json.dumps(request.builtwith_payload), request.clay_table_url)
+
+            technologies_count = 0
+
+            for tech in request.builtwith_payload:
+                if not isinstance(tech, dict):
+                    continue
+
+                tech_name = tech.get("Name") or tech.get("name")
+                if not tech_name:
+                    continue
+
+                # Extract fields
+                tech_url = tech.get("Link") or tech.get("link")
+                tech_description = tech.get("Description") or tech.get("description")
+                tech_parent = tech.get("Parent") or tech.get("parent")
+                categories = tech.get("Tag") or tech.get("tag") or tech.get("Categories") or tech.get("categories")
+                first_detected = tech.get("FirstDetected") or tech.get("first_detected")
+                last_detected = tech.get("LastDetected") or tech.get("last_detected")
+
+                # Convert categories to JSON string if it's a list
+                categories_json = json.dumps(categories) if categories else None
+
+                # 2. Insert into extracted
+                await conn.execute("""
+                    INSERT INTO extracted.company_builtwith
+                    (raw_payload_id, domain, technology_name, technology_url,
+                     technology_description, technology_parent, categories,
+                     first_detected, last_detected)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
+                """, raw_payload_id, request.domain, tech_name, tech_url,
+                     tech_description, tech_parent, categories_json,
+                     first_detected, last_detected)
+
+                # 3. Upsert into reference.technologies
+                await conn.execute("""
+                    INSERT INTO reference.technologies (name, url, description, parent, categories)
+                    VALUES ($1, $2, $3, $4, $5::jsonb)
+                    ON CONFLICT (name) DO NOTHING
+                """, tech_name, tech_url, tech_description, tech_parent, categories_json)
+
+                # 4. Map to core.company_technologies
+                await conn.execute("""
+                    INSERT INTO core.company_technologies (domain, technology_id, first_detected, last_detected)
+                    SELECT $1, t.id, $3, $4
+                    FROM reference.technologies t
+                    WHERE t.name = $2
+                    ON CONFLICT (domain, technology_id) DO UPDATE
+                    SET last_detected = EXCLUDED.last_detected,
+                        updated_at = NOW()
+                """, request.domain, tech_name, first_detected, last_detected)
+
+                technologies_count += 1
+
+            return {
+                "success": True,
+                "domain": request.domain,
+                "raw_payload_id": str(raw_payload_id),
+                "technologies_count": technologies_count,
+            }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ingestion error: {str(e)}")

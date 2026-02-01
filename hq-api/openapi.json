@@ -2205,6 +2205,46 @@
         }
       }
     },
+    "/api/enrichment/builtwith": {
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Ingest Builtwith",
+        "description": "Ingest BuiltWith tech stack data for a domain.\n\nFlow:\n1. Store raw payload \u2192 raw.builtwith_payloads\n2. Extract each tech \u2192 extracted.company_builtwith\n3. Auto-populate \u2192 reference.technologies (ON CONFLICT DO NOTHING)\n4. Map to core \u2192 core.company_technologies",
+        "operationId": "ingest_builtwith_api_enrichment_builtwith_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuiltWithIngestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/people": {
       "get": {
         "tags": [
@@ -7228,6 +7268,36 @@
         },
         "type": "object",
         "title": "BatchSubmitRequest"
+      },
+      "BuiltWithIngestRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "builtwith_payload": {
+            "items": {},
+            "type": "array",
+            "title": "Builtwith Payload"
+          },
+          "clay_table_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clay Table Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "builtwith_payload"
+        ],
+        "title": "BuiltWithIngestRequest"
       },
       "CompaniesResponse": {
         "properties": {
