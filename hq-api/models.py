@@ -52,6 +52,10 @@ class LeadsResponse(BaseModel):
     meta: PaginationMeta
 
 
+class LeadsQuickResponse(BaseModel):
+    data: List[Lead]
+
+
 class LeadsRecentlyPromotedResponse(BaseModel):
     data: List[LeadRecentlyPromoted]
     meta: PaginationMeta

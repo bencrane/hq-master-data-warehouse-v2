@@ -646,13 +646,13 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 1000,
+              "maximum": 2000,
               "minimum": 1,
-              "description": "Max results to return (up to 1000)",
+              "description": "Max results to return (up to 2000)",
               "default": 50,
               "title": "Limit"
             },
-            "description": "Max results to return (up to 1000)"
+            "description": "Max results to return (up to 2000)"
           }
         ],
         "responses": {
@@ -661,7 +661,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LeadsResponse"
+                  "$ref": "#/components/schemas/LeadsQuickResponse"
                 }
               }
             }
@@ -9328,6 +9328,22 @@
           "meta"
         ],
         "title": "LeadsAtVCPortfolioResponse"
+      },
+      "LeadsQuickResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Lead"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "LeadsQuickResponse"
       },
       "LeadsRecentlyPromotedResponse": {
         "properties": {

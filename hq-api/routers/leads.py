@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import date, datetime, timedelta
 from db import core, get_pool
 from models import (
-    Lead, LeadsResponse, PaginationMeta,
+    Lead, LeadsResponse, LeadsQuickResponse, PaginationMeta,
     LeadRecentlyPromoted, LeadsRecentlyPromotedResponse,
     LeadAtVCPortfolio, LeadsAtVCPortfolioResponse
 )
@@ -159,7 +159,7 @@ async def get_leads(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@router.get("/quick", response_model=LeadsResponse)
+@router.get("/quick", response_model=LeadsQuickResponse)
 async def get_leads_quick(
     job_function: Optional[str] = Query(None, description="Filter by job function (comma-separated)"),
     seniority: Optional[str] = Query(None, description="Filter by seniority (comma-separated)"),
@@ -178,7 +178,7 @@ async def get_leads_quick(
     job_start_date_gte: Optional[date] = Query(None),
     job_start_date_lte: Optional[date] = Query(None),
     business_model: Optional[str] = Query(None, description="Filter by business model: B2B, B2C, or Both"),
-    limit: int = Query(50, ge=1, le=1000, description="Max results to return (up to 1000)"),
+    limit: int = Query(50, ge=1, le=2000, description="Max results to return (up to 2000)"),
 ):
     """
     Fast leads endpoint for demos - skips the expensive count query.
@@ -208,10 +208,7 @@ async def get_leads_quick(
             bm_result = bm_query.execute()
             business_model_domains = [row["domain"] for row in bm_result.data]
             if not business_model_domains:
-                return LeadsResponse(
-                    data=[],
-                    meta=PaginationMeta(total=0, limit=limit, offset=0)
-                )
+                return LeadsQuickResponse(data=[])
 
         # Skip count query - just fetch data directly
         data_query = core().from_("leads").select(LEAD_COLUMNS)
@@ -221,9 +218,8 @@ async def get_leads_quick(
         data_query = data_query.limit(limit)
         data_result = data_query.execute()
 
-        return LeadsResponse(
-            data=[Lead(**row) for row in data_result.data],
-            meta=PaginationMeta(total=len(data_result.data), limit=limit, offset=0)
+        return LeadsQuickResponse(
+            data=[Lead(**row) for row in data_result.data]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
