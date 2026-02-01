@@ -7276,8 +7276,6 @@
             "title": "Domain"
           },
           "builtwith_payload": {
-            "items": {},
-            "type": "array",
             "title": "Builtwith Payload"
           },
           "clay_table_url": {

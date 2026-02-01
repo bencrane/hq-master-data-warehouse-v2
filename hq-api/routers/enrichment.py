@@ -312,7 +312,7 @@ async def get_queue_status():
 
 class BuiltWithIngestRequest(BaseModel):
     domain: str
-    builtwith_payload: List[Any]  # Raw array of technology objects from BuiltWith
+    builtwith_payload: Any  # Raw BuiltWith data - either array or {"matchesFound": [...]}
     clay_table_url: Optional[str] = None
 
 
@@ -329,6 +329,15 @@ async def ingest_builtwith(request: BuiltWithIngestRequest):
     """
     pool = get_pool()
 
+    # Handle both formats: direct array or {"matchesFound": [...]}
+    payload = request.builtwith_payload
+    if isinstance(payload, dict) and "matchesFound" in payload:
+        technologies = payload["matchesFound"]
+    elif isinstance(payload, list):
+        technologies = payload
+    else:
+        raise HTTPException(status_code=400, detail="builtwith_payload must be an array or {matchesFound: [...]}")
+
     try:
         async with pool.acquire() as conn:
             # 1. Insert raw payload
@@ -336,11 +345,11 @@ async def ingest_builtwith(request: BuiltWithIngestRequest):
                 INSERT INTO raw.builtwith_payloads (domain, payload, clay_table_url)
                 VALUES ($1, $2::jsonb, $3)
                 RETURNING id
-            """, request.domain, json.dumps(request.builtwith_payload), request.clay_table_url)
+            """, request.domain, json.dumps(payload), request.clay_table_url)
 
             technologies_count = 0
 
-            for tech in request.builtwith_payload:
+            for tech in technologies:
                 if not isinstance(tech, dict):
                     continue
 
