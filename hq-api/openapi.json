@@ -646,13 +646,13 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 500,
+              "maximum": 1000,
               "minimum": 1,
-              "description": "Max results to return (up to 500)",
+              "description": "Max results to return (up to 1000)",
               "default": 50,
               "title": "Limit"
             },
-            "description": "Max results to return (up to 500)"
+            "description": "Max results to return (up to 1000)"
           }
         ],
         "responses": {

@@ -178,7 +178,7 @@ async def get_leads_quick(
     job_start_date_gte: Optional[date] = Query(None),
     job_start_date_lte: Optional[date] = Query(None),
     business_model: Optional[str] = Query(None, description="Filter by business model: B2B, B2C, or Both"),
-    limit: int = Query(50, ge=1, le=500, description="Max results to return (up to 500)"),
+    limit: int = Query(50, ge=1, le=1000, description="Max results to return (up to 1000)"),
 ):
     """
     Fast leads endpoint for demos - skips the expensive count query.
