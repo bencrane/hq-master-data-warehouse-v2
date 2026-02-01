@@ -46,6 +46,57 @@ WHERE id IN (
 
 ---
 
+## Funding Data
+
+### Backfill core.company_funding from extracted.company_discovery
+- **Source:** `extracted.company_discovery.total_funding_amount_range_usd`
+- **Target:** `core.company_funding`
+- **Delta:** ~96,000 companies with funding data not yet in core
+- **Issue:** Direct INSERT with JOIN times out due to table size
+- **Plan:** Create intermediate table first, then batch insert
+- **SQL approach:**
+```sql
+-- Step 1: Create intermediate table with delta
+CREATE TABLE public.funding_backfill AS
+SELECT DISTINCT ON (e.domain)
+    e.domain,
+    e.total_funding_amount_range_usd as raw_funding_range
+FROM extracted.company_discovery e
+LEFT JOIN core.company_funding cf ON cf.domain = e.domain
+WHERE e.total_funding_amount_range_usd IS NOT NULL
+  AND cf.domain IS NULL;
+
+-- Step 2: Batch insert from intermediate table
+INSERT INTO core.company_funding (domain, raw_funding_range, source)
+SELECT domain, raw_funding_range, 'extracted.company_discovery'
+FROM public.funding_backfill
+LIMIT 5000 OFFSET 0;
+
+-- Step 3: Drop when done
+DROP TABLE public.funding_backfill;
+```
+
+---
+
+## Job Function Data
+
+### Fix line breaks in matched_job_function
+- **Table:** `core.person_job_titles`
+- **Column:** `matched_job_function`
+- **Count:** ~15,208 records with `\n` line breaks
+- **Examples:**
+  - `'Marketing \n  and Public Relations'` → `'Marketing and Public Relations'`
+  - `'Science   \n  and Research'` → `'Science and Research'`
+  - `'Human     \n  Resources and Recruiting'` → `'Human Resources and Recruiting'`
+- **SQL:**
+```sql
+UPDATE core.person_job_titles
+SET matched_job_function = TRIM(REGEXP_REPLACE(matched_job_function, E'[\\s\\n]+', ' ', 'g'))
+WHERE matched_job_function LIKE E'%\n%';
+```
+
+---
+
 ## Notes
 
 - API required fields: `company_name`, `company_country`, `person_country`, `matched_job_function`, `matched_seniority`
