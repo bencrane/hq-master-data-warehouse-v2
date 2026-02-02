@@ -6,7 +6,8 @@ from models import (
     Lead, LeadsResponse, LeadsQuickResponse, PaginationMeta,
     LeadRecentlyPromoted, LeadsRecentlyPromotedResponse,
     LeadAtVCPortfolio, LeadsAtVCPortfolioResponse,
-    PastEmployerCountResponse
+    PastEmployerCountResponse, PastEmployerBreakdownResponse,
+    PriorityCompanyCreate, PriorityCompany, PriorityCompaniesResponse
 )
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
@@ -323,6 +324,156 @@ async def get_past_employer_preview(
     return LeadsQuickResponse(
         data=[Lead(**row_to_dict(row)) for row in rows]
     )
+
+
+@router.get("/past-employer-breakdown", response_model=PastEmployerBreakdownResponse)
+async def get_past_employer_breakdown(
+    company_name: str = Query(..., description="Company name to search for"),
+    country: Optional[str] = Query(None, description="Filter by person's country (e.g., 'United States')"),
+):
+    """
+    Get breakdown of people who previously worked at a company, grouped by job function.
+    """
+    pool = get_pool()
+
+    # First, try to find the domain for this company name
+    domain_row = await pool.fetchrow(
+        "SELECT domain FROM core.companies WHERE name ILIKE $1 LIMIT 1",
+        company_name
+    )
+    domain = domain_row["domain"] if domain_row else None
+
+    # Build the breakdown query
+    if country:
+        query = """
+            SELECT pwh.matched_job_function, COUNT(DISTINCT pwh.linkedin_url) as count
+            FROM core.person_work_history pwh
+            LEFT JOIN core.person_locations pl ON pwh.linkedin_url = pl.linkedin_url
+            WHERE pwh.is_current = false
+            AND pwh.company_name ILIKE $1
+            AND pl.country ILIKE $2
+            AND pwh.matched_job_function IS NOT NULL
+            GROUP BY pwh.matched_job_function
+            ORDER BY count DESC
+        """
+        rows = await pool.fetch(query, company_name, country)
+    else:
+        query = """
+            SELECT matched_job_function, COUNT(DISTINCT linkedin_url) as count
+            FROM core.person_work_history
+            WHERE is_current = false
+            AND company_name ILIKE $1
+            AND matched_job_function IS NOT NULL
+            GROUP BY matched_job_function
+            ORDER BY count DESC
+        """
+        rows = await pool.fetch(query, company_name)
+
+    by_job_function = {row["matched_job_function"]: row["count"] for row in rows}
+    total = sum(by_job_function.values())
+
+    return PastEmployerBreakdownResponse(
+        company_name=company_name,
+        domain=domain,
+        total=total,
+        by_job_function=by_job_function
+    )
+
+
+@router.get("/priority-companies", response_model=PriorityCompaniesResponse)
+async def get_priority_companies():
+    """
+    Get all priority companies with their alumni counts.
+    """
+    pool = get_pool()
+
+    # Get all priority companies
+    companies = await pool.fetch(
+        "SELECT id, company_name, domain FROM core.priority_companies ORDER BY created_at"
+    )
+
+    if not companies:
+        return PriorityCompaniesResponse(data=[])
+
+    result = []
+    for company in companies:
+        # Get counts for this company
+        counts = await pool.fetchrow("""
+            SELECT
+                COUNT(DISTINCT linkedin_url) as total,
+                COUNT(DISTINCT linkedin_url) FILTER (WHERE matched_job_function = 'Engineering') as engineering,
+                COUNT(DISTINCT linkedin_url) FILTER (WHERE matched_job_function = 'Sales') as sales
+            FROM core.person_work_history
+            WHERE is_current = false
+            AND company_name ILIKE $1
+        """, company["company_name"])
+
+        result.append(PriorityCompany(
+            id=str(company["id"]),
+            company_name=company["company_name"],
+            domain=company["domain"],
+            total=counts["total"] if counts else 0,
+            engineering=counts["engineering"] if counts else 0,
+            sales=counts["sales"] if counts else 0
+        ))
+
+    return PriorityCompaniesResponse(data=result)
+
+
+@router.post("/priority-companies", response_model=PriorityCompany)
+async def add_priority_company(body: PriorityCompanyCreate):
+    """
+    Add a company to the priority list.
+    """
+    pool = get_pool()
+
+    # Try to find the domain for this company name
+    domain_row = await pool.fetchrow(
+        "SELECT domain FROM core.companies WHERE name ILIKE $1 LIMIT 1",
+        body.company_name
+    )
+    domain = domain_row["domain"] if domain_row else None
+
+    # Insert the company (upsert to handle duplicates)
+    row = await pool.fetchrow("""
+        INSERT INTO core.priority_companies (company_name, domain)
+        VALUES ($1, $2)
+        ON CONFLICT (company_name) DO UPDATE SET domain = EXCLUDED.domain
+        RETURNING id, company_name, domain
+    """, body.company_name, domain)
+
+    # Get counts
+    counts = await pool.fetchrow("""
+        SELECT
+            COUNT(DISTINCT linkedin_url) as total,
+            COUNT(DISTINCT linkedin_url) FILTER (WHERE matched_job_function = 'Engineering') as engineering,
+            COUNT(DISTINCT linkedin_url) FILTER (WHERE matched_job_function = 'Sales') as sales
+        FROM core.person_work_history
+        WHERE is_current = false
+        AND company_name ILIKE $1
+    """, body.company_name)
+
+    return PriorityCompany(
+        id=str(row["id"]),
+        company_name=row["company_name"],
+        domain=row["domain"],
+        total=counts["total"] if counts else 0,
+        engineering=counts["engineering"] if counts else 0,
+        sales=counts["sales"] if counts else 0
+    )
+
+
+@router.delete("/priority-companies/{company_name}")
+async def delete_priority_company(company_name: str):
+    """
+    Remove a company from the priority list.
+    """
+    pool = get_pool()
+    await pool.execute(
+        "DELETE FROM core.priority_companies WHERE company_name ILIKE $1",
+        company_name
+    )
+    return {"status": "deleted", "company_name": company_name}
 
 
 @router.get("/recently-promoted", response_model=LeadsRecentlyPromotedResponse)

@@ -855,6 +855,172 @@
         }
       }
     },
+    "/api/leads/past-employer-breakdown": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Get Past Employer Breakdown",
+        "description": "Get breakdown of people who previously worked at a company, grouped by job function.",
+        "operationId": "get_past_employer_breakdown_api_leads_past_employer_breakdown_get",
+        "parameters": [
+          {
+            "name": "company_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Company name to search for",
+              "title": "Company Name"
+            },
+            "description": "Company name to search for"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by person's country (e.g., 'United States')",
+              "title": "Country"
+            },
+            "description": "Filter by person's country (e.g., 'United States')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PastEmployerBreakdownResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/priority-companies": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Get Priority Companies",
+        "description": "Get all priority companies with their alumni counts.",
+        "operationId": "get_priority_companies_api_leads_priority_companies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityCompaniesResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Add Priority Company",
+        "description": "Add a company to the priority list.",
+        "operationId": "add_priority_company_api_leads_priority_companies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriorityCompanyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityCompany"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/priority-companies/{company_name}": {
+      "delete": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Delete Priority Company",
+        "description": "Remove a company from the priority list.",
+        "operationId": "delete_priority_company_api_leads_priority_companies__company_name__delete",
+        "parameters": [
+          {
+            "name": "company_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Company Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/leads/recently-promoted": {
       "get": {
         "tags": [
@@ -9698,6 +9864,43 @@
         ],
         "title": "PaginationMeta"
       },
+      "PastEmployerBreakdownResponse": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "by_job_function": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Job Function"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "total",
+          "by_job_function"
+        ],
+        "title": "PastEmployerBreakdownResponse"
+      },
       "PastEmployerCountResponse": {
         "properties": {
           "company_name": {
@@ -9929,6 +10132,79 @@
         },
         "type": "object",
         "title": "Person"
+      },
+      "PriorityCompaniesResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PriorityCompany"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "PriorityCompaniesResponse"
+      },
+      "PriorityCompany": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "engineering": {
+            "type": "integer",
+            "title": "Engineering",
+            "default": 0
+          },
+          "sales": {
+            "type": "integer",
+            "title": "Sales",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "company_name"
+        ],
+        "title": "PriorityCompany"
+      },
+      "PriorityCompanyCreate": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name"
+        ],
+        "title": "PriorityCompanyCreate"
       },
       "SessionValidation": {
         "properties": {

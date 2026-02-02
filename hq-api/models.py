@@ -62,6 +62,30 @@ class PastEmployerCountResponse(BaseModel):
     count: int
 
 
+class PastEmployerBreakdownResponse(BaseModel):
+    company_name: str
+    domain: Optional[str] = None
+    total: int
+    by_job_function: Dict[str, int]
+
+
+class PriorityCompanyCreate(BaseModel):
+    company_name: str
+
+
+class PriorityCompany(BaseModel):
+    id: str
+    company_name: str
+    domain: Optional[str] = None
+    total: int = 0
+    engineering: int = 0
+    sales: int = 0
+
+
+class PriorityCompaniesResponse(BaseModel):
+    data: List[PriorityCompany]
+
+
 class LeadsRecentlyPromotedResponse(BaseModel):
     data: List[LeadRecentlyPromoted]
     meta: PaginationMeta
