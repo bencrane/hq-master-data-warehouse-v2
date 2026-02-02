@@ -56,6 +56,12 @@ class LeadsQuickResponse(BaseModel):
     data: List[Lead]
 
 
+class PastEmployerCountResponse(BaseModel):
+    company_name: str
+    domain: Optional[str] = None
+    count: int
+
+
 class LeadsRecentlyPromotedResponse(BaseModel):
     data: List[LeadRecentlyPromoted]
     meta: PaginationMeta

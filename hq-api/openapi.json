@@ -679,6 +679,87 @@
         }
       }
     },
+    "/api/leads/past-employer-count": {
+      "get": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Get Past Employer Count",
+        "description": "Get count of people who previously worked at a specific company.\nOptionally filter by job function and/or person's country.",
+        "operationId": "get_past_employer_count_api_leads_past_employer_count_get",
+        "parameters": [
+          {
+            "name": "company_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Company name to search for",
+              "title": "Company Name"
+            },
+            "description": "Company name to search for"
+          },
+          {
+            "name": "job_function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by job function",
+              "title": "Job Function"
+            },
+            "description": "Filter by job function"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by person's country (e.g., 'United States')",
+              "title": "Country"
+            },
+            "description": "Filter by person's country (e.g., 'United States')"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PastEmployerCountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/leads/recently-promoted": {
       "get": {
         "tags": [
@@ -9521,6 +9602,35 @@
           "offset"
         ],
         "title": "PaginationMeta"
+      },
+      "PastEmployerCountResponse": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "count"
+        ],
+        "title": "PastEmployerCountResponse"
       },
       "PeopleResponse": {
         "properties": {

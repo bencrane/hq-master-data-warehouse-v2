@@ -5,7 +5,8 @@ from db import core, get_pool
 from models import (
     Lead, LeadsResponse, LeadsQuickResponse, PaginationMeta,
     LeadRecentlyPromoted, LeadsRecentlyPromotedResponse,
-    LeadAtVCPortfolio, LeadsAtVCPortfolioResponse
+    LeadAtVCPortfolio, LeadsAtVCPortfolioResponse,
+    PastEmployerCountResponse
 )
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
@@ -223,6 +224,56 @@ async def get_leads_quick(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@router.get("/past-employer-count", response_model=PastEmployerCountResponse)
+async def get_past_employer_count(
+    company_name: str = Query(..., description="Company name to search for"),
+    job_function: Optional[str] = Query(None, description="Filter by job function"),
+    country: Optional[str] = Query(None, description="Filter by person's country (e.g., 'United States')"),
+):
+    """
+    Get count of people who previously worked at a specific company.
+    Optionally filter by job function and/or person's country.
+    """
+    pool = get_pool()
+
+    # First, try to find the domain for this company name
+    domain_row = await pool.fetchrow(
+        "SELECT domain FROM core.companies WHERE name ILIKE $1 LIMIT 1",
+        company_name
+    )
+    domain = domain_row["domain"] if domain_row else None
+
+    # Build the count query
+    query = """
+        SELECT COUNT(DISTINCT pwh.linkedin_url) as count
+        FROM core.person_work_history pwh
+        LEFT JOIN core.person_locations pl ON pwh.linkedin_url = pl.linkedin_url
+        WHERE pwh.is_current = false
+        AND pwh.company_name ILIKE $1
+    """
+    params = [company_name]
+    param_idx = 2
+
+    if job_function:
+        query += f" AND pwh.matched_job_function = ${param_idx}"
+        params.append(job_function)
+        param_idx += 1
+
+    if country:
+        query += f" AND pl.country ILIKE ${param_idx}"
+        params.append(country)
+        param_idx += 1
+
+    result = await pool.fetchrow(query, *params)
+    count = result["count"] if result else 0
+
+    return PastEmployerCountResponse(
+        company_name=company_name,
+        domain=domain,
+        count=count
+    )
 
 
 @router.get("/recently-promoted", response_model=LeadsRecentlyPromotedResponse)
