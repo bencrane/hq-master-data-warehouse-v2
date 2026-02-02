@@ -276,6 +276,55 @@ async def get_past_employer_count(
     )
 
 
+@router.get("/past-employer-preview", response_model=LeadsQuickResponse)
+async def get_past_employer_preview(
+    company_name: str = Query(..., description="Company name to search for"),
+    job_function: Optional[str] = Query(None, description="Filter by job function"),
+    country: Optional[str] = Query(None, description="Filter by person's country (e.g., 'United States')"),
+    limit: int = Query(10, ge=1, le=50, description="Number of leads to return (default 10)"),
+):
+    """
+    Get a preview of leads who previously worked at a specific company.
+    Returns their current job info. Optionally filter by job function and/or country.
+    """
+    pool = get_pool()
+
+    query = f"""
+        SELECT DISTINCT ON (l.linkedin_url)
+            l.person_id, l.linkedin_url, l.linkedin_slug, l.full_name, l.linkedin_url_type,
+            l.person_city, l.person_state, l.person_country,
+            l.matched_cleaned_job_title, l.matched_job_function, l.matched_seniority, l.job_start_date,
+            l.company_id, l.company_domain, l.company_name, l.company_linkedin_url,
+            l.company_city, l.company_state, l.company_country, l.matched_industry, l.employee_range
+        FROM core.person_work_history pwh
+        JOIN core.leads l ON pwh.linkedin_url = l.linkedin_url
+        LEFT JOIN core.person_locations pl ON pwh.linkedin_url = pl.linkedin_url
+        WHERE pwh.is_current = false
+        AND pwh.company_name ILIKE $1
+    """
+    params = [company_name]
+    param_idx = 2
+
+    if job_function:
+        query += f" AND pwh.matched_job_function = ${param_idx}"
+        params.append(job_function)
+        param_idx += 1
+
+    if country:
+        query += f" AND pl.country ILIKE ${param_idx}"
+        params.append(country)
+        param_idx += 1
+
+    query += f" LIMIT ${param_idx}"
+    params.append(limit)
+
+    rows = await pool.fetch(query, *params)
+
+    return LeadsQuickResponse(
+        data=[Lead(**row_to_dict(row)) for row in rows]
+    )
+
+
 @router.get("/recently-promoted", response_model=LeadsRecentlyPromotedResponse)
 async def get_leads_recently_promoted(
     promoted_within_days: int = Query(180),
