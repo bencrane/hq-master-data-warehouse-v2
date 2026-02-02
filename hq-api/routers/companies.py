@@ -968,6 +968,83 @@ async def get_company_ads(domain: str):
     }
 
 
+@router.post("/enrichment-status")
+async def check_company_enrichment_status(payload: dict):
+    """
+    Check if a company has been enriched by a specific workflow.
+
+    Payload: {
+        "company_name": "Acme Inc",        # optional (for clarity)
+        "domain": "acme.com",              # required
+        "company_linkedin_url": "...",     # optional
+        "workflow_slug": "clay-company-firmographics"  # required
+    }
+
+    Returns: { "enriched": true/false, "last_enriched_at": timestamp }
+    """
+    from db import get_pool, reference
+
+    domain = payload.get("domain", "").lower().strip().rstrip("/")
+    workflow_slug = payload.get("workflow_slug", "").strip()
+
+    if not domain:
+        return {"error": "domain is required", "enriched": False}
+    if not workflow_slug:
+        return {"error": "workflow_slug is required", "enriched": False}
+
+    # Look up core_table from registry
+    registry_result = (
+        reference()
+        .from_("enrichment_workflow_registry")
+        .select("core_table")
+        .eq("workflow_slug", workflow_slug)
+        .limit(1)
+        .execute()
+    )
+
+    if not registry_result.data:
+        return {
+            "error": f"workflow_slug '{workflow_slug}' not found in registry",
+            "enriched": False
+        }
+
+    core_table = registry_result.data[0].get("core_table")
+
+    if not core_table:
+        return {
+            "error": f"workflow '{workflow_slug}' has no core_table mapped",
+            "enriched": False,
+            "note": "This workflow may not write to core schema"
+        }
+
+    # Query the core table for this domain
+    pool = get_pool()
+
+    # Parse schema and table name
+    if "." in core_table:
+        schema, table = core_table.split(".", 1)
+    else:
+        schema, table = "core", core_table
+
+    row = await pool.fetchrow(f"""
+        SELECT COUNT(*) as count, MAX(created_at) as last_enriched_at
+        FROM {schema}.{table}
+        WHERE domain = $1
+    """, domain)
+
+    count = row["count"] if row else 0
+    last_enriched_at = row["last_enriched_at"] if row else None
+
+    return {
+        "domain": domain,
+        "workflow_slug": workflow_slug,
+        "core_table": core_table,
+        "enriched": count > 0,
+        "count": count,
+        "last_enriched_at": str(last_enriched_at) if last_enriched_at else None
+    }
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""

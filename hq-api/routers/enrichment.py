@@ -14,6 +14,135 @@ from db import core, extracted, raw, get_pool
 
 router = APIRouter(prefix="/api/enrichment", tags=["enrichment"])
 
+
+# ============================================================================
+# Workflow Registry
+# ============================================================================
+
+@router.get("/workflows")
+async def get_workflows(
+    entity_type: Optional[str] = Query(None, description="Filter by entity type: company, person, target_client"),
+    coalesces_to_core: Optional[bool] = Query(None, description="Filter by whether data flows to core schema"),
+    payload_type: Optional[str] = Query(None, description="Filter by payload type: enrichment, inference, signal, etc."),
+    usage_category: Optional[str] = Query(None, description="Filter by usage category: client, internal-hq"),
+    is_active: Optional[bool] = Query(True, description="Filter by active status"),
+):
+    """
+    Get all enrichment workflows from the registry.
+
+    Use coalesces_to_core=true to see workflows that write to core tables.
+    Use coalesces_to_core=false to see workflows that only write to raw/extracted.
+    Use usage_category=client to see client-facing workflows (signals).
+    Use usage_category=internal-hq to see internal HQ workflows.
+    """
+    from db import reference
+
+    query = (
+        reference()
+        .from_("enrichment_workflow_registry")
+        .select("workflow_slug, provider, platform, payload_type, entity_type, description, raw_table, extracted_table, core_table, coalesces_to_core, usage_category, is_active")
+        .order("entity_type")
+        .order("payload_type")
+        .order("workflow_slug")
+    )
+
+    if entity_type:
+        query = query.eq("entity_type", entity_type)
+    if coalesces_to_core is not None:
+        query = query.eq("coalesces_to_core", coalesces_to_core)
+    if payload_type:
+        query = query.eq("payload_type", payload_type)
+    if usage_category:
+        query = query.eq("usage_category", usage_category)
+    if is_active is not None:
+        query = query.eq("is_active", is_active)
+
+    result = query.execute()
+
+    # Group by coalesces_to_core for summary
+    in_core = [w for w in result.data if w.get("coalesces_to_core")]
+    not_in_core = [w for w in result.data if not w.get("coalesces_to_core")]
+    client_workflows = [w for w in result.data if w.get("usage_category") == "client"]
+    internal_workflows = [w for w in result.data if w.get("usage_category") == "internal-hq"]
+
+    return {
+        "data": result.data,
+        "meta": {
+            "total": len(result.data),
+            "in_core_count": len(in_core),
+            "not_in_core_count": len(not_in_core),
+            "client_count": len(client_workflows),
+            "internal_hq_count": len(internal_workflows),
+            "filters": {
+                "entity_type": entity_type,
+                "coalesces_to_core": coalesces_to_core,
+                "payload_type": payload_type,
+                "usage_category": usage_category,
+                "is_active": is_active,
+            }
+        }
+    }
+
+
+@router.get("/workflows/summary")
+async def get_workflows_summary():
+    """
+    Get a summary of workflow counts by entity type, core status, and usage category.
+    """
+    from db import reference
+
+    result = (
+        reference()
+        .from_("enrichment_workflow_registry")
+        .select("entity_type, payload_type, coalesces_to_core, usage_category")
+        .eq("is_active", True)
+        .execute()
+    )
+
+    # Build summary
+    by_entity = {}
+    by_payload = {}
+    by_usage = {"client": 0, "internal-hq": 0}
+
+    for w in result.data:
+        entity = w.get("entity_type", "unknown")
+        payload = w.get("payload_type", "unknown")
+        in_core = w.get("coalesces_to_core", False)
+        usage = w.get("usage_category", "internal-hq")
+
+        # By entity
+        if entity not in by_entity:
+            by_entity[entity] = {"total": 0, "in_core": 0, "not_in_core": 0}
+        by_entity[entity]["total"] += 1
+        if in_core:
+            by_entity[entity]["in_core"] += 1
+        else:
+            by_entity[entity]["not_in_core"] += 1
+
+        # By payload type
+        if payload not in by_payload:
+            by_payload[payload] = {"total": 0, "in_core": 0, "not_in_core": 0}
+        by_payload[payload]["total"] += 1
+        if in_core:
+            by_payload[payload]["in_core"] += 1
+        else:
+            by_payload[payload]["not_in_core"] += 1
+
+        # By usage category
+        by_usage[usage] = by_usage.get(usage, 0) + 1
+
+    total_in_core = sum(e["in_core"] for e in by_entity.values())
+    total_not_in_core = sum(e["not_in_core"] for e in by_entity.values())
+
+    return {
+        "total_workflows": len(result.data),
+        "total_in_core": total_in_core,
+        "total_not_in_core": total_not_in_core,
+        "by_entity_type": by_entity,
+        "by_payload_type": by_payload,
+        "by_usage_category": by_usage,
+    }
+
 MODAL_PROCESS_QUEUE_URL = os.getenv(
     "MODAL_PROCESS_QUEUE_URL",
     "https://bencrane--hq-master-data-ingest-process-similar-companies-queue.modal.run"

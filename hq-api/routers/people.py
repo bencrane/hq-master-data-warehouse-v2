@@ -158,3 +158,80 @@ async def get_person_enrichment_status(body: LinkedInUrlRequest):
         entry_count=entry_count,
         last_enriched_at=str(last_enriched_at) if last_enriched_at else None
     )
+
+
+@router.post("/workflow-enrichment-status")
+async def check_person_workflow_enrichment_status(payload: dict):
+    """
+    Check if a person has been enriched by a specific workflow.
+
+    Payload: {
+        "company_name": "Acme Inc",           # optional (for clarity)
+        "domain": "acme.com",                 # optional (for clarity)
+        "person_linkedin_url": "linkedin.com/in/johndoe",  # required
+        "workflow_slug": "clay-person-profile"  # required
+    }
+
+    Returns: { "enriched": true/false, "last_enriched_at": timestamp }
+    """
+    from db import reference
+
+    person_linkedin_url = payload.get("person_linkedin_url", "").strip()
+    workflow_slug = payload.get("workflow_slug", "").strip()
+
+    if not person_linkedin_url:
+        return {"error": "person_linkedin_url is required", "enriched": False}
+    if not workflow_slug:
+        return {"error": "workflow_slug is required", "enriched": False}
+
+    # Look up core_table from registry
+    registry_result = (
+        reference()
+        .from_("enrichment_workflow_registry")
+        .select("core_table")
+        .eq("workflow_slug", workflow_slug)
+        .limit(1)
+        .execute()
+    )
+
+    if not registry_result.data:
+        return {
+            "error": f"workflow_slug '{workflow_slug}' not found in registry",
+            "enriched": False
+        }
+
+    core_table = registry_result.data[0].get("core_table")
+
+    if not core_table:
+        return {
+            "error": f"workflow '{workflow_slug}' has no core_table mapped",
+            "enriched": False,
+            "note": "This workflow may not write to core schema"
+        }
+
+    # Query the core table for this person
+    pool = get_pool()
+
+    # Parse schema and table name
+    if "." in core_table:
+        schema, table = core_table.split(".", 1)
+    else:
+        schema, table = "core", core_table
+
+    row = await pool.fetchrow(f"""
+        SELECT COUNT(*) as count, MAX(created_at) as last_enriched_at
+        FROM {schema}.{table}
+        WHERE linkedin_url = $1
+    """, person_linkedin_url)
+
+    count = row["count"] if row else 0
+    last_enriched_at = row["last_enriched_at"] if row else None
+
+    return {
+        "person_linkedin_url": person_linkedin_url,
+        "workflow_slug": workflow_slug,
+        "core_table": core_table,
+        "enriched": count > 0,
+        "count": count,
+        "last_enriched_at": str(last_enriched_at) if last_enriched_at else None
+    }

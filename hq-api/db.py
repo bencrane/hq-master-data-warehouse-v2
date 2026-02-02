@@ -66,7 +66,7 @@ def get_auth_pool() -> asyncpg.Pool:
     return _auth_pool
 
 # Export
-__all__ = ['supabase', 'core', 'raw', 'extracted', 'init_pool', 'close_pool', 'get_pool', 'get_auth_pool']
+__all__ = ['supabase', 'core', 'raw', 'extracted', 'reference', 'init_pool', 'close_pool', 'get_pool', 'get_auth_pool']
 
 # Helper to get core schema client (for simple table queries via Supabase)
 def core():
@@ -80,3 +80,7 @@ def raw():
 def extracted():
     """Get client for extracted schema."""
     return supabase.schema("extracted")
+
+def reference():
+    """Get client for reference schema."""
+    return supabase.schema("reference")

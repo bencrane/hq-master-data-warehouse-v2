@@ -163,3 +163,81 @@ LIMIT 1;
 3.  **Permissions**: The MCP server operates with the permissions of the configured user. If the user is `postgres` (superuser), it has full access. If it's a restricted user, some tables or operations might fail.
 4.  **Write Operations**: While `execute_sql` *can* perform `INSERT`/`UPDATE`/`DELETE`, it is recommended to use it primarily for `SELECT` (read) operations to avoid accidental data loss. Always verify the SQL before running destructive commands.
 5.  **JSONB**: The `raw` schema relies heavily on `jsonb`. Queries might need Postgres JSON operators (e.g., `->>`, `@>`) to extract meaningful data from these columns.
+
+---
+
+## AI Agent Guidance: PostgreSQL MCP vs Supabase Client
+
+**IMPORTANT**: AI agents should prefer the PostgreSQL MCP server over the Supabase Python client for data warehouse operations.
+
+See **[/docs/engineering/postgresql-over-supabase-client.md](../engineering/postgresql-over-supabase-client.md)** for full rationale and patterns.
+
+### Quick Summary
+
+| Operation | Tool to Use |
+|-----------|-------------|
+| Data backfills | PostgreSQL MCP (`execute_sql`) |
+| Schema exploration | PostgreSQL MCP (`list_objects`, `get_object_details`) |
+| Bulk INSERT/UPDATE | PostgreSQL MCP with `SET statement_timeout` |
+| Pattern matching updates | PostgreSQL MCP |
+| Simple API queries | Supabase client is acceptable |
+
+### Why Not Supabase Client?
+
+1. **Hard-coded 2-second timeout** - Cannot be overridden, causes failures on complex queries
+2. **No transaction control** - Each query is a separate HTTP request
+3. **No session settings** - Cannot use `SET statement_timeout = '10min'`
+
+### Standard Pattern for Large Operations
+
+```sql
+-- Always set timeout first
+SET statement_timeout = '10min';
+
+-- Then run the operation
+UPDATE core.person_job_titles
+SET matched_job_function = 'Engineering'
+WHERE matched_job_function IS NULL
+  AND matched_cleaned_job_title ILIKE '%engineer%';
+```
+
+### Workflow for AI Agents
+
+1. **Explore** - Use `list_schemas`, `list_objects`, `get_object_details` to understand structure
+2. **Count** - Always `SELECT COUNT(*)` before bulk operations
+3. **Sample** - Check `LIMIT 10` to verify data looks right
+4. **Execute** - Run the operation with appropriate timeout
+5. **Verify** - Count again to confirm expected changes
+
+### Key Tables for Data Work
+
+```sql
+-- Leads dimension table
+core.person_job_titles  -- job_function, seniority backfills
+
+-- Company dimension tables (star schema)
+core.company_names
+core.company_employee_ranges
+core.company_types
+core.company_locations
+core.company_industries
+core.company_funding
+core.company_revenue
+
+-- Reference/lookup tables
+reference.job_title_lookup
+reference.employee_range_lookup
+reference.industry_lookup
+reference.job_functions
+reference.seniorities
+```
+
+### Direct Connection String (for psql)
+
+If the MCP server is unavailable, AI agents can use the direct connection string with the Bash tool:
+
+```bash
+psql "postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres" -c "YOUR SQL HERE"
+```
+
+This provides the same capabilities as the MCP server but with more verbose syntax.

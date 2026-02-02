@@ -3201,6 +3201,48 @@
         }
       }
     },
+    "/api/companies/enrichment-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Check Company Enrichment Status",
+        "description": "Check if a company has been enriched by a specific workflow.\n\nPayload: {\n    \"company_name\": \"Acme Inc\",        # optional (for clarity)\n    \"domain\": \"acme.com\",              # required\n    \"company_linkedin_url\": \"...\",     # optional\n    \"workflow_slug\": \"clay-company-firmographics\"  # required\n}\n\nReturns: { \"enriched\": true/false, \"last_enriched_at\": timestamp }",
+        "operationId": "check_company_enrichment_status_api_companies_enrichment_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/companies/{domain}": {
       "get": {
         "tags": [
@@ -3238,6 +3280,149 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/workflows": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Get Workflows",
+        "description": "Get all enrichment workflows from the registry.\n\nUse coalesces_to_core=true to see workflows that write to core tables.\nUse coalesces_to_core=false to see workflows that only write to raw/extracted.\nUse usage_category=client to see client-facing workflows (signals).\nUse usage_category=internal-hq to see internal HQ workflows.",
+        "operationId": "get_workflows_api_enrichment_workflows_get",
+        "parameters": [
+          {
+            "name": "entity_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity type: company, person, target_client",
+              "title": "Entity Type"
+            },
+            "description": "Filter by entity type: company, person, target_client"
+          },
+          {
+            "name": "coalesces_to_core",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether data flows to core schema",
+              "title": "Coalesces To Core"
+            },
+            "description": "Filter by whether data flows to core schema"
+          },
+          {
+            "name": "payload_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by payload type: enrichment, inference, signal, etc.",
+              "title": "Payload Type"
+            },
+            "description": "Filter by payload type: enrichment, inference, signal, etc."
+          },
+          {
+            "name": "usage_category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by usage category: client, internal-hq",
+              "title": "Usage Category"
+            },
+            "description": "Filter by usage category: client, internal-hq"
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by active status",
+              "default": true,
+              "title": "Is Active"
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/workflows/summary": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Get Workflows Summary",
+        "description": "Get a summary of workflow counts by entity type, core status, and usage category.",
+        "operationId": "get_workflows_summary_api_enrichment_workflows_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -3775,6 +3960,48 @@
                 "schema": {
                   "$ref": "#/components/schemas/PersonEnrichmentStatusResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/people/workflow-enrichment-status": {
+      "post": {
+        "tags": [
+          "people"
+        ],
+        "summary": "Check Person Workflow Enrichment Status",
+        "description": "Check if a person has been enriched by a specific workflow.\n\nPayload: {\n    \"company_name\": \"Acme Inc\",           # optional (for clarity)\n    \"domain\": \"acme.com\",                 # optional (for clarity)\n    \"person_linkedin_url\": \"linkedin.com/in/johndoe\",  # required\n    \"workflow_slug\": \"clay-person-profile\"  # required\n}\n\nReturns: { \"enriched\": true/false, \"last_enriched_at\": timestamp }",
+        "operationId": "check_person_workflow_enrichment_status_api_people_workflow_enrichment_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
