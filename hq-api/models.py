@@ -112,6 +112,10 @@ class PersonEnrichmentStatusResponse(BaseModel):
     last_enriched_at: Optional[str] = None
 
 
+class LinkedInUrlRequest(BaseModel):
+    linkedin_url: str
+
+
 class LeadsRecentlyPromotedResponse(BaseModel):
     data: List[LeadRecentlyPromoted]
     meta: PaginationMeta

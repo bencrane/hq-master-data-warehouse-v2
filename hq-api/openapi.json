@@ -3625,26 +3625,23 @@
       }
     },
     "/api/people/work-history": {
-      "get": {
+      "post": {
         "tags": [
           "people"
         ],
         "summary": "Get Person Work History",
         "description": "Get a person's full work history from enrichment data.\nReturns all past and current positions.",
-        "operationId": "get_person_work_history_api_people_work_history_get",
-        "parameters": [
-          {
-            "name": "linkedin_url",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "LinkedIn URL of the person",
-              "title": "Linkedin Url"
-            },
-            "description": "LinkedIn URL of the person"
-          }
-        ],
+        "operationId": "get_person_work_history_api_people_work_history_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedInUrlRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3670,26 +3667,23 @@
       }
     },
     "/api/people/enrichment-status": {
-      "get": {
+      "post": {
         "tags": [
           "people"
         ],
         "summary": "Get Person Enrichment Status",
         "description": "Quick check if a person has been enriched (has work history data).\nReturns enrichment status and the date of last insert.",
-        "operationId": "get_person_enrichment_status_api_people_enrichment_status_get",
-        "parameters": [
-          {
-            "name": "linkedin_url",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "LinkedIn URL of the person",
-              "title": "Linkedin Url"
-            },
-            "description": "LinkedIn URL of the person"
-          }
-        ],
+        "operationId": "get_person_enrichment_status_api_people_enrichment_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedInUrlRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -9816,6 +9810,19 @@
           "meta"
         ],
         "title": "LeadsResponse"
+      },
+      "LinkedInUrlRequest": {
+        "properties": {
+          "linkedin_url": {
+            "type": "string",
+            "title": "Linkedin Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "linkedin_url"
+        ],
+        "title": "LinkedInUrlRequest"
       },
       "MagicLinkRequest": {
         "properties": {
