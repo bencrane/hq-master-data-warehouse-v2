@@ -230,12 +230,13 @@ async def get_leads_quick(
 @router.get("/past-employer-count", response_model=PastEmployerCountResponse)
 async def get_past_employer_count(
     company_name: str = Query(..., description="Company name to search for"),
-    job_function: Optional[str] = Query(None, description="Filter by job function"),
+    job_function: Optional[str] = Query(None, description="Filter by Sales Nav job function (e.g., 'Engineering', 'Customer Success and Support')"),
     country: Optional[str] = Query(None, description="Filter by person's country (e.g., 'United States')"),
 ):
     """
     Get count of people who previously worked at a specific company.
-    Optionally filter by job function and/or person's country.
+    Optionally filter by Sales Nav job function and/or person's country.
+    Job function accepts Sales Nav values which map to our internal functions.
     """
     pool = get_pool()
 
@@ -246,11 +247,12 @@ async def get_past_employer_count(
     )
     domain = domain_row["domain"] if domain_row else None
 
-    # Build the count query
+    # Build the count query with Sales Nav mapping
     query = """
         SELECT COUNT(DISTINCT pwh.linkedin_url) as count
         FROM core.person_work_history pwh
         LEFT JOIN core.person_locations pl ON pwh.linkedin_url = pl.linkedin_url
+        LEFT JOIN core.job_function_mapping jfm ON pwh.matched_job_function = jfm.our_job_function
         WHERE pwh.is_current = false
         AND pwh.company_name ILIKE $1
     """
@@ -258,7 +260,8 @@ async def get_past_employer_count(
     param_idx = 2
 
     if job_function:
-        query += f" AND pwh.matched_job_function = ${param_idx}"
+        # Filter by Sales Nav function (which may map to multiple of our functions)
+        query += f" AND COALESCE(jfm.sales_nav_function, 'Other') = ${param_idx}"
         params.append(job_function)
         param_idx += 1
 
@@ -280,17 +283,17 @@ async def get_past_employer_count(
 @router.get("/past-employer-preview", response_model=LeadsQuickResponse)
 async def get_past_employer_preview(
     company_name: str = Query(..., description="Company name to search for"),
-    job_function: Optional[str] = Query(None, description="Filter by job function"),
+    job_function: Optional[str] = Query(None, description="Filter by Sales Nav job function (e.g., 'Engineering', 'Customer Success and Support')"),
     country: Optional[str] = Query(None, description="Filter by person's country (e.g., 'United States')"),
     limit: int = Query(10, ge=1, le=50, description="Number of leads to return (default 10)"),
 ):
     """
     Get a preview of leads who previously worked at a specific company.
-    Returns their current job info. Optionally filter by job function and/or country.
+    Returns their current job info. Optionally filter by Sales Nav job function and/or country.
     """
     pool = get_pool()
 
-    query = f"""
+    query = """
         SELECT DISTINCT ON (l.linkedin_url)
             l.person_id, l.linkedin_url, l.linkedin_slug, l.full_name, l.linkedin_url_type,
             l.person_city, l.person_state, l.person_country,
@@ -300,6 +303,7 @@ async def get_past_employer_preview(
         FROM core.person_work_history pwh
         JOIN core.leads l ON pwh.linkedin_url = l.linkedin_url
         LEFT JOIN core.person_locations pl ON pwh.linkedin_url = pl.linkedin_url
+        LEFT JOIN core.job_function_mapping jfm ON pwh.matched_job_function = jfm.our_job_function
         WHERE pwh.is_current = false
         AND pwh.company_name ILIKE $1
     """
@@ -307,7 +311,7 @@ async def get_past_employer_preview(
     param_idx = 2
 
     if job_function:
-        query += f" AND pwh.matched_job_function = ${param_idx}"
+        query += f" AND COALESCE(jfm.sales_nav_function, 'Other') = ${param_idx}"
         params.append(job_function)
         param_idx += 1
 
@@ -332,7 +336,8 @@ async def get_past_employer_breakdown(
     country: Optional[str] = Query(None, description="Filter by person's country (e.g., 'United States')"),
 ):
     """
-    Get breakdown of people who previously worked at a company, grouped by job function.
+    Get breakdown of people who previously worked at a company, grouped by Sales Nav job function.
+    Uses mapping table to translate our job functions to Sales Nav equivalents.
     """
     pool = get_pool()
 
@@ -343,33 +348,39 @@ async def get_past_employer_breakdown(
     )
     domain = domain_row["domain"] if domain_row else None
 
-    # Build the breakdown query
+    # Build the breakdown query with Sales Nav mapping
     if country:
         query = """
-            SELECT pwh.matched_job_function, COUNT(DISTINCT pwh.linkedin_url) as count
+            SELECT
+                COALESCE(jfm.sales_nav_function, 'Other') as job_function,
+                COUNT(DISTINCT pwh.linkedin_url) as count
             FROM core.person_work_history pwh
             LEFT JOIN core.person_locations pl ON pwh.linkedin_url = pl.linkedin_url
+            LEFT JOIN core.job_function_mapping jfm ON pwh.matched_job_function = jfm.our_job_function
             WHERE pwh.is_current = false
             AND pwh.company_name ILIKE $1
             AND pl.country ILIKE $2
             AND pwh.matched_job_function IS NOT NULL
-            GROUP BY pwh.matched_job_function
+            GROUP BY COALESCE(jfm.sales_nav_function, 'Other')
             ORDER BY count DESC
         """
         rows = await pool.fetch(query, company_name, country)
     else:
         query = """
-            SELECT matched_job_function, COUNT(DISTINCT linkedin_url) as count
-            FROM core.person_work_history
-            WHERE is_current = false
-            AND company_name ILIKE $1
-            AND matched_job_function IS NOT NULL
-            GROUP BY matched_job_function
+            SELECT
+                COALESCE(jfm.sales_nav_function, 'Other') as job_function,
+                COUNT(DISTINCT pwh.linkedin_url) as count
+            FROM core.person_work_history pwh
+            LEFT JOIN core.job_function_mapping jfm ON pwh.matched_job_function = jfm.our_job_function
+            WHERE pwh.is_current = false
+            AND pwh.company_name ILIKE $1
+            AND pwh.matched_job_function IS NOT NULL
+            GROUP BY COALESCE(jfm.sales_nav_function, 'Other')
             ORDER BY count DESC
         """
         rows = await pool.fetch(query, company_name)
 
-    by_job_function = {row["matched_job_function"]: row["count"] for row in rows}
+    by_job_function = {row["job_function"]: row["count"] for row in rows}
     total = sum(by_job_function.values())
 
     return PastEmployerBreakdownResponse(

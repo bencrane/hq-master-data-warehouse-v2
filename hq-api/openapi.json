@@ -685,7 +685,7 @@
           "leads"
         ],
         "summary": "Get Past Employer Count",
-        "description": "Get count of people who previously worked at a specific company.\nOptionally filter by job function and/or person's country.",
+        "description": "Get count of people who previously worked at a specific company.\nOptionally filter by Sales Nav job function and/or person's country.\nJob function accepts Sales Nav values which map to our internal functions.",
         "operationId": "get_past_employer_count_api_leads_past_employer_count_get",
         "parameters": [
           {
@@ -712,10 +712,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by job function",
+              "description": "Filter by Sales Nav job function (e.g., 'Engineering', 'Customer Success and Support')",
               "title": "Job Function"
             },
-            "description": "Filter by job function"
+            "description": "Filter by Sales Nav job function (e.g., 'Engineering', 'Customer Success and Support')"
           },
           {
             "name": "country",
@@ -766,7 +766,7 @@
           "leads"
         ],
         "summary": "Get Past Employer Preview",
-        "description": "Get a preview of leads who previously worked at a specific company.\nReturns their current job info. Optionally filter by job function and/or country.",
+        "description": "Get a preview of leads who previously worked at a specific company.\nReturns their current job info. Optionally filter by Sales Nav job function and/or country.",
         "operationId": "get_past_employer_preview_api_leads_past_employer_preview_get",
         "parameters": [
           {
@@ -793,10 +793,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by job function",
+              "description": "Filter by Sales Nav job function (e.g., 'Engineering', 'Customer Success and Support')",
               "title": "Job Function"
             },
-            "description": "Filter by job function"
+            "description": "Filter by Sales Nav job function (e.g., 'Engineering', 'Customer Success and Support')"
           },
           {
             "name": "country",
@@ -861,7 +861,7 @@
           "leads"
         ],
         "summary": "Get Past Employer Breakdown",
-        "description": "Get breakdown of people who previously worked at a company, grouped by job function.",
+        "description": "Get breakdown of people who previously worked at a company, grouped by Sales Nav job function.\nUses mapping table to translate our job functions to Sales Nav equivalents.",
         "operationId": "get_past_employer_breakdown_api_leads_past_employer_breakdown_get",
         "parameters": [
           {
