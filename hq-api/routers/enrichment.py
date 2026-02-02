@@ -25,6 +25,7 @@ async def get_workflows(
     coalesces_to_core: Optional[bool] = Query(None, description="Filter by whether data flows to core schema"),
     payload_type: Optional[str] = Query(None, description="Filter by payload type: enrichment, inference, signal, etc."),
     usage_category: Optional[str] = Query(None, description="Filter by usage category: client, internal-hq"),
+    workflow_type: Optional[str] = Query(None, description="Filter by workflow type: ingest, calls_ai, lookup, utility, backfill"),
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
 ):
     """
@@ -40,7 +41,7 @@ async def get_workflows(
     query = (
         reference()
         .from_("enrichment_workflow_registry")
-        .select("workflow_slug, provider, platform, payload_type, entity_type, description, raw_table, extracted_table, core_table, coalesces_to_core, usage_category, is_active")
+        .select("workflow_slug, provider, platform, payload_type, entity_type, description, raw_table, extracted_table, core_table, coalesces_to_core, usage_category, workflow_type, is_active")
         .order("entity_type")
         .order("payload_type")
         .order("workflow_slug")
@@ -54,6 +55,8 @@ async def get_workflows(
         query = query.eq("payload_type", payload_type)
     if usage_category:
         query = query.eq("usage_category", usage_category)
+    if workflow_type:
+        query = query.eq("workflow_type", workflow_type)
     if is_active is not None:
         query = query.eq("is_active", is_active)
 
@@ -78,6 +81,7 @@ async def get_workflows(
                 "coalesces_to_core": coalesces_to_core,
                 "payload_type": payload_type,
                 "usage_category": usage_category,
+                "workflow_type": workflow_type,
                 "is_active": is_active,
             }
         }
@@ -94,7 +98,7 @@ async def get_workflows_summary():
     result = (
         reference()
         .from_("enrichment_workflow_registry")
-        .select("entity_type, payload_type, coalesces_to_core, usage_category")
+        .select("entity_type, payload_type, coalesces_to_core, usage_category, workflow_type")
         .eq("is_active", True)
         .execute()
     )
@@ -103,12 +107,14 @@ async def get_workflows_summary():
     by_entity = {}
     by_payload = {}
     by_usage = {"client": 0, "internal-hq": 0}
+    by_workflow_type = {}
 
     for w in result.data:
         entity = w.get("entity_type", "unknown")
         payload = w.get("payload_type", "unknown")
         in_core = w.get("coalesces_to_core", False)
         usage = w.get("usage_category", "internal-hq")
+        wf_type = w.get("workflow_type", "unknown")
 
         # By entity
         if entity not in by_entity:
@@ -131,6 +137,9 @@ async def get_workflows_summary():
         # By usage category
         by_usage[usage] = by_usage.get(usage, 0) + 1
 
+        # By workflow type
+        by_workflow_type[wf_type] = by_workflow_type.get(wf_type, 0) + 1
+
     total_in_core = sum(e["in_core"] for e in by_entity.values())
     total_not_in_core = sum(e["not_in_core"] for e in by_entity.values())
 
@@ -140,6 +149,7 @@ async def get_workflows_summary():
         "total_not_in_core": total_not_in_core,
         "by_entity_type": by_entity,
         "by_payload_type": by_payload,
+        "by_workflow_type": by_workflow_type,
         "by_usage_category": by_usage,
     }
 

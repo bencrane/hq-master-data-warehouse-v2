@@ -3368,6 +3368,24 @@
             "description": "Filter by usage category: client, internal-hq"
           },
           {
+            "name": "workflow_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by workflow type: ingest, calls_ai, lookup, utility, backfill",
+              "title": "Workflow Type"
+            },
+            "description": "Filter by workflow type: ingest, calls_ai, lookup, utility, backfill"
+          },
+          {
             "name": "is_active",
             "in": "query",
             "required": false,
