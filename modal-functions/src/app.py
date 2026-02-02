@@ -83,6 +83,7 @@ from ingest.linkedin_url_inference import infer_company_linkedin_url
 from ingest.meta_description import fetch_meta_description
 from ingest.email_anymailfinder import ingest_email_anymailfinder
 from ingest.email_leadmagic import ingest_email_leadmagic
+from ingest.email_icypeas import ingest_email_icypeas
 from ingest.icp_industries import ingest_icp_industries
 from ingest.icp_job_titles import ingest_icp_job_titles
 from ingest.icp_value_proposition import ingest_icp_value_proposition
