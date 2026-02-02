@@ -105,6 +105,13 @@ class PersonWorkHistoryResponse(BaseModel):
     work_history: List[WorkHistoryEntry]
 
 
+class PersonEnrichmentStatusResponse(BaseModel):
+    linkedin_url: str
+    is_enriched: bool
+    entry_count: int
+    last_enriched_at: Optional[str] = None
+
+
 class LeadsRecentlyPromotedResponse(BaseModel):
     data: List[LeadRecentlyPromoted]
     meta: PaginationMeta

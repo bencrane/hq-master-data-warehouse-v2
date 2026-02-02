@@ -3669,6 +3669,51 @@
         }
       }
     },
+    "/api/people/enrichment-status": {
+      "get": {
+        "tags": [
+          "people"
+        ],
+        "summary": "Get Person Enrichment Status",
+        "description": "Quick check if a person has been enriched (has work history data).\nReturns enrichment status and the date of last insert.",
+        "operationId": "get_person_enrichment_status_api_people_enrichment_status_get",
+        "parameters": [
+          {
+            "name": "linkedin_url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "LinkedIn URL of the person",
+              "title": "Linkedin Url"
+            },
+            "description": "LinkedIn URL of the person"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonEnrichmentStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/gaps/recipes": {
       "get": {
         "tags": [
@@ -10177,6 +10222,40 @@
         },
         "type": "object",
         "title": "Person"
+      },
+      "PersonEnrichmentStatusResponse": {
+        "properties": {
+          "linkedin_url": {
+            "type": "string",
+            "title": "Linkedin Url"
+          },
+          "is_enriched": {
+            "type": "boolean",
+            "title": "Is Enriched"
+          },
+          "entry_count": {
+            "type": "integer",
+            "title": "Entry Count"
+          },
+          "last_enriched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Enriched At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "linkedin_url",
+          "is_enriched",
+          "entry_count"
+        ],
+        "title": "PersonEnrichmentStatusResponse"
       },
       "PersonWorkHistoryResponse": {
         "properties": {

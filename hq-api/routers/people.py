@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 from datetime import date
 from db import core, get_pool
-from models import Person, PeopleResponse, PaginationMeta, WorkHistoryEntry, PersonWorkHistoryResponse
+from models import Person, PeopleResponse, PaginationMeta, WorkHistoryEntry, PersonWorkHistoryResponse, PersonEnrichmentStatusResponse
 
 router = APIRouter(prefix="/api/people", tags=["people"])
 
@@ -132,4 +132,33 @@ async def get_person_work_history(
         has_work_history=len(work_history) > 0,
         entry_count=len(work_history),
         work_history=work_history
+    )
+
+
+@router.get("/enrichment-status", response_model=PersonEnrichmentStatusResponse)
+async def get_person_enrichment_status(
+    linkedin_url: str = Query(..., description="LinkedIn URL of the person"),
+):
+    """
+    Quick check if a person has been enriched (has work history data).
+    Returns enrichment status and the date of last insert.
+    """
+    pool = get_pool()
+
+    row = await pool.fetchrow("""
+        SELECT
+            COUNT(*) as entry_count,
+            MAX(created_at) as last_enriched_at
+        FROM core.person_work_history
+        WHERE linkedin_url = $1
+    """, linkedin_url)
+
+    entry_count = row["entry_count"] if row else 0
+    last_enriched_at = row["last_enriched_at"] if row else None
+
+    return PersonEnrichmentStatusResponse(
+        linkedin_url=linkedin_url,
+        is_enriched=entry_count > 0,
+        entry_count=entry_count,
+        last_enriched_at=str(last_enriched_at) if last_enriched_at else None
     )
