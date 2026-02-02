@@ -86,6 +86,25 @@ class PriorityCompaniesResponse(BaseModel):
     data: List[PriorityCompany]
 
 
+class WorkHistoryEntry(BaseModel):
+    company_name: Optional[str] = None
+    company_domain: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    title: Optional[str] = None
+    matched_job_function: Optional[str] = None
+    matched_seniority: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    is_current: Optional[bool] = None
+
+
+class PersonWorkHistoryResponse(BaseModel):
+    linkedin_url: str
+    has_work_history: bool
+    entry_count: int
+    work_history: List[WorkHistoryEntry]
+
+
 class LeadsRecentlyPromotedResponse(BaseModel):
     data: List[LeadRecentlyPromoted]
     meta: PaginationMeta

@@ -3624,6 +3624,51 @@
         }
       }
     },
+    "/api/people/work-history": {
+      "get": {
+        "tags": [
+          "people"
+        ],
+        "summary": "Get Person Work History",
+        "description": "Get a person's full work history from enrichment data.\nReturns all past and current positions.",
+        "operationId": "get_person_work_history_api_people_work_history_get",
+        "parameters": [
+          {
+            "name": "linkedin_url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "LinkedIn URL of the person",
+              "title": "Linkedin Url"
+            },
+            "description": "LinkedIn URL of the person"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonWorkHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/gaps/recipes": {
       "get": {
         "tags": [
@@ -10133,6 +10178,37 @@
         "type": "object",
         "title": "Person"
       },
+      "PersonWorkHistoryResponse": {
+        "properties": {
+          "linkedin_url": {
+            "type": "string",
+            "title": "Linkedin Url"
+          },
+          "has_work_history": {
+            "type": "boolean",
+            "title": "Has Work History"
+          },
+          "entry_count": {
+            "type": "integer",
+            "title": "Entry Count"
+          },
+          "work_history": {
+            "items": {
+              "$ref": "#/components/schemas/WorkHistoryEntry"
+            },
+            "type": "array",
+            "title": "Work History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "linkedin_url",
+          "has_work_history",
+          "entry_count",
+          "work_history"
+        ],
+        "title": "PersonWorkHistoryResponse"
+      },
       "PriorityCompaniesResponse": {
         "properties": {
           "data": {
@@ -10651,6 +10727,113 @@
           "success"
         ],
         "title": "VerifyMagicLinkResponse"
+      },
+      "WorkHistoryEntry": {
+        "properties": {
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "matched_job_function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Job Function"
+          },
+          "matched_seniority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Seniority"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "is_current": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Current"
+          }
+        },
+        "type": "object",
+        "title": "WorkHistoryEntry"
       }
     }
   }

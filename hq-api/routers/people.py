@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 from datetime import date
-from db import core
-from models import Person, PeopleResponse, PaginationMeta
+from db import core, get_pool
+from models import Person, PeopleResponse, PaginationMeta, WorkHistoryEntry, PersonWorkHistoryResponse
 
 router = APIRouter(prefix="/api/people", tags=["people"])
 
@@ -90,3 +90,46 @@ async def get_people(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@router.get("/work-history", response_model=PersonWorkHistoryResponse)
+async def get_person_work_history(
+    linkedin_url: str = Query(..., description="LinkedIn URL of the person"),
+):
+    """
+    Get a person's full work history from enrichment data.
+    Returns all past and current positions.
+    """
+    pool = get_pool()
+
+    rows = await pool.fetch("""
+        SELECT
+            company_name, company_domain, company_linkedin_url,
+            title, matched_job_function, matched_seniority,
+            start_date, end_date, is_current
+        FROM core.person_work_history
+        WHERE linkedin_url = $1
+        ORDER BY is_current DESC, start_date DESC NULLS LAST
+    """, linkedin_url)
+
+    work_history = [
+        WorkHistoryEntry(
+            company_name=row["company_name"],
+            company_domain=row["company_domain"],
+            company_linkedin_url=row["company_linkedin_url"],
+            title=row["title"],
+            matched_job_function=row["matched_job_function"],
+            matched_seniority=row["matched_seniority"],
+            start_date=row["start_date"],
+            end_date=row["end_date"],
+            is_current=row["is_current"]
+        )
+        for row in rows
+    ]
+
+    return PersonWorkHistoryResponse(
+        linkedin_url=linkedin_url,
+        has_work_history=len(work_history) > 0,
+        entry_count=len(work_history),
+        work_history=work_history
+    )
