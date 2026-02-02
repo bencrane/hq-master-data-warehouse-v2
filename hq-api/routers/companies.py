@@ -283,6 +283,69 @@ async def check_has_customers_post(payload: dict):
     }
 
 
+@router.get("/{domain}/has-case-studies")
+async def check_has_case_studies(domain: str):
+    """
+    Check if case study details have been extracted for this company.
+    Returns: { "has_case_studies": true/false, "count": N, "last_extracted_at": timestamp }
+    """
+    from db import get_pool
+    pool = get_pool()
+
+    domain = domain.lower().strip().rstrip("/")
+
+    row = await pool.fetchrow("""
+        SELECT
+            COUNT(*) as count,
+            MAX(created_at) as last_extracted_at
+        FROM extracted.case_study_details
+        WHERE origin_company_domain = $1
+    """, domain)
+
+    count = row["count"] if row else 0
+    last_extracted_at = row["last_extracted_at"] if row else None
+
+    return {
+        "domain": domain,
+        "has_case_studies": count > 0,
+        "count": count,
+        "last_extracted_at": str(last_extracted_at) if last_extracted_at else None
+    }
+
+
+@router.post("/check-has-case-studies")
+async def check_has_case_studies_post(payload: dict):
+    """
+    Simple check via POST: does this company have case study details extracted?
+    Payload: { "domain": "example.com" }
+    Returns: { "has_case_studies": true/false, "count": N, "last_extracted_at": timestamp }
+    """
+    from db import get_pool
+    pool = get_pool()
+
+    domain = payload.get("domain", "").lower().strip().rstrip("/")
+    if not domain:
+        return {"error": "domain is required", "has_case_studies": False, "count": 0}
+
+    row = await pool.fetchrow("""
+        SELECT
+            COUNT(*) as count,
+            MAX(created_at) as last_extracted_at
+        FROM extracted.case_study_details
+        WHERE origin_company_domain = $1
+    """, domain)
+
+    count = row["count"] if row else 0
+    last_extracted_at = row["last_extracted_at"] if row else None
+
+    return {
+        "domain": domain,
+        "has_case_studies": count > 0,
+        "count": count,
+        "last_extracted_at": str(last_extracted_at) if last_extracted_at else None
+    }
+
+
 @router.get("/{domain}/customers")
 async def get_company_customers(
     domain: str,

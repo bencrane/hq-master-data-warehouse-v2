@@ -2610,6 +2610,89 @@
         }
       }
     },
+    "/api/companies/{domain}/has-case-studies": {
+      "get": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Check Has Case Studies",
+        "description": "Check if case study details have been extracted for this company.\nReturns: { \"has_case_studies\": true/false, \"count\": N, \"last_extracted_at\": timestamp }",
+        "operationId": "check_has_case_studies_api_companies__domain__has_case_studies_get",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Domain"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/check-has-case-studies": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Check Has Case Studies Post",
+        "description": "Simple check via POST: does this company have case study details extracted?\nPayload: { \"domain\": \"example.com\" }\nReturns: { \"has_case_studies\": true/false, \"count\": N, \"last_extracted_at\": timestamp }",
+        "operationId": "check_has_case_studies_post_api_companies_check_has_case_studies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/companies/{domain}/customers": {
       "get": {
         "tags": [
