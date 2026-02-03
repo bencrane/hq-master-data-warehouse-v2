@@ -3292,7 +3292,7 @@
           "enrichment"
         ],
         "summary": "Get Workflows",
-        "description": "Get all enrichment workflows from the registry.\n\nUse coalesces_to_core=true to see workflows that write to core tables.\nUse coalesces_to_core=false to see workflows that only write to raw/extracted.\nUse usage_category=client to see client-facing workflows (signals).\nUse usage_category=internal-hq to see internal HQ workflows.",
+        "description": "Get all enrichment workflows from the registry.\n\nUse coalesces_to_core=true to see workflows that write to core tables.\nUse coalesces_to_core=false to see workflows that only write to raw/extracted.\nUse usage_category=client to see client-facing workflows (signals).\nUse usage_category=internal-hq to see internal HQ workflows.\nUse has_api_wrapper=true to see only workflows with /run/* API endpoints.",
         "operationId": "get_workflows_api_enrichment_workflows_get",
         "parameters": [
           {
@@ -3403,6 +3403,24 @@
               "title": "Is Active"
             },
             "description": "Filter by active status"
+          },
+          {
+            "name": "has_api_wrapper",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether workflow has an API wrapper endpoint",
+              "title": "Has Api Wrapper"
+            },
+            "description": "Filter by whether workflow has an API wrapper endpoint"
           }
         ],
         "responses": {
