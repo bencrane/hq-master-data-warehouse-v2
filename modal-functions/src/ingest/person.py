@@ -22,6 +22,13 @@ from extraction.person import (
     extract_person_title_enrichment,
 )
 from extraction.person_mapping import map_person_discovery
+from extraction.person_core import (
+    upsert_core_person,
+    upsert_core_person_location,
+    upsert_core_person_tenure,
+    insert_core_person_past_employers,
+    extract_companies_from_experience,
+)
 
 
 class PersonIngestRequest(BaseModel):
@@ -129,6 +136,7 @@ def ingest_clay_person_profile(request: PersonIngestRequest) -> dict:
         )
 
         # Extract experience (delete + insert)
+        # Note: This triggers sync_person_experience_to_core() which populates core.person_work_history
         experience_count = extract_person_experience(
             supabase, raw_id, request.linkedin_url, request.raw_payload
         )
@@ -138,12 +146,43 @@ def ingest_clay_person_profile(request: PersonIngestRequest) -> dict:
             supabase, raw_id, request.linkedin_url, request.raw_payload
         )
 
+        # Populate core tables
+        # 1. core.people - check/insert person
+        core_person_id = upsert_core_person(
+            supabase, request.linkedin_url, request.raw_payload
+        )
+
+        # 2. core.companies - extract companies from experience
+        companies_count = extract_companies_from_experience(
+            supabase, request.raw_payload
+        )
+
+        # 3. core.person_locations - upsert location
+        core_location_id = upsert_core_person_location(
+            supabase, request.linkedin_url, request.raw_payload
+        )
+
+        # 4. core.person_tenure - upsert tenure (job start date)
+        core_tenure_id = upsert_core_person_tenure(
+            supabase, request.linkedin_url, request.raw_payload
+        )
+
+        # 5. core.person_past_employer - insert past employers
+        past_employers_count = insert_core_person_past_employers(
+            supabase, request.linkedin_url, request.raw_payload
+        )
+
         return {
             "success": True,
             "raw_id": raw_id,
             "person_profile_id": person_profile_id,
             "experience_count": experience_count,
             "education_count": education_count,
+            "core_person_id": core_person_id,
+            "companies_count": companies_count,
+            "core_location_id": core_location_id,
+            "core_tenure_id": core_tenure_id,
+            "past_employers_count": past_employers_count,
         }
 
     except Exception as e:
