@@ -4486,12 +4486,12 @@ async def backfill_person_matched_location(request: BackfillPersonMatchedLocatio
 @router.post(
     "/companies/db/public-ticker/backfill",
     response_model=BackfillPublicCompanyTickerResponse,
-    summary="Update ticker for a public company",
-    description="Updates the ticker column in core.company_public for a given domain"
+    summary="Update ticker for a company",
+    description="Updates the ticker column in core.companies for a given domain"
 )
 async def backfill_public_company_ticker(request: BackfillPublicCompanyTickerRequest) -> BackfillPublicCompanyTickerResponse:
     """
-    Update ticker for a public company in core.company_public.
+    Update ticker for a company in core.companies.
 
     Used for backfilling SEC ticker symbols from Clay.
     """
@@ -4505,21 +4505,12 @@ async def backfill_public_company_ticker(request: BackfillPublicCompanyTickerReq
 
     pool = get_pool()
 
+    # Upsert: update if exists, insert if not
     result = await pool.execute("""
-        UPDATE core.company_public
-        SET ticker = $1
-        WHERE domain = $2
+        INSERT INTO core.companies (domain, ticker)
+        VALUES ($2, $1)
+        ON CONFLICT (domain) DO UPDATE SET ticker = $1, updated_at = now()
     """, ticker, domain)
-
-    rows_affected = int(result.split()[-1])
-
-    if rows_affected == 0:
-        return BackfillPublicCompanyTickerResponse(
-            success=False,
-            domain=domain,
-            ticker=ticker,
-            error=f"No company found with domain '{domain}' in core.company_public"
-        )
 
     return BackfillPublicCompanyTickerResponse(
         success=True,
