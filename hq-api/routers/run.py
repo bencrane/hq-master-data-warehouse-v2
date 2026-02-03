@@ -1502,6 +1502,20 @@ class BackfillPublicCompanyTickerResponse(BaseModel):
     error: Optional[str] = None
 
 
+class CompanyTickerIngestRequest(BaseModel):
+    domain: str
+    ticker_payload: dict
+    clay_table_url: Optional[str] = None
+
+
+class CompanyTickerIngestResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    ticker: Optional[str] = None
+    raw_payload_id: Optional[str] = None
+    error: Optional[str] = None
+
+
 class ClientLeadIngestRequest(BaseModel):
     client_domain: str
     client_form_id: Optional[str] = None
@@ -4477,6 +4491,48 @@ async def backfill_person_matched_location(request: BackfillPersonMatchedLocatio
                 detail=f"Modal function error: {e.response.text}"
             )
         except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/ticker/ingest",
+    response_model=CompanyTickerIngestResponse,
+    summary="Ingest company ticker",
+    description="Wrapper for Modal function: ingest_company_ticker"
+)
+async def ingest_company_ticker(request: CompanyTickerIngestRequest) -> CompanyTickerIngestResponse:
+    """
+    Ingest company ticker data.
+
+    Stores raw payload, extracts ticker, upserts to reference.sec_company_info.
+
+    Modal function: ingest_company_ticker
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-company-ticker.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-ingest-company-ticker.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json={
+                    "domain": request.domain,
+                    "ticker_payload": request.ticker_payload,
+                    "clay_table_url": request.clay_table_url,
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            return CompanyTickerIngestResponse(**data)
+        except httpx.HTTPStatusError as e:
+            return CompanyTickerIngestResponse(
+                success=False,
+                error=f"Modal function error: {e.response.text}"
+            )
+        except Exception as e:
             raise HTTPException(
                 status_code=503,
                 detail=f"Failed to reach Modal function: {str(e)}"
