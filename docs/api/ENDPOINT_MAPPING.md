@@ -86,6 +86,16 @@ Maps Modal serverless functions to their API wrapper endpoints at `api.revenuein
 | clay-find-people-title-enrichment | ingest_ppl_title_enrich | https://bencrane--hq-master-data-ingest-ingest-ppl-title-enrich.modal.run | POST /run/people/not-sure/job-title-clean/ingest |
 | salesnav-company-location-lookup | lookup_salesnav_company_location | https://bencrane--hq-master-data-ingest-lookup-salesnav-company--1838bd.modal.run | POST /run/companies/db/salesnav-company-location/lookup |
 | salesnav-person-location-lookup | lookup_salesnav_location | https://bencrane--hq-master-data-ingest-lookup-salesnav-location.modal.run | POST /run/--/db/salesnav-person/lookup |
+| process-similar-companies-queue | process_similar_companies_queue | https://bencrane--hq-master-data-ingest-process-similar-companies-queue.modal.run | POST /run/IGNORE/IGNORE/IGNORE/process |
+| staging-company-linkedin-update | update_staging_company_linkedin | https://bencrane--hq-master-data-ingest-update-vc-domain.modal.run | POST /run/companies/db/company-linkedin/update |
+| vc-domain-update | update_vc_domain | https://bencrane--hq-master-data-ingest-upsert-core-company.modal.run | POST /run/companies/db/vc-domain/update |
+| core-company-upsert | upsert_core_company | https://bencrane--hq-master-data-ingest-upsert-core-company.modal.run | POST /run/companies/db/core-company/upsert |
+| core-company-full-upsert | upsert_core_company_full | https://bencrane--hq-master-data-ingest-upsert-core-company-full.modal.run | POST /run/companies/db/core-company-full/upsert |
+| icp-criteria-upsert | upsert_icp_criteria | https://bencrane--hq-master-data-ingest-upsert-icp-criteria.modal.run | POST /run/companies/db/icp-criteria/upsert |
+| backfill-cleaned-company-name | backfill_cleaned_company_name | https://bencrane--hq-master-data-ingest-backfill-cleaned-company-name.modal.run | POST /run/companies/db/populate-name/backfill |
+| backfill-company-descriptions | backfill_company_descriptions | https://bencrane--hq-master-data-ingest-backfill-company-descriptions.modal.run | POST /run/companies/db/populate-description/backfill |
+| backfill-person-location | backfill_person_location | https://bencrane--hq-master-data-ingest-backfill-person-location.modal.run | POST /run/people/db/populate-location/backfill |
+| backfill-person-matched-location | backfill_person_matched_location | https://bencrane--hq-master-data-ingest-backfill-person-matched--f1e270.modal.run | POST /run/people/db/populate-matched-location/backfill |
 
 ---
 

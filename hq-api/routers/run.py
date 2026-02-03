@@ -14,7 +14,7 @@ Example:
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 router = APIRouter(prefix="/run", tags=["run"])
 
@@ -1280,6 +1280,176 @@ class SalesnavLocationLookupResponse(BaseModel):
     has_city: Optional[bool] = None
     has_state: Optional[bool] = None
     has_country: Optional[bool] = None
+    error: Optional[str] = None
+
+
+class ProcessSimilarCompaniesQueueRequest(BaseModel):
+    batch_size: int = 300
+    webhook_url: Optional[str] = None
+    similarity_weight: Optional[float] = 0.0
+    country_code: Optional[str] = None
+
+
+class ProcessSimilarCompaniesQueueResponse(BaseModel):
+    success: bool
+    batch_id: Optional[str] = None
+    domains_to_process: Optional[int] = None
+    estimated_time_seconds: Optional[float] = None
+    webhook_url: Optional[str] = None
+    message: Optional[str] = None
+    error: Optional[str] = None
+
+
+class StagingCompanyLinkedInRequest(BaseModel):
+    domain: str
+    company_linkedin_url: Optional[str] = None
+    short_description: Optional[str] = None
+
+
+class StagingCompanyLinkedInResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    updated_count: Optional[int] = None
+    error: Optional[str] = None
+
+
+class VCDomainUpdateRequest(BaseModel):
+    vc_name: str
+    domain: str
+
+
+class VCDomainUpdateResponse(BaseModel):
+    success: bool
+    vc_name: Optional[str] = None
+    domain: Optional[str] = None
+    updated: Optional[int] = None
+    error: Optional[str] = None
+
+
+class CoreCompanyUpsertRequest(BaseModel):
+    domain: str
+    name: Optional[str] = None
+    linkedin_url: Optional[str] = None
+
+
+class CoreCompanyUpsertResponse(BaseModel):
+    success: bool
+    id: Optional[str] = None
+    domain: Optional[str] = None
+    error: Optional[str] = None
+
+
+class CoreCompanyFullUpsertRequest(BaseModel):
+    company_name: str
+    domain: str
+    linkedin_url: Optional[str] = None
+    industry: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    employee_range: Optional[str] = None
+    source: str = "gemini-enrichment"
+
+
+class CoreCompanyFullUpsertResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    company_id: Optional[str] = None
+    location_id: Optional[str] = None
+    industry_id: Optional[str] = None
+    employee_range_id: Optional[str] = None
+    linkedin_url_id: Optional[str] = None
+    error: Optional[str] = None
+
+
+class ICPCriteriaUpsertRequest(BaseModel):
+    domain: str
+    company_name: Optional[str] = None
+    industries: Optional[List[str]] = None
+    countries: Optional[List[str]] = None
+    employee_ranges: Optional[List[str]] = None
+    funding_stages: Optional[List[str]] = None
+    job_titles: Optional[List[str]] = None
+    seniorities: Optional[List[str]] = None
+    job_functions: Optional[List[str]] = None
+    value_proposition: Optional[str] = None
+    core_benefit: Optional[str] = None
+    target_customer: Optional[str] = None
+    key_differentiator: Optional[str] = None
+
+
+class ICPCriteriaUpsertResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    id: Optional[str] = None
+    error: Optional[str] = None
+
+
+class BackfillCleanedCompanyNameRequest(BaseModel):
+    batch_size: int = 5000
+    max_batches: Optional[int] = None
+
+
+class BackfillCleanedCompanyNameResponse(BaseModel):
+    success: bool
+    total_updated: Optional[int] = None
+    batches_processed: Optional[int] = None
+    error: Optional[str] = None
+
+
+class BackfillCompanyDescriptionsRequest(BaseModel):
+    batch_size: int = 1000
+    dry_run: bool = False
+
+
+class BackfillCompanyDescriptionsResponse(BaseModel):
+    success: bool
+    dry_run: Optional[bool] = None
+    updated_count: Optional[int] = None
+    source_breakdown: Optional[dict] = None
+    error: Optional[str] = None
+
+
+class BackfillPersonLocationRequest(BaseModel):
+    dry_run: bool = True
+    limit: Optional[int] = None
+
+
+class BackfillPersonLocationResponse(BaseModel):
+    success: bool = True
+    dry_run: Optional[bool] = None
+    records_missing_city: Optional[int] = None
+    lookup_entries: Optional[int] = None
+    matches_in_sample: Optional[int] = None
+    sample_size: Optional[int] = None
+    sample_matches: Optional[List[dict]] = None
+    message: Optional[str] = None
+    updated_count: Optional[int] = None
+    processed_count: Optional[int] = None
+    limit: Optional[int] = None
+    errors: Optional[List[dict]] = None
+    error_count: Optional[int] = None
+    error: Optional[str] = None
+
+
+class BackfillPersonMatchedLocationRequest(BaseModel):
+    dry_run: bool = True
+    limit: int = 50000
+
+
+class BackfillPersonMatchedLocationResponse(BaseModel):
+    success: bool = True
+    dry_run: Optional[bool] = None
+    total_records_to_update: Optional[int] = None
+    lookup_entries: Optional[int] = None
+    limit: Optional[int] = None
+    calls_needed: Optional[int] = None
+    records_processed: Optional[int] = None
+    updated_count: Optional[int] = None
+    skipped_no_match: Optional[int] = None
+    errors: Optional[List[dict]] = None
+    error_count: Optional[int] = None
+    remaining_records: Optional[int] = None
     error: Optional[str] = None
 
 
@@ -3862,6 +4032,373 @@ async def lookup_salesnav_location(request: SalesnavLocationLookupRequest) -> Sa
             )
             response.raise_for_status()
             return SalesnavLocationLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/IGNORE/IGNORE/IGNORE/process",
+    response_model=ProcessSimilarCompaniesQueueResponse,
+    summary="Process similar companies queue",
+    description="Wrapper for Modal function: process_similar_companies_queue"
+)
+async def process_similar_companies_queue(request: ProcessSimilarCompaniesQueueRequest) -> ProcessSimilarCompaniesQueueResponse:
+    """
+    Process next N domains from the similar companies queue.
+
+    Returns immediately with batch_id. Spawns background worker to process.
+    Calls webhook_url when done (if provided).
+
+    Modal function: process_similar_companies_queue
+    Modal URL: https://bencrane--hq-master-data-ingest-process-similar-companies-queue.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-process-similar-companies-queue.modal.run"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return ProcessSimilarCompaniesQueueResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/company-linkedin/update",
+    response_model=StagingCompanyLinkedInResponse,
+    summary="Update staging company LinkedIn URL",
+    description="Wrapper for Modal function: update_staging_company_linkedin"
+)
+async def update_staging_company_linkedin(request: StagingCompanyLinkedInRequest) -> StagingCompanyLinkedInResponse:
+    """
+    Update company_linkedin_url for a staging company by domain.
+
+    Modal function: update_staging_company_linkedin
+    Modal URL: https://bencrane--hq-master-data-ingest-update-vc-domain.modal.run
+    """
+    modal_url = "https://bencrane--hq-master-data-ingest-update-vc-domain.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return StagingCompanyLinkedInResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/vc-domain/update",
+    response_model=VCDomainUpdateResponse,
+    summary="Update VC firm domain by name",
+    description="Wrapper for Modal function: update_vc_domain"
+)
+async def update_vc_domain(request: VCDomainUpdateRequest) -> VCDomainUpdateResponse:
+    """
+    Update the domain for a VC firm by matching on name.
+
+    Modal function: update_vc_domain
+    Modal URL: https://bencrane--hq-master-data-ingest-upsert-core-company.modal.run
+    """
+    modal_url = "https://bencrane--hq-master-data-ingest-upsert-core-company.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return VCDomainUpdateResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/core-company/upsert",
+    response_model=CoreCompanyUpsertResponse,
+    summary="Upsert company to core.companies",
+    description="Wrapper for Modal function: upsert_core_company"
+)
+async def upsert_core_company(request: CoreCompanyUpsertRequest) -> CoreCompanyUpsertResponse:
+    """
+    Upsert a company to core.companies.
+
+    Simple direct insert/update on domain.
+
+    Modal function: upsert_core_company
+    Modal URL: https://bencrane--hq-master-data-ingest-upsert-core-company.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-upsert-core-company.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return CoreCompanyUpsertResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/core-company-full/upsert",
+    response_model=CoreCompanyFullUpsertResponse,
+    summary="Upsert company to all core dimension tables",
+    description="Wrapper for Modal function: upsert_core_company_full"
+)
+async def upsert_core_company_full(request: CoreCompanyFullUpsertRequest) -> CoreCompanyFullUpsertResponse:
+    """
+    Upsert enriched company data to all core dimension tables.
+
+    Writes to: core.companies, core.company_locations, core.company_industries,
+    core.company_employee_ranges, core.company_linkedin_urls
+
+    Modal function: upsert_core_company_full
+    Modal URL: https://bencrane--hq-master-data-ingest-upsert-core-company-full.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-upsert-core-company-full.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return CoreCompanyFullUpsertResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/icp-criteria/upsert",
+    response_model=ICPCriteriaUpsertResponse,
+    summary="Upsert ICP criteria for a company",
+    description="Wrapper for Modal function: upsert_icp_criteria"
+)
+async def upsert_icp_criteria(request: ICPCriteriaUpsertRequest) -> ICPCriteriaUpsertResponse:
+    """
+    Upsert ICP filter criteria for a company to core.icp_criteria.
+
+    Modal function: upsert_icp_criteria
+    Modal URL: https://bencrane--hq-master-data-ingest-upsert-icp-criteria.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-upsert-icp-criteria.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return ICPCriteriaUpsertResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/populate-name/backfill",
+    response_model=BackfillCleanedCompanyNameResponse,
+    summary="Backfill cleaned company names",
+    description="Wrapper for Modal function: backfill_cleaned_company_name"
+)
+async def backfill_cleaned_company_name(request: BackfillCleanedCompanyNameRequest) -> BackfillCleanedCompanyNameResponse:
+    """
+    Backfill cleaned_name in core.companies from extracted.cleaned_company_names.
+
+    Processes in batches to avoid timeouts.
+
+    Modal function: backfill_cleaned_company_name
+    Modal URL: https://bencrane--hq-master-data-ingest-backfill-cleaned-company-name.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-backfill-cleaned-company-name.modal.run"
+
+    async with httpx.AsyncClient(timeout=600.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return BackfillCleanedCompanyNameResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/populate-description/backfill",
+    response_model=BackfillCompanyDescriptionsResponse,
+    summary="Backfill company descriptions from multiple sources",
+    description="Wrapper for Modal function: backfill_company_descriptions"
+)
+async def backfill_company_descriptions(request: BackfillCompanyDescriptionsRequest) -> BackfillCompanyDescriptionsResponse:
+    """
+    Backfill core.company_descriptions with priority:
+    1. vc_portfolio.long_description
+    2. company_firmographics.description
+    3. company_discovery.description
+
+    Modal function: backfill_company_descriptions
+    Modal URL: https://bencrane--hq-master-data-ingest-backfill-company-descriptions.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-backfill-company-descriptions.modal.run"
+
+    async with httpx.AsyncClient(timeout=600.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return BackfillCompanyDescriptionsResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/people/db/populate-location/backfill",
+    response_model=BackfillPersonLocationResponse,
+    summary="Backfill person locations from lookup table",
+    description="Wrapper for Modal function: backfill_person_location"
+)
+async def backfill_person_location(request: BackfillPersonLocationRequest) -> BackfillPersonLocationResponse:
+    """
+    Backfill city/state/country in extracted.person_discovery from reference.location_lookup.
+
+    Only updates records where city IS NULL. Use dry_run=True to preview.
+
+    Modal function: backfill_person_location
+    Modal URL: https://bencrane--hq-master-data-ingest-backfill-person-location.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-backfill-person-location.modal.run"
+
+    async with httpx.AsyncClient(timeout=600.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return BackfillPersonLocationResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/people/db/populate-matched-location/backfill",
+    response_model=BackfillPersonMatchedLocationResponse,
+    summary="Backfill person matched locations from lookup table",
+    description="Wrapper for Modal function: backfill_person_matched_location"
+)
+async def backfill_person_matched_location(request: BackfillPersonMatchedLocationRequest) -> BackfillPersonMatchedLocationResponse:
+    """
+    Backfill matched_city/matched_state/matched_country in extracted.person_discovery.
+
+    Processes up to `limit` records per call. Use dry_run=True to preview count.
+
+    Modal function: backfill_person_matched_location
+    Modal URL: https://bencrane--hq-master-data-ingest-backfill-person-matched--f1e270.modal.run
+    """
+    modal_url = "https://bencrane--hq-master-data-ingest-backfill-person-matched--f1e270.modal.run"
+
+    async with httpx.AsyncClient(timeout=1800.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return BackfillPersonMatchedLocationResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
