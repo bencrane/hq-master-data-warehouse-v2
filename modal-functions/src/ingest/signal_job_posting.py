@@ -6,7 +6,7 @@ Detects new job postings at monitored companies.
 
 Signal Type: Company-level
 Required Input: company_linkedin_url
-Output: company_name, job_title, location, company_domain, job_linkedin_url, post_on
+Output: company_name, job_title, location, company_domain, job_linkedin_url, posted_at, etc.
 """
 
 import os
@@ -19,23 +19,20 @@ from extraction.signal_job_posting import extract_job_posting_signal
 
 
 class JobPostingSignalRequest(BaseModel):
-    # Input fields (required)
-    company_linkedin_url: str
-    
-    # Company record payload (full object from Clay)
-    company_record_raw_payload: Optional[Any] = None
-    
-    # Clay output fields (flattened)
-    company_name: Optional[str] = None
-    job_title: Optional[str] = None
-    location: Optional[str] = None
-    company_domain: Optional[str] = None
-    job_linkedin_url: Optional[str] = None
-    post_on: Optional[str] = None
-    
+    # Input fields (either or both)
+    domain: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+
+    # Raw payload from Clay (entire object with jobPostData nested)
+    raw_job_post_data_payload: Optional[dict] = None
+
+    # Enriched fields (from Clay)
+    cleaned_job_title: Optional[str] = None
+    job_function: Optional[str] = None
+
     # Signal metadata
     signal_slug: str = "clay-job-posting"
-    
+
     # Traceability
     clay_table_url: Optional[str] = None
 
@@ -74,12 +71,25 @@ def ingest_clay_signal_job_posting(request: JobPostingSignalRequest) -> dict:
         if not signal.get("is_active", True):
             return {"success": False, "error": f"Signal '{request.signal_slug}' is not active"}
 
+        raw = request.raw_job_post_data_payload or {}
+
+        # Resolve domain: prefer request.domain, fallback to jobPostData.domain
+        job_post_data = raw.get("jobPostData", {})
+        domain = request.domain or job_post_data.get("domain")
+        if domain:
+            domain = domain.lower().strip()
+
+        # Require at least domain or company_linkedin_url
+        if not domain and not request.company_linkedin_url:
+            return {"success": False, "error": "Either domain or company_linkedin_url is required"}
+
         # Store raw payload
         raw_record = {
+            "domain": domain,
             "company_linkedin_url": request.company_linkedin_url,
             "signal_slug": request.signal_slug,
             "clay_table_url": request.clay_table_url,
-            "company_record_raw_payload": request.company_record_raw_payload,
+            "raw_event_payload": raw,
         }
 
         raw_result = (
@@ -94,25 +104,29 @@ def ingest_clay_signal_job_posting(request: JobPostingSignalRequest) -> dict:
 
         raw_payload_id = raw_result.data[0]["id"]
 
-        # Extract normalized data
+        # Extract for normalized storage
+        is_initial_check = raw.get("isInitialCheck", False)
+
         extraction_result = extract_job_posting_signal(
             supabase=supabase,
             raw_payload_id=raw_payload_id,
+            domain=domain,
             company_linkedin_url=request.company_linkedin_url,
-            company_name=request.company_name,
-            job_title=request.job_title,
-            location=request.location,
-            company_domain=request.company_domain,
-            job_linkedin_url=request.job_linkedin_url,
-            post_on=request.post_on,
+            job_post_data=job_post_data,
+            is_initial_check=is_initial_check,
+            cleaned_job_title=request.cleaned_job_title,
+            job_function=request.job_function,
         )
 
         return {
             "success": True,
             "raw_id": raw_payload_id,
             "extracted_id": extraction_result.get("extracted_id"),
-            "job_title": request.job_title,
-            "company_name": request.company_name,
+            "core_id": extraction_result.get("core_id"),
+            "domain": domain,
+            "job_title": job_post_data.get("title"),
+            "cleaned_job_title": request.cleaned_job_title,
+            "job_function": request.job_function,
         }
 
     except Exception as e:
