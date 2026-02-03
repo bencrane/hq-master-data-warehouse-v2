@@ -27,6 +27,7 @@ async def get_workflows(
     usage_category: Optional[str] = Query(None, description="Filter by usage category: client, internal-hq"),
     workflow_type: Optional[str] = Query(None, description="Filter by workflow type: ingest, calls_ai, lookup, utility, backfill"),
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
+    has_api_wrapper: Optional[bool] = Query(None, description="Filter by whether workflow has an API wrapper endpoint"),
 ):
     """
     Get all enrichment workflows from the registry.
@@ -35,15 +36,15 @@ async def get_workflows(
     Use coalesces_to_core=false to see workflows that only write to raw/extracted.
     Use usage_category=client to see client-facing workflows (signals).
     Use usage_category=internal-hq to see internal HQ workflows.
+    Use has_api_wrapper=true to see only workflows with /run/* API endpoints.
     """
     from db import reference
 
     query = (
         reference()
         .from_("enrichment_workflow_registry")
-        .select("workflow_slug, provider, platform, payload_type, entity_type, description, raw_table, extracted_table, core_table, coalesces_to_core, usage_category, workflow_type, is_active")
-        .order("entity_type")
-        .order("payload_type")
+        .select("workflow_slug, new_workflow_slug, provider, platform, payload_type, entity_type, description, raw_table, extracted_table, core_table, coalesces_to_core, usage_category, workflow_type, is_active, modal_function_name, modal_endpoint_url, api_endpoint_url")
+        .order("new_workflow_slug", nullsfirst=False)
         .order("workflow_slug")
     )
 
@@ -59,6 +60,10 @@ async def get_workflows(
         query = query.eq("workflow_type", workflow_type)
     if is_active is not None:
         query = query.eq("is_active", is_active)
+    if has_api_wrapper is True:
+        query = query.not_.is_("api_endpoint_url", "null")
+    elif has_api_wrapper is False:
+        query = query.is_("api_endpoint_url", "null")
 
     result = query.execute()
 
@@ -67,6 +72,7 @@ async def get_workflows(
     not_in_core = [w for w in result.data if not w.get("coalesces_to_core")]
     client_workflows = [w for w in result.data if w.get("usage_category") == "client"]
     internal_workflows = [w for w in result.data if w.get("usage_category") == "internal-hq"]
+    with_api_wrapper = [w for w in result.data if w.get("api_endpoint_url")]
 
     return {
         "data": result.data,
@@ -76,6 +82,7 @@ async def get_workflows(
             "not_in_core_count": len(not_in_core),
             "client_count": len(client_workflows),
             "internal_hq_count": len(internal_workflows),
+            "with_api_wrapper_count": len(with_api_wrapper),
             "filters": {
                 "entity_type": entity_type,
                 "coalesces_to_core": coalesces_to_core,
@@ -83,6 +90,7 @@ async def get_workflows(
                 "usage_category": usage_category,
                 "workflow_type": workflow_type,
                 "is_active": is_active,
+                "has_api_wrapper": has_api_wrapper,
             }
         }
     }
