@@ -1252,6 +1252,42 @@ class PersonLocationLookupResponse(BaseModel):
     error: Optional[str] = None
 
 
+class JobTitleUpdateRequest(BaseModel):
+    latest_title: str
+    cleaned_job_title: str
+    seniority_level: Optional[str] = None
+    job_function: Optional[str] = None
+    status: Optional[str] = None
+
+
+class JobTitleUpdateResponse(BaseModel):
+    success: bool
+    latest_title: Optional[str] = None
+    cleaned_job_title: Optional[str] = None
+    seniority_level: Optional[str] = None
+    job_function: Optional[str] = None
+    error: Optional[str] = None
+
+
+class LocationUpdateRequest(BaseModel):
+    location_name: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    has_city: Optional[bool] = None
+    has_state: Optional[bool] = None
+    has_country: Optional[bool] = None
+
+
+class LocationUpdateResponse(BaseModel):
+    success: bool
+    location_name: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    error: Optional[str] = None
+
+
 class CompanyLocationLookupRequest(BaseModel):
     registered_address_raw: str
 
@@ -4578,3 +4614,105 @@ async def ingest_client_lead(request: ClientLeadIngestRequest) -> ClientLeadInge
             success=False,
             error=str(e)
         )
+
+
+@router.post(
+    "/reference/job-title/update",
+    response_model=JobTitleUpdateResponse,
+    summary="Add job title mapping to lookup table",
+    description="Adds a new entry to reference.job_title_lookup"
+)
+async def update_job_title_lookup(request: JobTitleUpdateRequest) -> JobTitleUpdateResponse:
+    """
+    Add a new job title mapping to reference.job_title_lookup.
+
+    Used when a title lookup returns no match and Clay has cleaned/classified the title.
+    """
+    pool = get_pool()
+
+    latest_title = request.latest_title.strip() if request.latest_title else None
+    cleaned_job_title = request.cleaned_job_title.strip() if request.cleaned_job_title else None
+
+    if not latest_title:
+        return JobTitleUpdateResponse(success=False, error="latest_title is required")
+    if not cleaned_job_title:
+        return JobTitleUpdateResponse(success=False, error="cleaned_job_title is required")
+
+    try:
+        await pool.execute("""
+            INSERT INTO reference.job_title_lookup (
+                latest_title, cleaned_job_title, seniority_level, job_function, status
+            ) VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (latest_title) DO UPDATE SET
+                cleaned_job_title = EXCLUDED.cleaned_job_title,
+                seniority_level = EXCLUDED.seniority_level,
+                job_function = EXCLUDED.job_function,
+                status = EXCLUDED.status
+        """,
+            latest_title, cleaned_job_title, request.seniority_level,
+            request.job_function, request.status
+        )
+
+        return JobTitleUpdateResponse(
+            success=True,
+            latest_title=latest_title,
+            cleaned_job_title=cleaned_job_title,
+            seniority_level=request.seniority_level,
+            job_function=request.job_function
+        )
+
+    except Exception as e:
+        return JobTitleUpdateResponse(success=False, error=str(e))
+
+
+@router.post(
+    "/reference/location/update",
+    response_model=LocationUpdateResponse,
+    summary="Add location mapping to lookup table",
+    description="Adds a new entry to reference.location_lookup"
+)
+async def update_location_lookup(request: LocationUpdateRequest) -> LocationUpdateResponse:
+    """
+    Add a new location mapping to reference.location_lookup.
+
+    Used when a location lookup returns no match and Clay has parsed the location.
+    """
+    pool = get_pool()
+
+    location_name = request.location_name.strip() if request.location_name else None
+
+    if not location_name:
+        return LocationUpdateResponse(success=False, error="location_name is required")
+
+    # Derive has_* fields if not provided
+    has_city = request.has_city if request.has_city is not None else bool(request.city)
+    has_state = request.has_state if request.has_state is not None else bool(request.state)
+    has_country = request.has_country if request.has_country is not None else bool(request.country)
+
+    try:
+        await pool.execute("""
+            INSERT INTO reference.location_lookup (
+                location_name, city, state, country, has_city, has_state, has_country
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (location_name) DO UPDATE SET
+                city = EXCLUDED.city,
+                state = EXCLUDED.state,
+                country = EXCLUDED.country,
+                has_city = EXCLUDED.has_city,
+                has_state = EXCLUDED.has_state,
+                has_country = EXCLUDED.has_country
+        """,
+            location_name, request.city, request.state, request.country,
+            has_city, has_state, has_country
+        )
+
+        return LocationUpdateResponse(
+            success=True,
+            location_name=location_name,
+            city=request.city,
+            state=request.state,
+            country=request.country
+        )
+
+    except Exception as e:
+        return LocationUpdateResponse(success=False, error=str(e))
