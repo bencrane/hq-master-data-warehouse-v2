@@ -63,6 +63,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
 
         # Extract customers
         extracted_count = 0
+        core_count = 0
         customer_names = []
 
         for c in customers:
@@ -70,7 +71,8 @@ def ingest_company_customers_structured(request: dict) -> dict:
             if not name:
                 continue
 
-            supabase.schema("extracted").from_("claygent_customers_structured").insert({
+            # Insert to extracted
+            extracted_result = supabase.schema("extracted").from_("claygent_customers_structured").insert({
                 "raw_id": raw_id,
                 "origin_company_domain": domain,
                 "origin_company_name": company_name,
@@ -80,7 +82,21 @@ def ingest_company_customers_structured(request: dict) -> dict:
                 "confidence": confidence,
             }).execute()
 
+            extracted_id = extracted_result.data[0]["id"] if extracted_result.data else None
+
+            # Upsert to core.company_customers
+            supabase.schema("core").from_("company_customers").upsert({
+                "origin_company_domain": domain,
+                "origin_company_name": company_name,
+                "customer_name": name,
+                "case_study_url": c.get("url"),
+                "has_case_study": c.get("hasCaseStudy"),
+                "source": "claygent_structured",
+                "source_id": extracted_id,
+            }, on_conflict="origin_company_domain,customer_name").execute()
+
             extracted_count += 1
+            core_count += 1
             customer_names.append(name)
 
         return {
@@ -88,6 +104,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
             "raw_id": str(raw_id),
             "domain": domain,
             "customers_extracted": extracted_count,
+            "customers_to_core": core_count,
             "customer_names": customer_names,
             "confidence": confidence,
         }
