@@ -67,15 +67,29 @@ async def get_workflows(
 
     result = query.execute()
 
+    # Transform data to add full API URL
+    API_BASE_URL = "https://api.revenueinfra.com"
+    workflows = []
+    for w in result.data:
+        workflow = dict(w)
+        # Add full URL if api_endpoint_url exists (format: "POST /run/...")
+        if workflow.get("api_endpoint_url"):
+            # Extract path from "POST /run/..." -> "/run/..."
+            path = workflow["api_endpoint_url"].replace("POST ", "")
+            workflow["api_endpoint_full_url"] = f"{API_BASE_URL}{path}"
+        else:
+            workflow["api_endpoint_full_url"] = None
+        workflows.append(workflow)
+
     # Group by coalesces_to_core for summary
-    in_core = [w for w in result.data if w.get("coalesces_to_core")]
-    not_in_core = [w for w in result.data if not w.get("coalesces_to_core")]
-    client_workflows = [w for w in result.data if w.get("usage_category") == "client"]
-    internal_workflows = [w for w in result.data if w.get("usage_category") == "internal-hq"]
-    with_api_wrapper = [w for w in result.data if w.get("api_endpoint_url")]
+    in_core = [w for w in workflows if w.get("coalesces_to_core")]
+    not_in_core = [w for w in workflows if not w.get("coalesces_to_core")]
+    client_workflows = [w for w in workflows if w.get("usage_category") == "client"]
+    internal_workflows = [w for w in workflows if w.get("usage_category") == "internal-hq"]
+    with_api_wrapper = [w for w in workflows if w.get("api_endpoint_url")]
 
     return {
-        "data": result.data,
+        "data": workflows,
         "meta": {
             "total": len(result.data),
             "in_core_count": len(in_core),
