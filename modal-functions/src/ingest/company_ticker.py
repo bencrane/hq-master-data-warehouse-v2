@@ -71,8 +71,11 @@ def ingest_company_ticker(request: dict) -> dict:
         if not domain:
             return {"success": False, "error": "No domain provided"}
 
-        # Extract ticker from payload
-        ticker = payload.get("ticker", "").upper().strip()
+        # Extract ticker from payload (handle string or dict)
+        if isinstance(payload, str):
+            ticker = payload.upper().strip()
+        else:
+            ticker = payload.get("ticker", "").upper().strip()
         if not ticker:
             return {"success": False, "error": "No ticker provided in payload"}
 
@@ -82,13 +85,14 @@ def ingest_company_ticker(request: dict) -> dict:
         sec_company_name = sec_data.get("company_name")
 
         # 1. Store raw payload (include fetched SEC data)
+        raw_payload_data = payload if isinstance(payload, dict) else {"ticker": payload}
         raw_insert = (
             supabase.schema("raw")
             .from_("company_ticker_payloads")
             .insert({
                 "domain": domain,
                 "payload": {
-                    **payload,
+                    **raw_payload_data,
                     "sec_cik": cik,
                     "sec_company_name": sec_company_name,
                 },

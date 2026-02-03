@@ -1504,7 +1504,7 @@ class BackfillPublicCompanyTickerResponse(BaseModel):
 
 class CompanyTickerIngestRequest(BaseModel):
     domain: str
-    ticker_payload: dict
+    ticker_payload: Any  # Can be string "AAPL" or dict {"ticker": "AAPL"}
     clay_table_url: Optional[str] = None
 
 
