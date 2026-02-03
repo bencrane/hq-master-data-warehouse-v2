@@ -30,7 +30,8 @@ def fetch_cik_from_sec(ticker: str) -> dict:
     Returns: {"cik": "0001234567", "company_name": "Example Inc"} or {"cik": None, "company_name": None}
     """
     try:
-        response = httpx.get(SEC_TICKERS_URL, timeout=30.0)
+        headers = {"User-Agent": "Substrate tools@substrate.build"}
+        response = httpx.get(SEC_TICKERS_URL, headers=headers, timeout=30.0)
         response.raise_for_status()
         data = response.json()
 
