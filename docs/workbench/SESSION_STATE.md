@@ -6,44 +6,65 @@ This file tracks the current state of work. Update after every major milestone.
 
 ---
 
-## Just Completed (Phase 1: API Wrapper Endpoints)
+## Just Completed (Phase 2: Client Lead Ingest & Person Profile Enhancement)
 
-### Run Router - Modal API Wrappers
-Created a comprehensive API layer at `api.revenueinfra.com/run/*` that wraps all Modal serverless functions:
+### Client Lead Ingest System
+Created client schema and lead tracking for multi-tenant support:
 
-- **New file:** `/hq-api/routers/run.py` (~4,400 lines)
-- **80 API endpoints** wrapping Modal functions
-- **Endpoint naming convention:** `POST /run/{entity}/{provider}/{workflow}/{action}`
-  - `entity`: `companies` or `people`
-  - `provider`: `clay-native`, `gemini`, `db`, `claygent`, `cb`, etc.
-  - `workflow`: descriptive name (e.g., `firmographics`, `icp-criteria`)
-  - `action`: `ingest`, `infer`, `lookup`, `upsert`, `backfill`
+- **New schema:** `client.*`
+- **New tables:**
+  - `client.leads` - denormalized lead data with all fields
+  - `client.leads_people` - normalized person data
+  - `client.leads_companies` - normalized company data
+- **New endpoint:** `POST /run/client/leads/ingest`
+- **Fields tracked:** client_domain, client_form_id, client_form_title, person info, company info
 
-### Endpoint Categories Added
+### Reference Table Lookup/Update Endpoints
+Created modular lookup pattern for Clay orchestration:
 
-| Category | Count | Example Path |
-|----------|-------|--------------|
-| Company Ingestion | ~25 | `/run/companies/clay-native/firmographics/ingest` |
-| People Ingestion | ~15 | `/run/people/clay-native/person-profile/ingest` |
-| Gemini Inference | ~20 | `/run/companies/gemini/industry/infer` |
-| Database Lookups | ~8 | `/run/companies/db/company-customers/lookup` |
-| Database Upserts | ~6 | `/run/companies/db/core-company-full/upsert` |
-| Backfill Operations | ~4 | `/run/people/db/populate-location/backfill` |
-| Signal Ingestion | ~6 | `/run/people/clay-native/signal-job-change-2/ingest` |
+**Lookup endpoints (check if exists):**
+- `POST /run/people/db/person-job-title/lookup` - returns cleaned_job_title, seniority_level, job_function
+- `POST /run/people/db/person-location/lookup` - returns city, state, country
 
-### Documentation Created
-- **`/docs/api/ENDPOINT_MAPPING.md`** - Maps all 80 workflows from:
-  - Workflow slug → Modal function name → Modal URL → API endpoint
+**Update endpoints (add new entries):**
+- `POST /run/reference/job-title/update` - add to reference.job_title_lookup
+- `POST /run/reference/location/update` - add to reference.location_lookup
 
-### Database Schema Updates
-- Added columns to `reference.enrichment_workflow_registry`:
-  - `modal_function_name` - Python function name in Modal
-  - `modal_endpoint_url` - Full Modal endpoint URL
-  - `api_endpoint_url` - API wrapper endpoint path
-- Migration: `/supabase/migrations/20260202_add_endpoint_columns.sql`
+### Person Profile Ingest Extended to Core Tables
+Enhanced `ingest_clay_person_profile` Modal function to populate:
 
-### Git Commits
-- `7dc54c8` - feat: add run router with Modal API wrapper endpoints
+| Core Table | Action | Data Source |
+|------------|--------|-------------|
+| `core.people` | check/insert | linkedin_url, full_name, slug |
+| `core.companies` | check/insert per company | experience array (deduped by domain) |
+| `core.person_locations` | upsert | location_name, country |
+| `core.person_tenure` | upsert | latest job start_date |
+| `core.person_past_employer` | delete+insert | experiences where is_current=false |
+
+**New file:** `/modal-functions/src/extraction/person_core.py`
+
+### Public Company Ticker Backfill
+- Added `ticker` column to `core.company_public`
+- Created `POST /run/companies/db/public-ticker/backfill` endpoint
+- For SEC CIK lookups via Clay
+
+### Job Title Lookup Table Backfill
+Backfilled `reference.job_title_lookup` with job_function and seniority from extracted tables:
+- 13,774 rows updated with job_function
+- 12,908 rows updated with seniority_level
+
+---
+
+## Enrichment Protocol (Decision Made)
+
+**Pattern for lookups from Clay:**
+1. Clay calls lookup API (e.g., `/run/people/db/person-job-title/lookup`)
+2. If `match_status: true` → use returned values
+3. If `match_status: false` → run enrichment (Gemini, etc.)
+4. Call update endpoint to add to lookup table (e.g., `/run/reference/job-title/update`)
+5. Proceed with enriched data
+
+**Design decision:** DB does lookups during ingest (not optimized yet). Clay ensures lookup table has entries before sending. Optimization deferred.
 
 ---
 
@@ -57,7 +78,9 @@ Created a comprehensive API layer at `api.revenueinfra.com/run/*` that wraps all
 │  /api/companies/*      │  Company lookup/enrichment             │
 │  /api/people/*         │  People work history/enrichment        │
 │  /api/enrichment/*     │  Workflow registry & status            │
-│  /run/*                │  NEW: Modal function wrappers (80)     │
+│  /run/*                │  Modal function wrappers (80+)         │
+│  /run/client/*         │  Client lead ingest                    │
+│  /run/reference/*      │  Reference table updates               │
 └─────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -69,7 +92,32 @@ Created a comprehensive API layer at `api.revenueinfra.com/run/*` that wraps all
                                     ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Supabase PostgreSQL                           │
-│  raw.* → extracted.* → reference.* → core.*                     │
+│  raw.* → extracted.* → reference.* → core.* + client.*          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Person Profile Ingest Flow
+
+```
+Clay sends: { linkedin_url, workflow_slug, raw_payload }
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 ingest_clay_person_profile                       │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Store raw payload → raw.person_payloads                     │
+│  2. Extract profile → extracted.person_profile (upsert)         │
+│  3. Extract experience → extracted.person_experience (del+ins)  │
+│     └─ Trigger: sync_person_experience_to_core()                │
+│        └─ Populates: core.person_work_history                   │
+│  4. Extract education → extracted.person_education (del+ins)    │
+│  5. Upsert → core.people                                        │
+│  6. Upsert companies → core.companies (from experience)         │
+│  7. Upsert → core.person_locations                              │
+│  8. Upsert → core.person_tenure                                 │
+│  9. Insert → core.person_past_employer                          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -77,7 +125,7 @@ Created a comprehensive API layer at `api.revenueinfra.com/run/*` that wraps all
 
 ## Currently In Progress
 
-- Nothing active - Phase 1 complete, ready for Phase 2
+- Testing person profile ingest with new core table writes
 
 ---
 
@@ -91,68 +139,54 @@ Created a comprehensive API layer at `api.revenueinfra.com/run/*` that wraps all
 
 | File | Changes |
 |------|---------|
-| `/hq-api/routers/run.py` | NEW - 80 endpoints, ~4,400 lines |
-| `/hq-api/main.py` | Added `run` router import |
-| `/docs/api/ENDPOINT_MAPPING.md` | NEW - Workflow to endpoint mapping |
-| `/supabase/migrations/20260202_add_endpoint_columns.sql` | NEW - Registry columns |
+| `/hq-api/routers/run.py` | Added client lead, job-title/location update endpoints |
+| `/modal-functions/src/ingest/person.py` | Extended to populate core tables |
+| `/modal-functions/src/extraction/person_core.py` | NEW - Core table extraction functions |
 
 ---
 
-## Workflow Registry Status
+## Key Tables Reference
 
-The `reference.enrichment_workflow_registry` table EXISTS and contains:
-- ~106 workflow entries
-- New columns: `modal_function_name`, `modal_endpoint_url`, `api_endpoint_url`
-- Column `workflow_type` distinguishes: `ingest`, `inference`, `lookup`, `utility`
+### Lookup Tables
+| Table | Key | Returns |
+|-------|-----|---------|
+| `reference.job_title_lookup` | latest_title | cleaned_job_title, seniority_level, job_function |
+| `reference.location_lookup` | location_name | city, state, country, has_* |
 
-Query the registry:
-```sql
-SELECT workflow_slug, modal_function_name, api_endpoint_url
-FROM reference.enrichment_workflow_registry
-WHERE api_endpoint_url IS NOT NULL
-ORDER BY workflow_slug;
-```
+### Core Person Tables
+| Table | Purpose | Key |
+|-------|---------|-----|
+| `core.people` | Canonical person record | linkedin_url |
+| `core.person_work_history` | All jobs (via trigger) | linkedin_url |
+| `core.person_locations` | Person's location | linkedin_url |
+| `core.person_tenure` | Current job start date | linkedin_url |
+| `core.person_past_employer` | Previous companies | linkedin_url |
+| `core.person_job_titles` | Matched title info | linkedin_url |
 
 ---
 
 ## API Quick Reference
 
-### Test an endpoint
+### Client lead ingest
 ```bash
-curl -X POST https://api.revenueinfra.com/run/companies/gemini/industry/infer \
+curl -X POST https://api.revenueinfra.com/run/client/leads/ingest \
   -H "Content-Type: application/json" \
-  -d '{"company_name": "Stripe", "domain": "stripe.com"}'
+  -d '{"client_domain":"acme.com","client_form_id":"form1","first_name":"John"}'
 ```
 
-### View all run endpoints
+### Job title lookup
+```bash
+curl -X POST https://api.revenueinfra.com/run/people/db/person-job-title/lookup \
+  -H "Content-Type: application/json" \
+  -d '{"job_title":"Senior Sales Engineer"}'
 ```
-https://api.revenueinfra.com/docs#/run
+
+### Add to job title lookup
+```bash
+curl -X POST https://api.revenueinfra.com/run/reference/job-title/update \
+  -H "Content-Type: application/json" \
+  -d '{"latest_title":"Senior Sales Engineer","cleaned_job_title":"Sales Engineer","seniority_level":"Senior","job_function":"Sales Engineering"}'
 ```
-
-### Endpoint timeout conventions
-- Standard ingest/lookup: 30-60 seconds
-- Gemini inference: 60-90 seconds
-- Backfill operations: 600-1800 seconds
-
----
-
-## Next Priorities (Phase 2)
-
-1. **TBD** - Awaiting direction on next phase
-2. Consider: Workflow registry audit (verify all `coalesces_to_core` values)
-3. Consider: End-to-end testing of critical workflows
-4. Consider: OpenAPI spec regeneration for new endpoints
-
----
-
-## Key Context for Next Session
-
-- **Run router complete**: 80 Modal functions wrapped at `/run/*`
-- **Naming convention**: `/run/{entity}/{provider}/{workflow}/{action}`
-- **Some Modal URLs have unique suffixes** (e.g., `-85468a`, `-f1e270`) - use exact URLs
-- **Registry updated**: `api_endpoint_url` column populated for wrapped workflows
-- **Not yet committed**: Recent endpoint additions since `7dc54c8`
-- **Production URL**: `api.revenueinfra.com` (Railway auto-deploys from main)
 
 ---
 
