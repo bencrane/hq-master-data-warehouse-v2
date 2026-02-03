@@ -12095,6 +12095,48 @@
         }
       }
     },
+    "/run/companies/db/public-ticker/backfill": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Update ticker for a public company",
+        "description": "Updates the ticker column in core.company_public for a given domain",
+        "operationId": "backfill_public_company_ticker_run_companies_db_public_ticker_backfill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackfillPublicCompanyTickerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillPublicCompanyTickerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -12985,6 +13027,70 @@
         },
         "type": "object",
         "title": "BackfillPersonMatchedLocationResponse"
+      },
+      "BackfillPublicCompanyTickerRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "ticker"
+        ],
+        "title": "BackfillPublicCompanyTickerRequest"
+      },
+      "BackfillPublicCompanyTickerResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticker"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "BackfillPublicCompanyTickerResponse"
       },
       "BatchSubmitRequest": {
         "properties": {

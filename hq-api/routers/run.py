@@ -15,6 +15,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Any, List
+from db import get_pool
 
 router = APIRouter(prefix="/run", tags=["run"])
 
@@ -1450,6 +1451,18 @@ class BackfillPersonMatchedLocationResponse(BaseModel):
     errors: Optional[List[dict]] = None
     error_count: Optional[int] = None
     remaining_records: Optional[int] = None
+    error: Optional[str] = None
+
+
+class BackfillPublicCompanyTickerRequest(BaseModel):
+    domain: str
+    ticker: str
+
+
+class BackfillPublicCompanyTickerResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    ticker: Optional[str] = None
     error: Optional[str] = None
 
 
@@ -4409,3 +4422,48 @@ async def backfill_person_matched_location(request: BackfillPersonMatchedLocatio
                 status_code=503,
                 detail=f"Failed to reach Modal function: {str(e)}"
             )
+
+
+@router.post(
+    "/companies/db/public-ticker/backfill",
+    response_model=BackfillPublicCompanyTickerResponse,
+    summary="Update ticker for a public company",
+    description="Updates the ticker column in core.company_public for a given domain"
+)
+async def backfill_public_company_ticker(request: BackfillPublicCompanyTickerRequest) -> BackfillPublicCompanyTickerResponse:
+    """
+    Update ticker for a public company in core.company_public.
+
+    Used for backfilling SEC ticker symbols from Clay.
+    """
+    domain = request.domain.lower().strip().rstrip("/")
+    ticker = request.ticker.upper().strip()
+
+    if not domain:
+        return BackfillPublicCompanyTickerResponse(success=False, error="domain is required")
+    if not ticker:
+        return BackfillPublicCompanyTickerResponse(success=False, error="ticker is required")
+
+    pool = get_pool()
+
+    result = await pool.execute("""
+        UPDATE core.company_public
+        SET ticker = $1
+        WHERE domain = $2
+    """, ticker, domain)
+
+    rows_affected = int(result.split()[-1])
+
+    if rows_affected == 0:
+        return BackfillPublicCompanyTickerResponse(
+            success=False,
+            domain=domain,
+            ticker=ticker,
+            error=f"No company found with domain '{domain}' in core.company_public"
+        )
+
+    return BackfillPublicCompanyTickerResponse(
+        success=True,
+        domain=domain,
+        ticker=ticker
+    )
