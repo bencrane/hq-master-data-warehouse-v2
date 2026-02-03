@@ -1468,6 +1468,8 @@ class BackfillPublicCompanyTickerResponse(BaseModel):
 
 class ClientLeadIngestRequest(BaseModel):
     client_domain: str
+    client_form_id: Optional[str] = None
+    client_form_title: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     full_name: Optional[str] = None
@@ -1477,8 +1479,6 @@ class ClientLeadIngestRequest(BaseModel):
     company_name: Optional[str] = None
     company_linkedin_url: Optional[str] = None
     source: Optional[str] = None
-    client_form_id: Optional[str] = None
-    client_form_title: Optional[str] = None
 
 
 class ClientLeadIngestResponse(BaseModel):
