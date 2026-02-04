@@ -189,8 +189,9 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                 except Exception:
                     pass
 
-        # 4. Technologies breakout
+        # 4. Technologies breakout + coalesce to core.company_tech_on_site
         technologies = payload.get("technologies") or []
+        core_tech_count = 0
         for tech in technologies:
             if tech:
                 try:
@@ -198,6 +199,38 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                         {"domain": domain, "technology": tech},
                         on_conflict="domain,technology"
                     ).execute()
+                except Exception:
+                    pass
+
+                # Coalesce to core: lookup or create in reference.technologies, then upsert to core
+                try:
+                    ref_result = (
+                        supabase.schema("reference")
+                        .from_("technologies")
+                        .select("id")
+                        .eq("name", tech)
+                        .execute()
+                    )
+                    if ref_result.data:
+                        tech_id = ref_result.data[0]["id"]
+                    else:
+                        ref_insert = (
+                            supabase.schema("reference")
+                            .from_("technologies")
+                            .insert({"name": tech})
+                            .execute()
+                        )
+                        tech_id = ref_insert.data[0]["id"]
+
+                    supabase.schema("core").from_("company_tech_on_site").upsert(
+                        {
+                            "domain": domain,
+                            "technology_id": tech_id,
+                            "source": "companyenrich",
+                        },
+                        on_conflict="domain,technology_id"
+                    ).execute()
+                    core_tech_count += 1
                 except Exception:
                     pass
 
@@ -376,6 +409,7 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             "funding_rounds_processed": funding_count,
             "keywords_count": len(keywords),
             "technologies_count": len(technologies),
+            "core_tech_on_site_count": core_tech_count,
             "investors_count": len(all_investors),
         }
 
