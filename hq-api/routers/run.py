@@ -1643,6 +1643,43 @@ class TargetClientLeadLinkResponse(BaseModel):
     error: Optional[str] = None
 
 
+class TargetClientLeadLinkBatchItem(BaseModel):
+    company_domain: Optional[str] = None
+    person_linkedin_url: Optional[str] = None
+    person_email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    full_name: Optional[str] = None
+
+
+class TargetClientLeadLinkBatchRequest(BaseModel):
+    target_client_domain: str
+    leads: List[TargetClientLeadLinkBatchItem]
+    source: Optional[str] = "csv_import"
+    form_id: Optional[str] = None
+    form_title: Optional[str] = None
+
+
+class TargetClientLeadLinkBatchResultItem(BaseModel):
+    index: int
+    success: bool
+    lead_id: Optional[str] = None
+    core_company_id: Optional[str] = None
+    core_person_id: Optional[str] = None
+    company_found: bool = False
+    person_found: bool = False
+    error: Optional[str] = None
+
+
+class TargetClientLeadLinkBatchResponse(BaseModel):
+    success: bool
+    total: int = 0
+    linked: int = 0
+    failed: int = 0
+    results: List[TargetClientLeadLinkBatchResultItem] = []
+    error: Optional[str] = None
+
+
 class TargetClientLeadEnrichedCompany(BaseModel):
     id: Optional[str] = None
     domain: Optional[str] = None
@@ -5302,6 +5339,158 @@ async def link_target_client_lead(request: TargetClientLeadLinkRequest) -> Targe
             success=False,
             error=str(e)
         )
+
+
+@router.post(
+    "/target-client/leads/link-batch",
+    response_model=TargetClientLeadLinkBatchResponse,
+    summary="Link batch of existing core data to target client leads",
+    description="Creates multiple target_client.leads records from a CSV import, linking to existing core data"
+)
+async def link_target_client_leads_batch(request: TargetClientLeadLinkBatchRequest) -> TargetClientLeadLinkBatchResponse:
+    """
+    Link a batch of existing enriched data to target client leads for demos.
+
+    Ideal for CSV imports where work_email matches existing core.people records.
+    Looks up each lead by email/linkedin, then creates target_client.leads with FKs.
+    """
+    pool = get_pool()
+
+    target_client_domain = request.target_client_domain.lower().strip() if request.target_client_domain else None
+    if not target_client_domain:
+        return TargetClientLeadLinkBatchResponse(success=False, error="target_client_domain is required")
+
+    if not request.leads:
+        return TargetClientLeadLinkBatchResponse(success=False, error="No leads provided")
+
+    results = []
+    linked = 0
+    failed = 0
+
+    for idx, lead in enumerate(request.leads):
+        try:
+            company_domain = lead.company_domain.lower().strip().rstrip("/") if lead.company_domain else None
+            person_linkedin_url = lead.person_linkedin_url.strip() if lead.person_linkedin_url else None
+            person_email = lead.person_email.lower().strip() if lead.person_email else None
+
+            # Look up core_company_id
+            core_company_id = None
+            company_name = None
+            company_linkedin_url = None
+            company_found = False
+            if company_domain:
+                company_lookup = await pool.fetchrow(
+                    "SELECT id, name, linkedin_url FROM core.companies WHERE domain = $1 LIMIT 1",
+                    company_domain
+                )
+                if company_lookup:
+                    core_company_id = company_lookup["id"]
+                    company_name = company_lookup["name"]
+                    company_linkedin_url = company_lookup["linkedin_url"]
+                    company_found = True
+
+            # Look up core_person_id - prefer email for CSV imports
+            core_person_id = None
+            first_name = lead.first_name
+            last_name = lead.last_name
+            full_name = lead.full_name
+            work_email = person_email
+            person_found = False
+
+            if person_email:
+                person_lookup = await pool.fetchrow(
+                    "SELECT id, first_name, last_name, full_name, linkedin_url, work_email, company_domain FROM core.people WHERE work_email = $1 LIMIT 1",
+                    person_email
+                )
+                if person_lookup:
+                    core_person_id = person_lookup["id"]
+                    first_name = first_name or person_lookup["first_name"]
+                    last_name = last_name or person_lookup["last_name"]
+                    full_name = full_name or person_lookup["full_name"]
+                    person_linkedin_url = person_linkedin_url or person_lookup["linkedin_url"]
+                    # Also grab company_domain from person if not provided
+                    if not company_domain and person_lookup["company_domain"]:
+                        company_domain = person_lookup["company_domain"]
+                        # Try to look up company now
+                        company_lookup = await pool.fetchrow(
+                            "SELECT id, name, linkedin_url FROM core.companies WHERE domain = $1 LIMIT 1",
+                            company_domain
+                        )
+                        if company_lookup:
+                            core_company_id = company_lookup["id"]
+                            company_name = company_lookup["name"]
+                            company_linkedin_url = company_lookup["linkedin_url"]
+                            company_found = True
+                    person_found = True
+
+            if not core_person_id and person_linkedin_url:
+                person_lookup = await pool.fetchrow(
+                    "SELECT id, first_name, last_name, full_name, work_email FROM core.people WHERE linkedin_url = $1 LIMIT 1",
+                    person_linkedin_url
+                )
+                if person_lookup:
+                    core_person_id = person_lookup["id"]
+                    first_name = first_name or person_lookup["first_name"]
+                    last_name = last_name or person_lookup["last_name"]
+                    full_name = full_name or person_lookup["full_name"]
+                    work_email = work_email or person_lookup["work_email"]
+                    person_found = True
+
+            # Must find at least person for CSV import
+            if not core_person_id:
+                results.append(TargetClientLeadLinkBatchResultItem(
+                    index=idx,
+                    success=False,
+                    error="No matching person found in core.people",
+                    company_found=company_found,
+                    person_found=False
+                ))
+                failed += 1
+                continue
+
+            # Insert into target_client.leads with FKs
+            lead_row = await pool.fetchrow("""
+                INSERT INTO target_client.leads (
+                    target_client_domain, first_name, last_name, full_name,
+                    person_linkedin_url, work_email, company_domain,
+                    company_name, company_linkedin_url, source,
+                    form_id, form_title, core_company_id, core_person_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                RETURNING id
+            """,
+                target_client_domain, first_name, last_name, full_name,
+                person_linkedin_url, work_email, company_domain,
+                company_name, company_linkedin_url, request.source,
+                request.form_id, request.form_title, core_company_id, core_person_id
+            )
+            lead_id = str(lead_row["id"])
+
+            results.append(TargetClientLeadLinkBatchResultItem(
+                index=idx,
+                success=True,
+                lead_id=lead_id,
+                core_company_id=str(core_company_id) if core_company_id else None,
+                core_person_id=str(core_person_id) if core_person_id else None,
+                company_found=company_found,
+                person_found=person_found
+            ))
+            linked += 1
+
+        except Exception as e:
+            results.append(TargetClientLeadLinkBatchResultItem(
+                index=idx,
+                success=False,
+                error=str(e)
+            ))
+            failed += 1
+
+    return TargetClientLeadLinkBatchResponse(
+        success=True,
+        total=len(request.leads),
+        linked=linked,
+        failed=failed,
+        results=results
+    )
 
 
 @router.post(
