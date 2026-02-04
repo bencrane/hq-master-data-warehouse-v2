@@ -23,6 +23,7 @@ def read_db_check_existence(request: dict) -> dict:
     domain = request.get("domain", "").lower().strip()
     schema_name = request.get("schema_name", "").lower().strip()
     table_name = request.get("table_name", "").lower().strip()
+    column_name = request.get("column_name", "domain").lower().strip()
 
     try:
         # Input sanitization
@@ -36,9 +37,9 @@ def read_db_check_existence(request: dict) -> dict:
                  "table_name": table_name
              }
         
-        # Strict alphanumeric check for schema/table (allow underscores)
+        # Strict alphanumeric check for schema/table/column (allow underscores)
         # This prevents injection even though Supabase client is already safe
-        if not (schema_name.replace("_","").isalnum() and table_name.replace("_","").isalnum()):
+        if not (schema_name.replace("_","").isalnum() and table_name.replace("_","").isalnum() and column_name.replace("_","").isalnum()):
              return {
                  "success": False, 
                  "exists": False, 
@@ -53,8 +54,8 @@ def read_db_check_existence(request: dict) -> dict:
         response = (
             client.schema(schema_name)
             .from_(table_name)
-            .select("domain")
-            .eq("domain", domain)
+            .select(column_name)
+            .eq(column_name, domain)
             .limit(1)
             .execute()
         )
