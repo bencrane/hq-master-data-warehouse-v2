@@ -248,13 +248,25 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
         )
         extracted_id = company_upsert.data[0]["id"] if company_upsert.data else None
 
-        # 3. Keywords breakout
+        # 3. Keywords breakout + coalesce to core
         keywords = payload.get("keywords") or []
         for kw in keywords:
             if kw:
                 try:
                     supabase.schema("extracted").from_("companyenrich_keywords").upsert(
                         {"domain": domain, "keyword": kw},
+                        on_conflict="domain,keyword"
+                    ).execute()
+                except Exception:
+                    pass
+
+                try:
+                    supabase.schema("core").from_("company_keywords").upsert(
+                        {
+                            "domain": domain,
+                            "keyword": kw,
+                            "source": "companyenrich",
+                        },
                         on_conflict="domain,keyword"
                     ).execute()
                 except Exception:
