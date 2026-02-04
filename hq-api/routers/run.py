@@ -1540,6 +1540,36 @@ class SECFinancialsIngestResponse(BaseModel):
     error: Optional[str] = None
 
 
+class SECFilingsRequest(BaseModel):
+    domain: str
+
+
+class SECFilingInfo(BaseModel):
+    filing_date: Optional[str] = None
+    report_date: Optional[str] = None
+    accession_number: Optional[str] = None
+    document_url: Optional[str] = None
+    items: Optional[str] = None
+
+
+class SECFilingsData(BaseModel):
+    latest_10q: Optional[SECFilingInfo] = None
+    latest_10k: Optional[SECFilingInfo] = None
+    recent_8k_executive_changes: Optional[List[SECFilingInfo]] = None
+    recent_8k_earnings: Optional[List[SECFilingInfo]] = None
+    recent_8k_material_contracts: Optional[List[SECFilingInfo]] = None
+
+
+class SECFilingsResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    cik: Optional[str] = None
+    ticker: Optional[str] = None
+    company_name: Optional[str] = None
+    filings: Optional[SECFilingsData] = None
+    error: Optional[str] = None
+
+
 class ClientLeadIngestRequest(BaseModel):
     client_domain: str
     client_form_id: Optional[str] = None
@@ -4658,6 +4688,75 @@ async def fetch_sec_financials(request: SECFinancialsIngestRequest) -> SECFinanc
             )
         except Exception as e:
             return SECFinancialsIngestResponse(
+                success=False,
+                domain=request.domain,
+                error=str(e),
+            )
+
+
+@router.post(
+    "/companies/sec/filings/fetch",
+    response_model=SECFilingsResponse,
+    summary="Fetch SEC filings for a company",
+    description="Wrapper for Modal function: fetch_sec_filings"
+)
+async def fetch_sec_filings(request: SECFilingsRequest) -> SECFilingsResponse:
+    """
+    Fetch SEC filing metadata for a public company.
+
+    Returns filtered filings relevant for sales briefings:
+    - Latest 10-Q (quarterly report)
+    - Latest 10-K (annual report)
+    - Recent 8-Ks with executive changes (5.02), earnings (2.02), material contracts (1.01)
+
+    Each filing includes a document_url that can be passed to an LLM for summarization.
+
+    Modal function: fetch_sec_filings
+    Modal URL: https://bencrane--hq-master-data-ingest-fetch-sec-filings.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-fetch-sec-filings.modal.run"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json={"domain": request.domain}
+            )
+            result = response.json()
+
+            # Parse filings into typed models
+            filings_data = None
+            if result.get("filings"):
+                raw_filings = result["filings"]
+
+                def parse_filing(f: dict) -> SECFilingInfo:
+                    return SECFilingInfo(
+                        filing_date=f.get("filing_date"),
+                        report_date=f.get("report_date"),
+                        accession_number=f.get("accession_number"),
+                        document_url=f.get("document_url"),
+                        items=f.get("items"),
+                    )
+
+                filings_data = SECFilingsData(
+                    latest_10q=parse_filing(raw_filings["latest_10q"]) if raw_filings.get("latest_10q") else None,
+                    latest_10k=parse_filing(raw_filings["latest_10k"]) if raw_filings.get("latest_10k") else None,
+                    recent_8k_executive_changes=[parse_filing(f) for f in raw_filings.get("recent_8k_executive_changes", [])],
+                    recent_8k_earnings=[parse_filing(f) for f in raw_filings.get("recent_8k_earnings", [])],
+                    recent_8k_material_contracts=[parse_filing(f) for f in raw_filings.get("recent_8k_material_contracts", [])],
+                )
+
+            return SECFilingsResponse(
+                success=result.get("success", False),
+                domain=result.get("domain"),
+                cik=result.get("cik"),
+                ticker=result.get("ticker"),
+                company_name=result.get("company_name"),
+                filings=filings_data,
+                error=result.get("error"),
+            )
+        except Exception as e:
+            return SECFilingsResponse(
                 success=False,
                 domain=request.domain,
                 error=str(e),

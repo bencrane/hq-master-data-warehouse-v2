@@ -73,6 +73,7 @@ WHERE table_schema = 'reference';
 | ingest_company_customers_structured | company-customers-structured | clay | customer_research | raw.company_customers_structured | NEW |
 | ingest_company_customers_v2 | company-customers-v2 | clay | customer_research | raw.claygent_customers_v2_raw | NEW |
 | ingest_public_company | company-public | internal | enrichment | - | NEW |
+| fetch_sec_filings | sec-filings-fetch | sec | lookup | - | NEW |
 | ingest_core_company_simple | core-company-simple | internal | upsert | - | core.companies | NEW |
 | upsert_core_company_full | upsert-core-company-full | internal | upsert | - | core.companies_full | NEW |
 | ingest_company_vc_investors | clay-company-vc-investors | clay | enrichment | raw.company_vc_investors | ✓ REGISTERED |
