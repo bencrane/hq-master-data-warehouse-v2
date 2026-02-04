@@ -345,6 +345,32 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
+            # Coalesce to core.company_vc_investors
+            try:
+                supabase.schema("core").from_("company_vc_investors").upsert(
+                    {
+                        "company_domain": domain,
+                        "vc_name": investor,
+                        "source": "companyenrich",
+                    },
+                    on_conflict="company_domain,vc_name"
+                ).execute()
+            except Exception:
+                pass
+
+        # Upsert core.company_vc_backed
+        if all_investors:
+            try:
+                supabase.schema("core").from_("company_vc_backed").upsert(
+                    {
+                        "domain": domain,
+                        "vc_count": len(all_investors),
+                    },
+                    on_conflict="domain"
+                ).execute()
+            except Exception:
+                pass
+
         # 9. Socials breakout
         if socials:
             try:
