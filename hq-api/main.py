@@ -39,6 +39,7 @@ ALLOWED_ORIGINS = [
     "https://demo.radarrevenue.com",
     # localhost for development
     "http://localhost:3000",
+    "http://localhost:3005",
     "http://localhost:5173",
     # admin tools
     "https://find-similar-companies-admin.vercel.app",
