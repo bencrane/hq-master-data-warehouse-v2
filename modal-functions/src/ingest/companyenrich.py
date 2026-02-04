@@ -281,7 +281,7 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             amount = round_data.get("amount")
             investors_str = round_data.get("from")
 
-            # Funding round
+            # Funding round (extracted breakout)
             try:
                 supabase.schema("extracted").from_("companyenrich_funding_rounds").upsert(
                     {
@@ -295,6 +295,23 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                     on_conflict="domain,funding_date,funding_type"
                 ).execute()
                 funding_count += 1
+            except Exception:
+                pass
+
+            # Coalesce to core.company_funding_rounds
+            try:
+                supabase.schema("core").from_("company_funding_rounds").upsert(
+                    {
+                        "domain": domain,
+                        "source": "companyenrich",
+                        "funding_date": funding_date,
+                        "funding_type": funding_type,
+                        "amount": amount,
+                        "investors": investors_str,
+                        "url": round_data.get("url"),
+                    },
+                    on_conflict="domain,source,funding_date,funding_type"
+                ).execute()
             except Exception:
                 pass
 
