@@ -64,6 +64,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
         # Extract customers
         extracted_count = 0
         core_count = 0
+        staging_count = 0
         customer_names = []
 
         for c in customers:
@@ -95,6 +96,21 @@ def ingest_company_customers_structured(request: dict) -> dict:
                 "source_id": extracted_id,
             }, on_conflict="origin_company_domain,customer_name").execute()
 
+            # Push case study URLs to staging for Gemini extraction
+            case_study_url = c.get("url")
+            if case_study_url:
+                try:
+                    supabase.schema("staging").from_("case_study_urls_to_process").upsert({
+                        "origin_company_name": company_name,
+                        "origin_company_domain": domain,
+                        "customer_company_name": name,
+                        "case_study_url": case_study_url,
+                        "processed": False,
+                    }, on_conflict="case_study_url").execute()
+                    staging_count += 1
+                except Exception:
+                    pass
+
             extracted_count += 1
             core_count += 1
             customer_names.append(name)
@@ -105,6 +121,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
             "domain": domain,
             "customers_extracted": extracted_count,
             "customers_to_core": core_count,
+            "staging_case_study_urls": staging_count,
             "customer_names": customer_names,
             "confidence": confidence,
         }
