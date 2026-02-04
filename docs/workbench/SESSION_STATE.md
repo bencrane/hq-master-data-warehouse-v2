@@ -6,7 +6,57 @@ This file tracks the current state of work. Update after every major milestone.
 
 ---
 
-## Just Completed (2026-02-04: SalesNav to Clay Pipeline)
+## Just Completed (2026-02-04: CompanyEnrich Workflow)
+
+### CompanyEnrich.com Workflow (Complete)
+Full company enrichment workflow for companyenrich.com data with breakout tables.
+
+**Endpoints:**
+- **Modal:** `https://bencrane--hq-master-data-ingest-ingest-companyenrich.modal.run`
+- **API:** `POST /run/companies/companyenrich/ingest`
+
+**Tables (13 total):**
+
+| Table | Purpose |
+|-------|---------|
+| `raw.companyenrich_payloads` | Full JSON payload storage |
+| `extracted.companyenrich_company` | Main table with arrays for easy retrieval |
+| `extracted.companyenrich_keywords` | Breakout: one row per keyword |
+| `extracted.companyenrich_technologies` | Breakout: one row per technology |
+| `extracted.companyenrich_industries` | Breakout: one row per industry |
+| `extracted.companyenrich_categories` | Breakout: one row per category |
+| `extracted.companyenrich_naics_codes` | Breakout: one row per NAICS code |
+| `extracted.companyenrich_funding_rounds` | Breakout: one row per funding round |
+| `extracted.companyenrich_investors` | Breakout: unique investors per company |
+| `extracted.companyenrich_vc_investments` | Breakout: investor + round details |
+| `extracted.companyenrich_socials` | Breakout: social media URLs |
+| `extracted.companyenrich_location` | Breakout: location details |
+| `extracted.companyenrich_subsidiaries` | Breakout: company subsidiaries |
+
+**Design Pattern:** Dual storage - arrays in main table for easy single-company retrieval, breakout tables for querying across companies.
+
+**Documentation:** `/docs/workflows/catalog/ingest-companyenrich.md`
+
+**Request:**
+```json
+{
+  "domain": "harness.io",
+  "raw_payload": { ... full companyenrich payload ... }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "raw_id": "uuid",
+  "extracted_id": "uuid",
+  "funding_rounds_processed": 8,
+  "keywords_count": 26,
+  "technologies_count": 22,
+  "investors_count": 8
+}
+```
 
 ### SalesNav Export to Clay Webhook Endpoint
 Created endpoint to send SalesNav export files directly to Clay webhooks:
@@ -25,36 +75,6 @@ Created endpoint to send SalesNav export files directly to Clay webhooks:
 - **New schema:** `testing`
 - **New table:** `testing.companies` (id, name, domain, linkedin_url, created_at)
 - **New endpoint:** `POST /run/testing/companies` - Insert company into testing table
-
-### CompanyEnrich.com Workflow
-New company enrichment workflow for companyenrich.com data:
-
-**Tables:**
-- `raw.companyenrich_payloads` - Full JSON payload storage
-- `extracted.companyenrich_company` - Flattened company data (firmographics, location, socials, funding summary)
-- `extracted.companyenrich_funding_rounds` - One row per funding round
-
-**Endpoints:**
-- **Modal:** `https://bencrane--hq-master-data-ingest-ingest-companyenrich.modal.run`
-- **API:** `POST /run/companies/companyenrich/ingest`
-
-**Request:**
-```json
-{
-  "domain": "harness.io",
-  "raw_payload": { ... full companyenrich payload ... }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "raw_id": "uuid",
-  "extracted_id": "uuid",
-  "funding_rounds_processed": 8
-}
-```
 
 ---
 
@@ -204,8 +224,9 @@ Clay sends: { linkedin_url, workflow_slug, raw_payload }
 |------|---------|
 | `/hq-api/routers/run.py` | Added `/run/salesnav/export/to-clay`, `/run/testing/companies`, `/run/companies/companyenrich/ingest` |
 | `/hq-api/main.py` | Added localhost ports 3000-3015 to CORS allowed origins |
-| `/modal-functions/src/ingest/companyenrich.py` | NEW - CompanyEnrich.com ingestion function |
+| `/modal-functions/src/ingest/companyenrich.py` | NEW - CompanyEnrich.com ingestion with 12 breakout tables |
 | `/modal-functions/src/app.py` | Added companyenrich import |
+| `/docs/workflows/catalog/ingest-companyenrich.md` | NEW - Workflow documentation |
 
 ## Key Files Modified Previous Session
 
