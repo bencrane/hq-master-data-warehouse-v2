@@ -1616,6 +1616,35 @@ class TargetClientLeadIngestResponse(BaseModel):
     error: Optional[str] = None
 
 
+class TargetClientLeadsListRequest(BaseModel):
+    target_client_domain: str
+    source: Optional[str] = None  # Optional filter by source
+
+
+class TargetClientLead(BaseModel):
+    id: str
+    target_client_domain: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    full_name: Optional[str] = None
+    person_linkedin_url: Optional[str] = None
+    work_email: Optional[str] = None
+    company_domain: Optional[str] = None
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    source: Optional[str] = None
+    form_id: Optional[str] = None
+    form_title: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class TargetClientLeadsListResponse(BaseModel):
+    success: bool
+    leads: List[TargetClientLead] = []
+    count: int = 0
+    error: Optional[str] = None
+
+
 # =============================================================================
 # Company Endpoints
 # =============================================================================
@@ -4959,6 +4988,79 @@ async def ingest_target_client_lead(request: TargetClientLeadIngestRequest) -> T
 
     except Exception as e:
         return TargetClientLeadIngestResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+@router.post(
+    "/target-client/leads/list",
+    response_model=TargetClientLeadsListResponse,
+    summary="List leads for a target client (demo/prospect)",
+    description="Returns all leads for a target_client_domain, optionally filtered by source"
+)
+async def list_target_client_leads(request: TargetClientLeadsListRequest) -> TargetClientLeadsListResponse:
+    """
+    List leads for a target client (demo/prospect).
+
+    Queries target_client.leads and returns all leads for the given domain.
+    Optionally filter by source (e.g., 'contact_form', 'csv_upload').
+    """
+    pool = get_pool()
+
+    target_client_domain = request.target_client_domain.lower().strip() if request.target_client_domain else None
+    if not target_client_domain:
+        return TargetClientLeadsListResponse(success=False, error="target_client_domain is required")
+
+    try:
+        # Build query with optional source filter
+        if request.source:
+            rows = await pool.fetch("""
+                SELECT id, target_client_domain, first_name, last_name, full_name,
+                       person_linkedin_url, work_email, company_domain, company_name,
+                       company_linkedin_url, source, form_id, form_title, created_at
+                FROM target_client.leads
+                WHERE target_client_domain = $1 AND source = $2
+                ORDER BY created_at DESC
+            """, target_client_domain, request.source)
+        else:
+            rows = await pool.fetch("""
+                SELECT id, target_client_domain, first_name, last_name, full_name,
+                       person_linkedin_url, work_email, company_domain, company_name,
+                       company_linkedin_url, source, form_id, form_title, created_at
+                FROM target_client.leads
+                WHERE target_client_domain = $1
+                ORDER BY created_at DESC
+            """, target_client_domain)
+
+        leads = [
+            TargetClientLead(
+                id=str(row["id"]),
+                target_client_domain=row["target_client_domain"],
+                first_name=row["first_name"],
+                last_name=row["last_name"],
+                full_name=row["full_name"],
+                person_linkedin_url=row["person_linkedin_url"],
+                work_email=row["work_email"],
+                company_domain=row["company_domain"],
+                company_name=row["company_name"],
+                company_linkedin_url=row["company_linkedin_url"],
+                source=row["source"],
+                form_id=row["form_id"],
+                form_title=row["form_title"],
+                created_at=row["created_at"].isoformat() if row["created_at"] else None
+            )
+            for row in rows
+        ]
+
+        return TargetClientLeadsListResponse(
+            success=True,
+            leads=leads,
+            count=len(leads)
+        )
+
+    except Exception as e:
+        return TargetClientLeadsListResponse(
             success=False,
             error=str(e)
         )
