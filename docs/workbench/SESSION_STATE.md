@@ -8,6 +8,15 @@ This file tracks the current state of work. Update after every major milestone.
 
 ## Just Completed (Phase 2: Client Lead Ingest & Person Profile Enhancement)
 
+### Generic Database Read/Check Endpoint
+Created a safe, generic endpoint to check if a domain exists in any table:
+- **API Endpoint:** `POST /read/companies/db/check-existence`
+- **Modal Function:** `read_db_check_existence`
+- **Features:** 
+  - Validates schema/table names (alphanumeric only)
+  - Uses parameterized queries for safety
+  - Returns boolean `exists` flag
+
 ### Client Lead Ingest System
 Created client schema and lead tracking for multi-tenant support:
 
@@ -142,6 +151,8 @@ Clay sends: { linkedin_url, workflow_slug, raw_payload }
 | `/hq-api/routers/run.py` | Added client lead, job-title/location update endpoints |
 | `/modal-functions/src/ingest/person.py` | Extended to populate core tables |
 | `/modal-functions/src/extraction/person_core.py` | NEW - Core table extraction functions |
+| `/hq-api/routers/read.py` | NEW - Generic read router |
+| `/modal-functions/src/read/db_check.py` | NEW - Safe DB check function |
 
 ---
 

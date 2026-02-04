@@ -24,6 +24,8 @@ from config import app, image
 
 # Import all endpoint modules - this registers them with the app
 # These imports must happen AFTER app is defined in config
+# Import endpoints
+from read.db_check import read_db_check_existence
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
 from ingest.case_study import ingest_case_study_extraction
@@ -271,4 +273,5 @@ __all__ = [
     "infer_comparison_page_exists",
     "infer_minimum_seats",
     "infer_webinars",
+    "read_db_check_existence",
 ]

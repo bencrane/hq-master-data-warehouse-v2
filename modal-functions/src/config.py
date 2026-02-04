@@ -25,5 +25,5 @@ image = (
         "opencv-python-headless",
         "numpy",
     )
-    .add_local_python_source("config", "ingest", "extraction", "icp")
+    .add_local_python_source("config", "ingest", "extraction", "icp", "read")
 )
