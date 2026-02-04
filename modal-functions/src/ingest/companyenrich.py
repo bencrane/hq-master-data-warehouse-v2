@@ -498,7 +498,44 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
-        # 12. Subsidiaries breakout
+        # 12. Coalesce industry to core.company_industries (only if not exists)
+        industry = payload.get("industry")
+        if industry:
+            try:
+                existing_industry = (
+                    supabase.schema("core")
+                    .from_("company_industries")
+                    .select("id")
+                    .eq("domain", domain)
+                    .execute()
+                )
+                if not existing_industry.data:
+                    # Ensure industry exists in reference.company_industries
+                    ref_check = (
+                        supabase.schema("reference")
+                        .from_("company_industries")
+                        .select("id")
+                        .eq("name", industry)
+                        .eq("source", "companyenrich")
+                        .execute()
+                    )
+                    if not ref_check.data:
+                        supabase.schema("reference").from_("company_industries").insert(
+                            {"name": industry, "source": "companyenrich"}
+                        ).execute()
+
+                    # Insert to core
+                    supabase.schema("core").from_("company_industries").insert(
+                        {
+                            "domain": domain,
+                            "matched_industry": industry,
+                            "source": "companyenrich",
+                        }
+                    ).execute()
+            except Exception:
+                pass
+
+        # 13. Subsidiaries breakout
         subsidiaries = payload.get("subsidiaries") or []
         if subsidiaries:
             for sub in subsidiaries:
