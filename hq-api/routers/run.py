@@ -5825,10 +5825,7 @@ async def _send_case_study_urls_to_clay(rows: List[dict], webhook_url: str):
     summary="Send unprocessed case study URLs to Clay webhook",
     description="Reads unprocessed URLs from raw.staging_case_study_urls and sends to Clay webhook in background at 10 records/second."
 )
-async def case_study_urls_to_clay(
-    webhook_url: str = Query(..., description="Clay webhook URL"),
-    limit: int = Query(1000, ge=1, le=5000, description="Max rows to send"),
-):
+async def case_study_urls_to_clay(request: dict):
     """
     Send unprocessed case study URLs to Clay webhook for Gemini extraction.
 
@@ -5838,6 +5835,12 @@ async def case_study_urls_to_clay(
     4. Returns immediately with row count
     """
     try:
+        webhook_url = request.get("webhook_url")
+        limit = request.get("limit", 1000)
+
+        if not webhook_url:
+            return CaseStudyUrlsToClayResponse(success=False, errors=["webhook_url is required"])
+
         pool = get_pool()
         rows = await pool.fetch("""
             SELECT id, origin_company_name, origin_company_domain, customer_company_name, case_study_url
