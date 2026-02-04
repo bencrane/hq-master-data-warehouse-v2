@@ -317,13 +317,25 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                 except Exception:
                     pass
 
-        # 6. Categories breakout
+        # 6. Categories breakout + coalesce to core
         categories = payload.get("categories") or []
         for cat in categories:
             if cat:
                 try:
                     supabase.schema("extracted").from_("companyenrich_categories").upsert(
                         {"domain": domain, "category": cat},
+                        on_conflict="domain,category"
+                    ).execute()
+                except Exception:
+                    pass
+
+                try:
+                    supabase.schema("core").from_("company_categories").upsert(
+                        {
+                            "domain": domain,
+                            "category": cat,
+                            "source": "companyenrich",
+                        },
                         on_conflict="domain,category"
                     ).execute()
                 except Exception:
