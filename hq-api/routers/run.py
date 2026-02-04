@@ -5784,3 +5784,43 @@ async def salesnav_export_to_clay(
             success=False,
             errors=[str(e)]
         )
+
+
+# =============================================================================
+# Testing: Companies
+# =============================================================================
+
+class TestingCompanyRequest(BaseModel):
+    name: str
+    domain: str
+    linkedin_url: Optional[str] = None
+
+
+class TestingCompanyResponse(BaseModel):
+    success: bool
+    id: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/testing/companies",
+    response_model=TestingCompanyResponse,
+    summary="Add a company to testing.companies",
+)
+async def add_testing_company(request: TestingCompanyRequest) -> TestingCompanyResponse:
+    """Insert a company into testing.companies table."""
+    try:
+        pool = await get_pool()
+        result = await pool.fetchrow(
+            """
+            INSERT INTO testing.companies (name, domain, linkedin_url)
+            VALUES ($1, $2, $3)
+            RETURNING id
+            """,
+            request.name,
+            request.domain,
+            request.linkedin_url,
+        )
+        return TestingCompanyResponse(success=True, id=str(result["id"]))
+    except Exception as e:
+        return TestingCompanyResponse(success=False, error=str(e))
