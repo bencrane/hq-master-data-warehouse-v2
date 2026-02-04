@@ -6,57 +6,49 @@ This file tracks the current state of work. Update after every major milestone.
 
 ---
 
-## Just Completed (2026-02-04: CompanyEnrich Workflow)
+## Just Completed (2026-02-04: CompanyEnrich Workflow with Core Coalescing)
 
-### CompanyEnrich.com Workflow (Complete)
-Full company enrichment workflow for companyenrich.com data with breakout tables.
+### CompanyEnrich.com Workflow (Complete + Core Coalescing)
+Full company enrichment workflow: raw → extracted breakout tables → core tables. Single endpoint populates the entire company profile.
 
 **Endpoints:**
 - **Modal:** `https://bencrane--hq-master-data-ingest-ingest-companyenrich.modal.run`
 - **API:** `POST /run/companies/companyenrich/ingest`
 
-**Tables (13 total):**
+**Extracted Tables (13):** raw payload + main company table + 11 breakout tables
 
-| Table | Purpose |
-|-------|---------|
-| `raw.companyenrich_payloads` | Full JSON payload storage |
-| `extracted.companyenrich_company` | Main table with arrays for easy retrieval |
-| `extracted.companyenrich_keywords` | Breakout: one row per keyword |
-| `extracted.companyenrich_technologies` | Breakout: one row per technology |
-| `extracted.companyenrich_industries` | Breakout: one row per industry |
-| `extracted.companyenrich_categories` | Breakout: one row per category |
-| `extracted.companyenrich_naics_codes` | Breakout: one row per NAICS code |
-| `extracted.companyenrich_funding_rounds` | Breakout: one row per funding round |
-| `extracted.companyenrich_investors` | Breakout: unique investors per company |
-| `extracted.companyenrich_vc_investments` | Breakout: investor + round details |
-| `extracted.companyenrich_socials` | Breakout: social media URLs |
-| `extracted.companyenrich_location` | Breakout: location details |
-| `extracted.companyenrich_subsidiaries` | Breakout: company subsidiaries |
+**Core Tables Coalesced (16):**
 
-**Design Pattern:** Dual storage - arrays in main table for easy single-company retrieval, breakout tables for querying across companies.
+| Core Table | Data | Behavior |
+|------------|------|----------|
+| `core.companies` | name, domain, linkedin_url | Insert if not exists |
+| `core.company_names` | raw_name, linkedin_url | Insert if not exists, never overwrite cleaned_name |
+| `core.company_employee_range` | matched via reference lookup | Upsert |
+| `core.company_revenue` | matched via reference lookup (upper-end) | Upsert on domain+source |
+| `core.company_types` | private→Private Company, etc. | Upsert on domain+source |
+| `core.company_locations` | pre-parsed city/state/country | Only overwrite if more data |
+| `core.company_descriptions` | description + seo_description as tagline | Upsert |
+| `core.company_industries` | industry + reference insert | Insert if not exists |
+| `core.company_tech_on_site` | via reference.technologies | Upsert per tech |
+| `core.company_keywords` | each keyword | Upsert per keyword |
+| `core.company_categories` | each category | Upsert per category |
+| `core.company_naics_codes` | each NAICS code | Upsert per code |
+| `core.company_funding_rounds` | each funding round | Upsert per round |
+| `core.company_vc_investors` | parsed from funding `from` field | Upsert per investor |
+| `core.company_vc_backed` | vc_count = distinct investors | Upsert |
+| `core.company_social_urls` | all social URLs | Upsert |
+
+**New Core Tables Created:** `core.company_funding_rounds`, `core.company_categories`, `core.company_keywords`, `core.company_naics_codes`
+
+**Renamed Tables:** `core.company_technologies` → `core.company_tech_on_site`, `core.company_linkedin_urls` → `core.company_social_urls`
+
+**New Reference Lookups Added:**
+- `reference.employee_range_lookup`: companyenrich values (501-1K, 1K-5K, 5K-10K, over-10K)
+- `reference.revenue_range_lookup`: companyenrich values (1m-10m, 10m-50m, etc.) mapped to upper-end canonical
 
 **Documentation:** `/docs/workflows/catalog/ingest-companyenrich.md`
 
-**Request:**
-```json
-{
-  "domain": "harness.io",
-  "raw_payload": { ... full companyenrich payload ... }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "raw_id": "uuid",
-  "extracted_id": "uuid",
-  "funding_rounds_processed": 8,
-  "keywords_count": 26,
-  "technologies_count": 22,
-  "investors_count": 8
-}
-```
+**Tested end-to-end:** pactos.ai (new company, all 16 core tables populated), antimetal.com (existing company, conditional logic verified)
 
 ### SalesNav Export to Clay Webhook Endpoint
 Created endpoint to send SalesNav export files directly to Clay webhooks:
@@ -208,7 +200,7 @@ Clay sends: { linkedin_url, workflow_slug, raw_payload }
 
 ## Currently In Progress
 
-- Testing person profile ingest with new core table writes
+- None
 
 ---
 
@@ -224,9 +216,21 @@ Clay sends: { linkedin_url, workflow_slug, raw_payload }
 |------|---------|
 | `/hq-api/routers/run.py` | Added `/run/salesnav/export/to-clay`, `/run/testing/companies`, `/run/companies/companyenrich/ingest` |
 | `/hq-api/main.py` | Added localhost ports 3000-3015 to CORS allowed origins |
-| `/modal-functions/src/ingest/companyenrich.py` | NEW - CompanyEnrich.com ingestion with 12 breakout tables |
+| `/modal-functions/src/ingest/companyenrich.py` | NEW - CompanyEnrich.com ingestion with breakout tables + core coalescing (16 core tables) |
 | `/modal-functions/src/app.py` | Added companyenrich import |
-| `/docs/workflows/catalog/ingest-companyenrich.md` | NEW - Workflow documentation |
+| `/docs/workflows/catalog/ingest-companyenrich.md` | NEW - Full workflow documentation |
+
+## Schema Changes This Session
+
+| Change | Details |
+|--------|---------|
+| Renamed `core.company_technologies` → `core.company_tech_on_site` | Removed first_detected/last_detected, added source |
+| Renamed `core.company_linkedin_urls` → `core.company_social_urls` | Added twitter, facebook, github, youtube, instagram, crunchbase, g2, angellist columns |
+| Created `core.tech_on_site_detections` | domain, technology_id (FK), first_detected, last_detected, source |
+| Created `core.company_funding_rounds` | domain, source, funding_date, funding_type, amount, investors, url |
+| Created `core.company_categories` | domain, category, source |
+| Created `core.company_keywords` | domain, keyword, source |
+| Created `core.company_naics_codes` | domain, naics_code, source |
 
 ## Key Files Modified Previous Session
 

@@ -3,7 +3,7 @@
 > **Last Updated:** 2026-02-04
 
 ## Purpose
-Ingests company enrichment data from companyenrich.com. Stores raw payload and extracts to main company table plus multiple breakout tables for querying across companies.
+Ingests company enrichment data from companyenrich.com. Stores raw payload, extracts to breakout tables, and coalesces to core tables. Single endpoint populates the full company profile across the database.
 
 ## Endpoint
 ```
@@ -22,9 +22,9 @@ POST https://api.revenueinfra.com/run/companies/companyenrich/ingest
   "raw_payload": {
     "id": "abc123",
     "name": "Harness",
-    "type": "Private",
+    "type": "private",
     "website": "https://harness.io",
-    "revenue": "$50M-$100M",
+    "revenue": "10m-50m",
     "employees": "1K-5K",
     "industry": "Software",
     "industries": ["Software", "DevOps", "Cloud"],
@@ -92,9 +92,11 @@ POST https://api.revenueinfra.com/run/companies/companyenrich/ingest
   "success": true,
   "raw_id": "uuid-here",
   "extracted_id": "uuid-here",
+  "core_company_inserted": true,
   "funding_rounds_processed": 8,
   "keywords_count": 26,
   "technologies_count": 22,
+  "core_tech_on_site_count": 22,
   "investors_count": 8
 }
 ```
@@ -122,6 +124,42 @@ POST https://api.revenueinfra.com/run/companies/companyenrich/ingest
 | `companyenrich_location` | domain | Location details |
 | `companyenrich_subsidiaries` | domain, subsidiary_name | Company subsidiaries |
 
+### Core Tables (coalesced)
+| Core Table | Data | Behavior |
+|------------|------|----------|
+| `core.companies` | name, domain, linkedin_url | Insert if not exists |
+| `core.company_names` | raw_name, linkedin_url | Insert if domain+source not exists. Never overwrites cleaned_name |
+| `core.company_employee_range` | matched range via `reference.employee_range_lookup` | Upsert (overwrites) |
+| `core.company_revenue` | raw + matched range via `reference.revenue_range_lookup` | Upsert on domain+source |
+| `core.company_types` | raw_type + matched_type (private→Private Company, etc.) | Upsert on domain+source |
+| `core.company_locations` | city, state, country (pre-parsed) | Only overwrite if incoming has >= non-null fields |
+| `core.company_descriptions` | description + seo_description as tagline | Upsert (overwrites) |
+| `core.company_industries` | industry (singular) + insert to `reference.company_industries` | Insert if domain not exists |
+| `core.company_tech_on_site` | each technology via `reference.technologies` (insert if new) | Upsert per tech |
+| `core.company_keywords` | each keyword | Upsert per keyword |
+| `core.company_categories` | each category | Upsert per category |
+| `core.company_naics_codes` | each NAICS code | Upsert per code |
+| `core.company_funding_rounds` | each funding round | Upsert per round |
+| `core.company_vc_investors` | each parsed investor from funding `from` field | Upsert per investor |
+| `core.company_vc_backed` | domain + vc_count (distinct investors) | Upsert |
+| `core.company_social_urls` | all social URLs (linkedin, twitter, facebook, github, etc.) | Upsert (overwrites) |
+
+## Reference Table Lookups
+
+| Lookup | Raw Value Example | Matched Value |
+|--------|-------------------|---------------|
+| `reference.employee_range_lookup` | `1K-5K` → `1001-5000` | Upper-end mapping |
+| `reference.revenue_range_lookup` | `10m-50m` → `$25M - $50M` | Upper-end mapping (conservative for ICP) |
+| `reference.technologies` | Technology name | Insert if not found |
+| `reference.company_industries` | Industry name | Insert if not found with source=companyenrich |
+
+### Company Type Mapping (hardcoded)
+| companyenrich | canonical |
+|---------------|-----------|
+| private | Private Company |
+| public | Public Company |
+| self-owned | Self-Employed |
+
 ## Design Decisions
 
 **Dual Storage Pattern:** Arrays are kept in the main `companyenrich_company` table AND broken out into separate tables. This is intentional:
@@ -130,12 +168,22 @@ POST https://api.revenueinfra.com/run/companies/companyenrich/ingest
 
 Storage is cheap; query flexibility is valuable.
 
+**Location overwrite protection:** Only overwrites `core.company_locations` if incoming data has more non-null fields (city/state/country) than existing. Prevents downgrading from a richer source.
+
+**Industry insert-only:** Does not overwrite existing industry in `core.company_industries`. First source wins.
+
+**Revenue upper-end mapping:** Companyenrich ranges don't map 1:1 to canonical ranges. Maps to upper end for conservative ICP filtering (rather miss on the high side than low).
+
 ## How It Works
-1. Stores raw payload to `raw.companyenrich_payloads`
-2. Upserts flattened company data to `extracted.companyenrich_company`
-3. Loops through all array fields and upserts to breakout tables
-4. Parses funding rounds and extracts individual investors
-5. Returns counts of processed items
+1. Check/insert `core.companies` if domain not exists
+2. Insert `core.company_names` if domain+source not exists
+3. Look up and coalesce employee range, revenue, company type
+4. Store raw payload to `raw.companyenrich_payloads`
+5. Upsert flattened company data to `extracted.companyenrich_company`
+6. Loop through all array fields → breakout tables + core tables
+7. Parse funding rounds → extracted + core, extract individual investors → core VC tables
+8. Coalesce location (with overwrite protection), description, industry, social URLs
+9. Return counts of processed items
 
 ## Example Queries
 
@@ -153,4 +201,14 @@ SELECT c.domain, c.name, i.funding_type, i.amount
 FROM extracted.companyenrich_company c
 JOIN extracted.companyenrich_vc_investments i ON c.domain = i.domain
 WHERE i.investor_name = 'Sequoia';
+```
+
+**Query across core tables (uses coalesced data):**
+```sql
+SELECT c.domain, c.name, er.employee_range, cl.country, ci.matched_industry
+FROM core.companies c
+LEFT JOIN core.company_employee_range er ON c.domain = er.domain
+LEFT JOIN core.company_locations cl ON c.domain = cl.domain
+LEFT JOIN core.company_industries ci ON c.domain = ci.domain
+WHERE er.employee_range = '1001-5000' AND cl.country = 'United States';
 ```

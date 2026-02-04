@@ -636,25 +636,35 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                     .execute()
                 )
                 if not existing_industry.data:
+                    # Lookup cleaned industry from reference.industry_lookup
+                    industry_lookup = (
+                        supabase.schema("reference")
+                        .from_("industry_lookup")
+                        .select("industry_cleaned")
+                        .eq("industry_raw", industry)
+                        .execute()
+                    )
+                    matched_industry = industry_lookup.data[0]["industry_cleaned"] if industry_lookup.data else industry
+
                     # Ensure industry exists in reference.company_industries
                     ref_check = (
                         supabase.schema("reference")
                         .from_("company_industries")
                         .select("id")
-                        .eq("name", industry)
+                        .eq("name", matched_industry)
                         .eq("source", "companyenrich")
                         .execute()
                     )
                     if not ref_check.data:
                         supabase.schema("reference").from_("company_industries").insert(
-                            {"name": industry, "source": "companyenrich"}
+                            {"name": matched_industry, "source": "companyenrich"}
                         ).execute()
 
                     # Insert to core
                     supabase.schema("core").from_("company_industries").insert(
                         {
                             "domain": domain,
-                            "matched_industry": industry,
+                            "matched_industry": matched_industry,
                             "source": "companyenrich",
                         }
                     ).execute()
