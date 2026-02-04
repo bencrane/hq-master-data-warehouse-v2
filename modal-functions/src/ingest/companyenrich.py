@@ -78,6 +78,25 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
         payload = request.raw_payload or {}
         domain = request.domain
 
+        # 0. Check/insert into core.companies
+        core_company_inserted = False
+        existing = (
+            supabase.schema("core")
+            .from_("companies")
+            .select("id")
+            .eq("domain", domain)
+            .execute()
+        )
+        if not existing.data:
+            # Insert into core.companies
+            socials = payload.get("socials") or {}
+            supabase.schema("core").from_("companies").insert({
+                "domain": domain,
+                "name": payload.get("name"),
+                "linkedin_url": socials.get("linkedin_url"),
+            }).execute()
+            core_company_inserted = True
+
         # 1. Store raw payload
         raw_insert = (
             supabase.schema("raw")
@@ -353,6 +372,7 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             "success": True,
             "raw_id": raw_id,
             "extracted_id": extracted_id,
+            "core_company_inserted": core_company_inserted,
             "funding_rounds_processed": funding_count,
             "keywords_count": len(keywords),
             "technologies_count": len(technologies),
