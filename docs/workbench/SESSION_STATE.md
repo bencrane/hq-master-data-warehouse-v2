@@ -1,12 +1,34 @@
 # Session State
 
-**Last updated:** 2026-02-03
+**Last updated:** 2026-02-04
 
 This file tracks the current state of work. Update after every major milestone.
 
 ---
 
-## Just Completed (Phase 2: Client Lead Ingest & Person Profile Enhancement)
+## Just Completed (2026-02-04: SalesNav to Clay Pipeline)
+
+### SalesNav Export to Clay Webhook Endpoint
+Created endpoint to send SalesNav export files directly to Clay webhooks:
+- **Endpoint:** `POST /run/salesnav/export/to-clay`
+- **Features:**
+  - Accepts TSV/CSV file upload + Clay webhook URL
+  - Auto-detects delimiter (TSV vs CSV)
+  - Sends rows to Clay in background at 10 records/second
+  - Returns immediately with row count (fire-and-forget)
+- **Form fields:** `file`, `webhook_url`, `export_title`, `export_timestamp`, `notes`
+
+### CORS Updates
+- Added localhost ports 3000-3015 to allowed origins for development
+
+### Testing Schema & Endpoint
+- **New schema:** `testing`
+- **New table:** `testing.companies` (id, name, domain, linkedin_url, created_at)
+- **New endpoint:** `POST /run/testing/companies` - Insert company into testing table
+
+---
+
+## Previously Completed (Phase 2: Client Lead Ingest & Person Profile Enhancement)
 
 ### Generic Database Read/Check Endpoint
 Created a safe, generic endpoint to check if a domain exists in any table:
@@ -90,6 +112,8 @@ Backfilled `reference.job_title_lookup` with job_function and seniority from ext
 │  /run/*                │  Modal function wrappers (80+)         │
 │  /run/client/*         │  Client lead ingest                    │
 │  /run/reference/*      │  Reference table updates               │
+│  /run/salesnav/*       │  SalesNav export to Clay               │
+│  /run/testing/*        │  Testing/dev endpoints                 │
 └─────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -101,7 +125,7 @@ Backfilled `reference.job_title_lookup` with job_function and seniority from ext
                                     ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Supabase PostgreSQL                           │
-│  raw.* → extracted.* → reference.* → core.* + client.*          │
+│  raw.* → extracted.* → reference.* → core.* + client.* + testing.* │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -144,7 +168,14 @@ Clay sends: { linkedin_url, workflow_slug, raw_payload }
 
 ---
 
-## Key Files Modified This Session
+## Key Files Modified This Session (2026-02-04)
+
+| File | Changes |
+|------|---------|
+| `/hq-api/routers/run.py` | Added `/run/salesnav/export/to-clay` and `/run/testing/companies` endpoints |
+| `/hq-api/main.py` | Added localhost ports 3000-3015 to CORS allowed origins |
+
+## Key Files Modified Previous Session
 
 | File | Changes |
 |------|---------|
@@ -197,6 +228,22 @@ curl -X POST https://api.revenueinfra.com/run/people/db/person-job-title/lookup 
 curl -X POST https://api.revenueinfra.com/run/reference/job-title/update \
   -H "Content-Type: application/json" \
   -d '{"latest_title":"Senior Sales Engineer","cleaned_job_title":"Sales Engineer","seniority_level":"Senior","job_function":"Sales Engineering"}'
+```
+
+### SalesNav export to Clay (multipart form)
+```bash
+curl -X POST https://api.revenueinfra.com/run/salesnav/export/to-clay \
+  -F "file=@export.csv" \
+  -F "webhook_url=https://api.clay.com/v3/sources/webhook/..." \
+  -F "export_title=Q1 2026 Leads" \
+  -F "export_timestamp=1/25/2026, 10:15 PM"
+```
+
+### Add company to testing table
+```bash
+curl -X POST https://api.revenueinfra.com/run/testing/companies \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Acme Inc","domain":"acme.com","linkedin_url":"https://linkedin.com/company/acme"}'
 ```
 
 ---
