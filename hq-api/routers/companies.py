@@ -1045,6 +1045,78 @@ async def check_company_enrichment_status(payload: dict):
     }
 
 
+@router.post("/public-company-info")
+async def get_public_company_info(payload: dict):
+    """
+    Get public company info (ticker and SEC CIK) for a domain.
+
+    Payload: { "domain": "apple.com" }
+    Returns ticker symbol and SEC CIK if the company is publicly traded.
+    """
+    domain = payload.get("domain", "").lower().strip()
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    pool = get_pool()
+
+    # Get the most recent record with CIK data from raw.company_ticker_payloads
+    row = await pool.fetchrow("""
+        SELECT
+            domain,
+            payload->>'ticker' AS ticker,
+            payload->>'sec_cik' AS cik,
+            payload->>'sec_company_name' AS sec_company_name,
+            created_at
+        FROM raw.company_ticker_payloads
+        WHERE domain = $1
+          AND payload->>'sec_cik' IS NOT NULL
+          AND payload->>'sec_cik' != 'null'
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, domain)
+
+    if row:
+        return {
+            "found": True,
+            "domain": row["domain"],
+            "ticker": row["ticker"],
+            "cik": row["cik"],
+            "sec_company_name": row["sec_company_name"],
+            "last_updated": str(row["created_at"]) if row["created_at"] else None
+        }
+
+    # Fallback: check if we have ticker without CIK
+    fallback_row = await pool.fetchrow("""
+        SELECT
+            domain,
+            payload->>'ticker' AS ticker,
+            created_at
+        FROM raw.company_ticker_payloads
+        WHERE domain = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, domain)
+
+    if fallback_row:
+        return {
+            "found": True,
+            "domain": fallback_row["domain"],
+            "ticker": fallback_row["ticker"],
+            "cik": None,
+            "sec_company_name": None,
+            "last_updated": str(fallback_row["created_at"]) if fallback_row["created_at"] else None,
+            "note": "CIK not yet fetched from SEC"
+        }
+
+    return {
+        "found": False,
+        "domain": domain,
+        "ticker": None,
+        "cik": None,
+        "sec_company_name": None
+    }
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""
