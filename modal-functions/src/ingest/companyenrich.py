@@ -442,26 +442,42 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
-            # Coalesce to core.company_locations
+            # Coalesce to core.company_locations (only if we have more data than existing)
             city_name = city_obj.get("name")
             state_name = state_obj.get("name")
             country_name = country_obj.get("name")
-            if city_name or state_name or country_name:
+            incoming_count = sum(1 for v in [city_name, state_name, country_name] if v)
+            if incoming_count > 0:
                 try:
-                    supabase.schema("core").from_("company_locations").upsert(
-                        {
-                            "domain": domain,
-                            "city": city_name,
-                            "state": state_name,
-                            "country": country_name,
-                            "raw_location": location.get("address"),
-                            "raw_country": country_name,
-                            "has_city": city_name is not None,
-                            "has_state": state_name is not None,
-                            "source": "companyenrich",
-                        },
-                        on_conflict="domain"
-                    ).execute()
+                    existing_loc = (
+                        supabase.schema("core")
+                        .from_("company_locations")
+                        .select("city,state,country")
+                        .eq("domain", domain)
+                        .execute()
+                    )
+                    should_write = True
+                    if existing_loc.data:
+                        ex = existing_loc.data[0]
+                        existing_count = sum(1 for v in [ex.get("city"), ex.get("state"), ex.get("country")] if v)
+                        if incoming_count < existing_count:
+                            should_write = False
+
+                    if should_write:
+                        supabase.schema("core").from_("company_locations").upsert(
+                            {
+                                "domain": domain,
+                                "city": city_name,
+                                "state": state_name,
+                                "country": country_name,
+                                "raw_location": location.get("address"),
+                                "raw_country": country_name,
+                                "has_city": city_name is not None,
+                                "has_state": state_name is not None,
+                                "source": "companyenrich",
+                            },
+                            on_conflict="domain"
+                        ).execute()
                 except Exception:
                     pass
 
