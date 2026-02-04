@@ -442,6 +442,29 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
+            # Coalesce to core.company_locations
+            city_name = city_obj.get("name")
+            state_name = state_obj.get("name")
+            country_name = country_obj.get("name")
+            if city_name or state_name or country_name:
+                try:
+                    supabase.schema("core").from_("company_locations").upsert(
+                        {
+                            "domain": domain,
+                            "city": city_name,
+                            "state": state_name,
+                            "country": country_name,
+                            "raw_location": location.get("address"),
+                            "raw_country": country_name,
+                            "has_city": city_name is not None,
+                            "has_state": state_name is not None,
+                            "source": "companyenrich",
+                        },
+                        on_conflict="domain"
+                    ).execute()
+                except Exception:
+                    pass
+
         # 11. Subsidiaries breakout
         subsidiaries = payload.get("subsidiaries") or []
         if subsidiaries:
