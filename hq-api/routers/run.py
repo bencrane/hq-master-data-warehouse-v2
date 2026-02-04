@@ -1623,6 +1623,26 @@ class TargetClientLeadsListRequest(BaseModel):
     source: Optional[str] = None  # Optional filter by source
 
 
+class TargetClientLeadLinkRequest(BaseModel):
+    target_client_domain: str
+    company_domain: Optional[str] = None
+    person_linkedin_url: Optional[str] = None
+    person_email: Optional[str] = None
+    source: Optional[str] = "demo"
+    form_id: Optional[str] = None
+    form_title: Optional[str] = None
+
+
+class TargetClientLeadLinkResponse(BaseModel):
+    success: bool
+    lead_id: Optional[str] = None
+    core_company_id: Optional[str] = None
+    core_person_id: Optional[str] = None
+    company_found: bool = False
+    person_found: bool = False
+    error: Optional[str] = None
+
+
 class TargetClientLeadEnrichedCompany(BaseModel):
     id: Optional[str] = None
     domain: Optional[str] = None
@@ -5160,6 +5180,125 @@ async def list_target_client_leads(request: TargetClientLeadsListRequest) -> Tar
 
     except Exception as e:
         return TargetClientLeadsListResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+@router.post(
+    "/target-client/leads/link",
+    response_model=TargetClientLeadLinkResponse,
+    summary="Link existing core data to a target client lead",
+    description="Creates a target_client.leads record pointing to existing core.companies and core.people records"
+)
+async def link_target_client_lead(request: TargetClientLeadLinkRequest) -> TargetClientLeadLinkResponse:
+    """
+    Link existing enriched data to a target client lead for demos.
+
+    Looks up existing records in core.companies and core.people,
+    then creates a target_client.leads record with FKs pointing to them.
+
+    No enrichment runs - just links existing data.
+    """
+    pool = get_pool()
+
+    target_client_domain = request.target_client_domain.lower().strip() if request.target_client_domain else None
+    if not target_client_domain:
+        return TargetClientLeadLinkResponse(success=False, error="target_client_domain is required")
+
+    company_domain = request.company_domain.lower().strip().rstrip("/") if request.company_domain else None
+    person_linkedin_url = request.person_linkedin_url.strip() if request.person_linkedin_url else None
+    person_email = request.person_email.lower().strip() if request.person_email else None
+
+    try:
+        # Look up core_company_id from core.companies by domain
+        core_company_id = None
+        company_name = None
+        company_linkedin_url = None
+        company_found = False
+        if company_domain:
+            company_lookup = await pool.fetchrow(
+                "SELECT id, name, linkedin_url FROM core.companies WHERE domain = $1 LIMIT 1",
+                company_domain
+            )
+            if company_lookup:
+                core_company_id = company_lookup["id"]
+                company_name = company_lookup["name"]
+                company_linkedin_url = company_lookup["linkedin_url"]
+                company_found = True
+
+        # Look up core_person_id from core.people by linkedin_url or email
+        core_person_id = None
+        first_name = None
+        last_name = None
+        full_name = None
+        work_email = None
+        person_found = False
+
+        if person_linkedin_url:
+            person_lookup = await pool.fetchrow(
+                "SELECT id, first_name, last_name, full_name, work_email FROM core.people WHERE linkedin_url = $1 LIMIT 1",
+                person_linkedin_url
+            )
+            if person_lookup:
+                core_person_id = person_lookup["id"]
+                first_name = person_lookup["first_name"]
+                last_name = person_lookup["last_name"]
+                full_name = person_lookup["full_name"]
+                work_email = person_lookup["work_email"]
+                person_found = True
+
+        if not core_person_id and person_email:
+            person_lookup = await pool.fetchrow(
+                "SELECT id, first_name, last_name, full_name, linkedin_url, work_email FROM core.people WHERE work_email = $1 LIMIT 1",
+                person_email
+            )
+            if person_lookup:
+                core_person_id = person_lookup["id"]
+                first_name = person_lookup["first_name"]
+                last_name = person_lookup["last_name"]
+                full_name = person_lookup["full_name"]
+                person_linkedin_url = person_lookup["linkedin_url"]
+                work_email = person_lookup["work_email"]
+                person_found = True
+
+        # Must find at least one
+        if not core_company_id and not core_person_id:
+            return TargetClientLeadLinkResponse(
+                success=False,
+                error="No matching company or person found in core tables",
+                company_found=False,
+                person_found=False
+            )
+
+        # Insert into target_client.leads with FKs
+        lead_row = await pool.fetchrow("""
+            INSERT INTO target_client.leads (
+                target_client_domain, first_name, last_name, full_name,
+                person_linkedin_url, work_email, company_domain,
+                company_name, company_linkedin_url, source,
+                form_id, form_title, core_company_id, core_person_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            RETURNING id
+        """,
+            target_client_domain, first_name, last_name, full_name,
+            person_linkedin_url, work_email, company_domain,
+            company_name, company_linkedin_url, request.source,
+            request.form_id, request.form_title, core_company_id, core_person_id
+        )
+        lead_id = str(lead_row["id"])
+
+        return TargetClientLeadLinkResponse(
+            success=True,
+            lead_id=lead_id,
+            core_company_id=str(core_company_id) if core_company_id else None,
+            core_person_id=str(core_person_id) if core_person_id else None,
+            company_found=company_found,
+            person_found=person_found
+        )
+
+    except Exception as e:
+        return TargetClientLeadLinkResponse(
             success=False,
             error=str(e)
         )
