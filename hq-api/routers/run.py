@@ -5824,3 +5824,62 @@ async def add_testing_company(request: TestingCompanyRequest) -> TestingCompanyR
         return TestingCompanyResponse(success=True, id=str(result["id"]))
     except Exception as e:
         return TestingCompanyResponse(success=False, error=str(e))
+
+
+# =============================================================================
+# CompanyEnrich.com Ingestion
+# =============================================================================
+
+class CompanyEnrichRequest(BaseModel):
+    domain: str
+    raw_payload: dict
+
+
+class CompanyEnrichResponse(BaseModel):
+    success: bool
+    raw_id: Optional[str] = None
+    extracted_id: Optional[str] = None
+    funding_rounds_processed: Optional[int] = None
+    error: Optional[str] = None
+
+
+MODAL_COMPANYENRICH_URL = f"{MODAL_BASE_URL}-ingest-companyenrich.modal.run"
+
+
+@router.post(
+    "/companies/companyenrich/ingest",
+    response_model=CompanyEnrichResponse,
+    summary="Ingest company data from CompanyEnrich.com",
+    description="Stores raw payload and extracts company firmographics + funding rounds"
+)
+async def ingest_companyenrich(request: CompanyEnrichRequest) -> CompanyEnrichResponse:
+    """
+    Ingest company enrichment data from CompanyEnrich.com.
+
+    Stores raw payload in raw.companyenrich_payloads,
+    extracts company data to extracted.companyenrich_company,
+    and funding rounds to extracted.companyenrich_funding_rounds.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                MODAL_COMPANYENRICH_URL,
+                json=request.model_dump(),
+            )
+
+            if response.status_code != 200:
+                return CompanyEnrichResponse(
+                    success=False,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return CompanyEnrichResponse(
+                success=result.get("success", False),
+                raw_id=result.get("raw_id"),
+                extracted_id=result.get("extracted_id"),
+                funding_rounds_processed=result.get("funding_rounds_processed"),
+                error=result.get("error"),
+            )
+    except Exception as e:
+        return CompanyEnrichResponse(success=False, error=str(e))

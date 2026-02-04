@@ -58,6 +58,7 @@ from ingest.salesnav_person import ingest_salesnav_person
 from ingest.nostra_ecom import ingest_nostra_ecom_company
 from ingest.nostra_ecom_people import ingest_nostra_ecom_person
 from ingest.leadmagic_company import ingest_leadmagic_company
+from ingest.companyenrich import ingest_companyenrich
 from ingest.core_company_simple import ingest_core_company_simple
 from ingest.apollo_scrape import ingest_apollo_scrape
 from ingest.cleaned_company_name import ingest_cleaned_company_name
@@ -208,6 +209,7 @@ __all__ = [
     "ingest_nostra_ecom_company",
     "ingest_nostra_ecom_person",
     "ingest_leadmagic_company",
+    "ingest_companyenrich",
     "ingest_core_company_simple",
     "ingest_apollo_scrape",
     "ingest_cleaned_company_name",
