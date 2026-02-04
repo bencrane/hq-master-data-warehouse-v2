@@ -418,6 +418,27 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
+            # Coalesce to core.company_social_urls
+            try:
+                supabase.schema("core").from_("company_social_urls").upsert(
+                    {
+                        "domain": domain,
+                        "linkedin_url": socials.get("linkedin_url"),
+                        "twitter_url": socials.get("twitter_url"),
+                        "facebook_url": socials.get("facebook_url"),
+                        "github_url": socials.get("github_url"),
+                        "youtube_url": socials.get("youtube_url"),
+                        "instagram_url": socials.get("instagram_url"),
+                        "crunchbase_url": socials.get("crunchbase_url"),
+                        "g2_url": socials.get("g2_url"),
+                        "angellist_url": socials.get("angellist_url"),
+                        "source": "companyenrich",
+                    },
+                    on_conflict="domain"
+                ).execute()
+            except Exception:
+                pass
+
         # 10. Location breakout
         if location:
             try:
