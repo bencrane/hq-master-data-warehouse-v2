@@ -481,7 +481,24 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                 except Exception:
                     pass
 
-        # 11. Subsidiaries breakout
+        # 11. Coalesce description to core.company_descriptions
+        desc = payload.get("description")
+        seo_desc = payload.get("seo_description")
+        if desc or seo_desc:
+            try:
+                supabase.schema("core").from_("company_descriptions").upsert(
+                    {
+                        "domain": domain,
+                        "description": desc,
+                        "tagline": seo_desc,
+                        "source": "companyenrich",
+                    },
+                    on_conflict="domain"
+                ).execute()
+            except Exception:
+                pass
+
+        # 12. Subsidiaries breakout
         subsidiaries = payload.get("subsidiaries") or []
         if subsidiaries:
             for sub in subsidiaries:
