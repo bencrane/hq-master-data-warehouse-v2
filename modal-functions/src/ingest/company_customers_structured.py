@@ -65,6 +65,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
         extracted_count = 0
         core_count = 0
         staging_count = 0
+        staging_errors = []
         customer_names = []
 
         for c in customers:
@@ -108,8 +109,8 @@ def ingest_company_customers_structured(request: dict) -> dict:
                         "processed": False,
                     }, on_conflict="case_study_url").execute()
                     staging_count += 1
-                except Exception:
-                    pass
+                except Exception as staging_err:
+                    staging_errors.append(str(staging_err))
 
             extracted_count += 1
             core_count += 1
@@ -122,6 +123,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
             "customers_extracted": extracted_count,
             "customers_to_core": core_count,
             "staging_case_study_urls": staging_count,
+            "staging_errors": staging_errors[:3] if staging_errors else None,
             "customer_names": customer_names,
             "confidence": confidence,
         }
