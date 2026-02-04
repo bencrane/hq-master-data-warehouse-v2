@@ -42,7 +42,7 @@ def call_gemini(prompt: str, content: str) -> str:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("gemini-api-key")],
+    secrets=[modal.Secret.from_name("gemini-secret")],
     timeout=300,
 )
 @modal.fastapi_endpoint(method="POST")
@@ -97,7 +97,7 @@ def analyze_sec_10k(request: dict) -> dict:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("gemini-api-key")],
+    secrets=[modal.Secret.from_name("gemini-secret")],
     timeout=300,
 )
 @modal.fastapi_endpoint(method="POST")
@@ -152,7 +152,7 @@ def analyze_sec_10q(request: dict) -> dict:
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("gemini-api-key")],
+    secrets=[modal.Secret.from_name("gemini-secret")],
     timeout=300,
 )
 @modal.fastapi_endpoint(method="POST")
