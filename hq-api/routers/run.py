@@ -12,7 +12,7 @@ Example:
 """
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, Any, List
 from db import get_pool
@@ -5593,3 +5593,89 @@ async def update_location_lookup(request: LocationUpdateRequest) -> LocationUpda
 
     except Exception as e:
         return LocationUpdateResponse(success=False, error=str(e))
+
+
+# =============================================================================
+# LinkedIn Job Video Extraction
+# =============================================================================
+
+class LinkedInJobVideoResponse(BaseModel):
+    success: bool
+    raw_video_id: Optional[str] = None
+    video_filename: Optional[str] = None
+    video_duration_seconds: Optional[float] = None
+    frames_extracted: Optional[int] = None
+    jobs_extracted: Optional[int] = None
+    tokens_used: Optional[int] = None
+    error: Optional[str] = None
+
+
+MODAL_LINKEDIN_JOB_VIDEO_URL = f"{MODAL_BASE_URL}-ingest-linkedin-job-video.modal.run"
+
+
+@router.post(
+    "/linkedin/job-video/ingest",
+    response_model=LinkedInJobVideoResponse,
+    summary="Extract job postings from LinkedIn job search video",
+    description="Uploads a video recording of LinkedIn job search results, extracts frames, and uses GPT-4o vision to extract job postings"
+)
+async def ingest_linkedin_job_video(
+    video: UploadFile = File(..., description="Video file (MP4, MOV, WebM) of LinkedIn job search"),
+    search_query: Optional[str] = Form(None, description="LinkedIn search query used"),
+    search_date: Optional[str] = Form(None, description="Date of search (YYYY-MM-DD)"),
+    linkedin_search_url: Optional[str] = Form(None, description="Full LinkedIn search URL"),
+) -> LinkedInJobVideoResponse:
+    """
+    Extract job postings from a video recording of LinkedIn job search results.
+
+    1. Uploads video to Modal endpoint
+    2. Extracts frames every 2 seconds (max 30 frames)
+    3. Sends frames to GPT-4o vision for extraction
+    4. Stores raw response + extracted jobs in database
+
+    Returns job count and extraction metadata.
+    """
+    try:
+        # Read video content
+        video_content = await video.read()
+
+        # Forward to Modal endpoint as multipart form data
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            files = {"video": (video.filename, video_content, video.content_type or "video/mp4")}
+            data = {}
+            if search_query:
+                data["search_query"] = search_query
+            if search_date:
+                data["search_date"] = search_date
+            if linkedin_search_url:
+                data["linkedin_search_url"] = linkedin_search_url
+
+            response = await client.post(
+                MODAL_LINKEDIN_JOB_VIDEO_URL,
+                files=files,
+                data=data,
+            )
+
+            if response.status_code != 200:
+                return LinkedInJobVideoResponse(
+                    success=False,
+                    error=f"Modal endpoint returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+
+            return LinkedInJobVideoResponse(
+                success=result.get("success", False),
+                raw_video_id=result.get("raw_video_id"),
+                video_filename=result.get("video_filename"),
+                video_duration_seconds=result.get("video_duration_seconds"),
+                frames_extracted=result.get("frames_extracted"),
+                jobs_extracted=result.get("jobs_extracted"),
+                tokens_used=result.get("tokens_used"),
+                error=result.get("error"),
+            )
+
+    except httpx.TimeoutException:
+        return LinkedInJobVideoResponse(success=False, error="Request timed out - video processing may take up to 5 minutes")
+    except Exception as e:
+        return LinkedInJobVideoResponse(success=False, error=str(e))

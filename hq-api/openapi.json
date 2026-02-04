@@ -12599,6 +12599,48 @@
         }
       }
     },
+    "/run/linkedin/job-video/ingest": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Extract job postings from LinkedIn job search video",
+        "description": "Uploads a video recording of LinkedIn job search results, extracts frames, and uses GPT-4o vision to extract job postings",
+        "operationId": "ingest_linkedin_job_video_run_linkedin_job_video_ingest_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_ingest_linkedin_job_video_run_linkedin_job_video_ingest_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedInJobVideoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -13648,6 +13690,57 @@
           "success"
         ],
         "title": "BillingDefaultResponse"
+      },
+      "Body_ingest_linkedin_job_video_run_linkedin_job_video_ingest_post": {
+        "properties": {
+          "video": {
+            "type": "string",
+            "format": "binary",
+            "title": "Video",
+            "description": "Video file (MP4, MOV, WebM) of LinkedIn job search"
+          },
+          "search_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Query",
+            "description": "LinkedIn search query used"
+          },
+          "search_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Date",
+            "description": "Date of search (YYYY-MM-DD)"
+          },
+          "linkedin_search_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Search Url",
+            "description": "Full LinkedIn search URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "video"
+        ],
+        "title": "Body_ingest_linkedin_job_video_run_linkedin_job_video_ingest_post"
       },
       "BuiltWithIngestRequest": {
         "properties": {
@@ -21737,6 +21830,96 @@
           "success"
         ],
         "title": "LinkedInAdsResponse"
+      },
+      "LinkedInJobVideoResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "raw_video_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Video Id"
+          },
+          "video_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Filename"
+          },
+          "video_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Duration Seconds"
+          },
+          "frames_extracted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frames Extracted"
+          },
+          "jobs_extracted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jobs Extracted"
+          },
+          "tokens_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Used"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "LinkedInJobVideoResponse"
       },
       "LinkedInUrlInferenceRequest": {
         "properties": {
