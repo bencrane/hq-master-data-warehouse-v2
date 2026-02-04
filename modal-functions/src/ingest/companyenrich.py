@@ -97,7 +97,30 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             }).execute()
             core_company_inserted = True
 
-        # 0b. Coalesce employee range to core
+        # 0b. Coalesce company name to core.company_names (only if not exists for this source)
+        company_name = payload.get("name")
+        if company_name:
+            try:
+                existing_name = (
+                    supabase.schema("core")
+                    .from_("company_names")
+                    .select("id")
+                    .eq("domain", domain)
+                    .eq("source", "companyenrich")
+                    .execute()
+                )
+                if not existing_name.data:
+                    socials_for_name = payload.get("socials") or {}
+                    supabase.schema("core").from_("company_names").insert({
+                        "domain": domain,
+                        "source": "companyenrich",
+                        "raw_name": company_name,
+                        "linkedin_url": socials_for_name.get("linkedin_url"),
+                    }).execute()
+            except Exception:
+                pass
+
+        # 0c. Coalesce employee range to core
         raw_employees = payload.get("employees")
         matched_employee_range = None
         if raw_employees:
