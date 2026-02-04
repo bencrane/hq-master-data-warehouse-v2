@@ -73,6 +73,7 @@ from ingest.company_public import ingest_public_company
 from ingest.company_ticker import ingest_company_ticker
 from ingest.sec_financials import ingest_sec_financials
 from ingest.sec_filings import fetch_sec_filings
+from ingest.sec_filing_analysis import analyze_sec_10k, analyze_sec_10q, analyze_sec_8k_executive
 from ingest.vc_domain_lookup import lookup_vc_domain
 from ingest.vc_domain_update import update_vc_domain
 from ingest.has_raised_vc import has_raised_vc
@@ -147,6 +148,9 @@ import extraction.icp_industries
 import extraction.icp_job_titles
 import extraction.icp_value_proposition
 import extraction.icp_fit_criterion
+
+# Import prompts module so Modal mounts it
+import prompts.sec_filings
 
 # Simple test endpoint - always keep this
 @app.function(image=image)
@@ -224,6 +228,9 @@ __all__ = [
     "ingest_company_ticker",
     "ingest_sec_financials",
     "fetch_sec_filings",
+    "analyze_sec_10k",
+    "analyze_sec_10q",
+    "analyze_sec_8k_executive",
     "lookup_vc_domain",
     "update_vc_domain",
     "has_raised_vc",
