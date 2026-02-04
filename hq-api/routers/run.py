@@ -3402,8 +3402,9 @@ async def ingest_company_vc_investors(request: CompanyVCInvestorsRequest) -> Com
 @router.post(
     "/companies/claygent/customers-of-1/ingest",
     response_model=CompanyCustomerResponse,
-    summary="Ingest company customers (variant 1)",
-    description="Wrapper for Modal function: ingest_all_comp_customers"
+    summary="[DEPRECATED] Ingest company customers (variant 1) - Use customers-of-3 instead",
+    description="DEPRECATED: Use /run/companies/claygent/customers-of-3/ingest instead",
+    deprecated=True
 )
 async def ingest_all_comp_customers(request: CompanyCustomerRequest) -> CompanyCustomerResponse:
     """
@@ -3439,8 +3440,9 @@ async def ingest_all_comp_customers(request: CompanyCustomerRequest) -> CompanyC
 @router.post(
     "/companies/claygent/customers-of-2/ingest",
     response_model=CompanyCustomersV2Response,
-    summary="Ingest company customers (variant 2)",
-    description="Wrapper for Modal function: ingest_company_customers_v2"
+    summary="[DEPRECATED] Ingest company customers (variant 2) - Use customers-of-3 instead",
+    description="DEPRECATED: Use /run/companies/claygent/customers-of-3/ingest instead",
+    deprecated=True
 )
 async def ingest_company_customers_v2(request: CompanyCustomersV2Request) -> CompanyCustomersV2Response:
     """
@@ -3511,8 +3513,9 @@ async def ingest_company_customers_structured(request: CompanyCustomersStructure
 @router.post(
     "/companies/claygent/customers-of-4/ingest",
     response_model=CompanyCustomersV2Response,
-    summary="Ingest company customers (variant 4 - claygent)",
-    description="Wrapper for Modal function: ingest_company_customers_claygent"
+    summary="[DEPRECATED] Ingest company customers (variant 4) - Use customers-of-3 instead",
+    description="DEPRECATED: Use /run/companies/claygent/customers-of-3/ingest instead",
+    deprecated=True
 )
 async def ingest_company_customers_claygent(request: CompanyCustomersClaygentRequest) -> CompanyCustomersV2Response:
     """

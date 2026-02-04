@@ -1,14 +1,26 @@
 # ingest_company_customers_structured
 
-> **Last Updated:** 2026-01-31
+> **Last Updated:** 2026-02-04
 
 ## Purpose
 Ingests structured company customers data from Clay webhooks. Accepts flat payload with customers array containing company names, URLs, and case study flags.
 
+**This is the canonical "get customers of" ingest endpoint.** All other variants (customers-of-1, customers-of-2, customers-of-4) are deprecated.
+
 ## Endpoint
+```
+POST https://api.revenueinfra.com/run/companies/claygent/customers-of-3/ingest
+```
+
+**Modal (direct):**
 ```
 POST https://bencrane--hq-master-data-ingest-ingest-company-customers-85468a.modal.run
 ```
+
+## Deprecated Endpoints (do not use)
+- `customers-of-1` — old Claygent format
+- `customers-of-2` — different payload shape
+- `customers-of-4` — comma-separated customer names
 
 ## Expected Payload (Flat Structure)
 
@@ -87,9 +99,15 @@ Map each Claygent output field separately:
 | Claygent.Confidence | `confidence` |
 | Claygent.Steps Taken | `stepsTaken` |
 
+## Tables Written
+
+- **`raw.claygent_customers_structured_raw`** — Full payload storage
+- **`extracted.claygent_customers_structured`** — One row per customer
+- **`core.company_customers`** — Coalesced canonical table (source = `claygent_structured`)
+
 ## Notes
 
 - Endpoint accepts raw `dict` (no Pydantic validation issues)
 - Empty customers arrays handled gracefully
 - Customers without `companyName` are skipped
-- Data should be coalesced to `core.company_customers` for the status endpoint to work
+- Case study URLs are stored but not automatically pushed to `staging.case_study_urls_to_process` (manual step for now)
