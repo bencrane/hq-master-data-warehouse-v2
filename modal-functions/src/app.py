@@ -71,6 +71,7 @@ from ingest.company_customers_v2 import ingest_company_customers_v2
 from ingest.company_customers_status import get_company_customers_status
 from ingest.company_public import ingest_public_company
 from ingest.company_ticker import ingest_company_ticker
+from ingest.sec_financials import ingest_sec_financials
 from ingest.vc_domain_lookup import lookup_vc_domain
 from ingest.vc_domain_update import update_vc_domain
 from ingest.has_raised_vc import has_raised_vc
@@ -220,6 +221,7 @@ __all__ = [
     "get_company_customers_status",
     "ingest_public_company",
     "ingest_company_ticker",
+    "ingest_sec_financials",
     "lookup_vc_domain",
     "update_vc_domain",
     "has_raised_vc",

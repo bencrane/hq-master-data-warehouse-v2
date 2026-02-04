@@ -1516,6 +1516,30 @@ class CompanyTickerIngestResponse(BaseModel):
     error: Optional[str] = None
 
 
+class SECFinancialsIngestRequest(BaseModel):
+    domain: str
+
+
+class SECFinancialsLatestPeriod(BaseModel):
+    period_end: Optional[str] = None
+    fiscal_year: Optional[int] = None
+    fiscal_period: Optional[str] = None
+    revenue: Optional[int] = None
+    net_income: Optional[int] = None
+
+
+class SECFinancialsIngestResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    cik: Optional[str] = None
+    ticker: Optional[str] = None
+    sec_company_name: Optional[str] = None
+    raw_payload_id: Optional[str] = None
+    periods_extracted: Optional[int] = None
+    latest_period: Optional[SECFinancialsLatestPeriod] = None
+    error: Optional[str] = None
+
+
 class ClientLeadIngestRequest(BaseModel):
     client_domain: str
     client_form_id: Optional[str] = None
@@ -4582,6 +4606,62 @@ async def backfill_public_company_ticker(request: BackfillPublicCompanyTickerReq
         domain=domain,
         ticker=ticker
     )
+
+
+@router.post(
+    "/companies/sec/financials/ingest",
+    response_model=SECFinancialsIngestResponse,
+    summary="Ingest SEC financials for a company",
+    description="Wrapper for Modal function: ingest_sec_financials"
+)
+async def ingest_sec_financials(request: SECFinancialsIngestRequest) -> SECFinancialsIngestResponse:
+    """
+    Fetch and store SEC EDGAR financial data for a public company.
+
+    Looks up CIK from existing ticker data, fetches CompanyFacts from SEC,
+    stores raw payload, extracts key financial metrics by period.
+
+    Modal function: ingest_sec_financials
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-sec-financials.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-ingest-sec-financials.modal.run"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json={"domain": request.domain}
+            )
+            result = response.json()
+
+            latest = result.get("latest_period")
+            latest_period = None
+            if latest:
+                latest_period = SECFinancialsLatestPeriod(
+                    period_end=latest.get("period_end"),
+                    fiscal_year=latest.get("fiscal_year"),
+                    fiscal_period=latest.get("fiscal_period"),
+                    revenue=latest.get("revenue"),
+                    net_income=latest.get("net_income"),
+                )
+
+            return SECFinancialsIngestResponse(
+                success=result.get("success", False),
+                domain=result.get("domain"),
+                cik=result.get("cik"),
+                ticker=result.get("ticker"),
+                sec_company_name=result.get("sec_company_name"),
+                raw_payload_id=result.get("raw_payload_id"),
+                periods_extracted=result.get("periods_extracted"),
+                latest_period=latest_period,
+                error=result.get("error"),
+            )
+        except Exception as e:
+            return SECFinancialsIngestResponse(
+                success=False,
+                domain=request.domain,
+                error=str(e),
+            )
 
 
 @router.post(
