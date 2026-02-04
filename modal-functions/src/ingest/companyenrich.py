@@ -97,6 +97,31 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             }).execute()
             core_company_inserted = True
 
+        # 0b. Coalesce employee range to core
+        raw_employees = payload.get("employees")
+        matched_employee_range = None
+        if raw_employees:
+            try:
+                lookup = (
+                    supabase.schema("reference")
+                    .from_("employee_range_lookup")
+                    .select("size_cleaned")
+                    .eq("size_raw", raw_employees)
+                    .execute()
+                )
+                if lookup.data:
+                    matched_employee_range = lookup.data[0]["size_cleaned"]
+                    supabase.schema("core").from_("company_employee_range").upsert(
+                        {
+                            "domain": domain,
+                            "employee_range": matched_employee_range,
+                            "source": "companyenrich",
+                        },
+                        on_conflict="domain"
+                    ).execute()
+            except Exception:
+                pass
+
         # 1. Store raw payload
         raw_insert = (
             supabase.schema("raw")
