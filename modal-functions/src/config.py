@@ -22,6 +22,8 @@ image = (
         "httpx",
         "requests",
         "beautifulsoup4",
+        "opencv-python-headless",
+        "numpy",
     )
     .add_local_python_source("config", "ingest", "extraction", "icp")
 )
