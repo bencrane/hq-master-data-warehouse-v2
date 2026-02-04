@@ -283,13 +283,25 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                 except Exception:
                     pass
 
-        # 7. NAICS codes breakout
+        # 7. NAICS codes breakout + coalesce to core
         naics_codes = payload.get("naics_codes") or []
         for code in naics_codes:
             if code:
                 try:
                     supabase.schema("extracted").from_("companyenrich_naics_codes").upsert(
                         {"domain": domain, "naics_code": code},
+                        on_conflict="domain,naics_code"
+                    ).execute()
+                except Exception:
+                    pass
+
+                try:
+                    supabase.schema("core").from_("company_naics_codes").upsert(
+                        {
+                            "domain": domain,
+                            "naics_code": code,
+                            "source": "companyenrich",
+                        },
                         on_conflict="domain,naics_code"
                     ).execute()
                 except Exception:
