@@ -1613,12 +1613,35 @@ class TargetClientLeadIngestResponse(BaseModel):
     lead_id: Optional[str] = None
     person_id: Optional[str] = None
     company_id: Optional[str] = None
+    core_company_id: Optional[str] = None
+    core_person_id: Optional[str] = None
     error: Optional[str] = None
 
 
 class TargetClientLeadsListRequest(BaseModel):
     target_client_domain: str
     source: Optional[str] = None  # Optional filter by source
+
+
+class TargetClientLeadEnrichedCompany(BaseModel):
+    id: Optional[str] = None
+    domain: Optional[str] = None
+    name: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    industry: Optional[str] = None
+    employee_count: Optional[int] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+
+
+class TargetClientLeadEnrichedPerson(BaseModel):
+    id: Optional[str] = None
+    full_name: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    title: Optional[str] = None
+    seniority: Optional[str] = None
+    department: Optional[str] = None
 
 
 class TargetClientLead(BaseModel):
@@ -1636,6 +1659,10 @@ class TargetClientLead(BaseModel):
     form_id: Optional[str] = None
     form_title: Optional[str] = None
     created_at: Optional[str] = None
+    core_company_id: Optional[str] = None
+    core_person_id: Optional[str] = None
+    enriched_company: Optional[TargetClientLeadEnrichedCompany] = None
+    enriched_person: Optional[TargetClientLeadEnrichedPerson] = None
 
 
 class TargetClientLeadsListResponse(BaseModel):
@@ -4929,22 +4956,50 @@ async def ingest_target_client_lead(request: TargetClientLeadIngestRequest) -> T
     company_domain = request.company_domain.lower().strip().rstrip("/") if request.company_domain else None
     person_linkedin_url = request.person_linkedin_url.strip() if request.person_linkedin_url else None
     company_linkedin_url = request.company_linkedin_url.strip() if request.company_linkedin_url else None
+    work_email = request.work_email.lower().strip() if request.work_email else None
 
     try:
+        # Look up core_company_id from core.companies by domain
+        core_company_id = None
+        if company_domain:
+            company_lookup = await pool.fetchrow(
+                "SELECT id FROM core.companies WHERE domain = $1 LIMIT 1",
+                company_domain
+            )
+            if company_lookup:
+                core_company_id = company_lookup["id"]
+
+        # Look up core_person_id from core.people by linkedin_url or email
+        core_person_id = None
+        if person_linkedin_url:
+            person_lookup = await pool.fetchrow(
+                "SELECT id FROM core.people WHERE linkedin_url = $1 LIMIT 1",
+                person_linkedin_url
+            )
+            if person_lookup:
+                core_person_id = person_lookup["id"]
+        if not core_person_id and work_email:
+            person_lookup = await pool.fetchrow(
+                "SELECT id FROM core.people WHERE work_email = $1 LIMIT 1",
+                work_email
+            )
+            if person_lookup:
+                core_person_id = person_lookup["id"]
+
         # Insert into target_client.leads (denormalized)
         lead_row = await pool.fetchrow("""
             INSERT INTO target_client.leads (
                 target_client_domain, first_name, last_name, full_name,
                 person_linkedin_url, work_email, company_domain,
                 company_name, company_linkedin_url, source,
-                form_id, form_title
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                form_id, form_title, core_company_id, core_person_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id
         """,
             target_client_domain, request.first_name, request.last_name, request.full_name,
-            person_linkedin_url, request.work_email, company_domain,
+            person_linkedin_url, work_email, company_domain,
             request.company_name, company_linkedin_url, request.source,
-            request.form_id, request.form_title
+            request.form_id, request.form_title, core_company_id, core_person_id
         )
         lead_id = str(lead_row["id"])
 
@@ -4983,7 +5038,9 @@ async def ingest_target_client_lead(request: TargetClientLeadIngestRequest) -> T
             success=True,
             lead_id=lead_id,
             person_id=person_id,
-            company_id=company_id
+            company_id=company_id,
+            core_company_id=str(core_company_id) if core_company_id else None,
+            core_person_id=str(core_person_id) if core_person_id else None
         )
 
     except Exception as e:
@@ -5013,28 +5070,68 @@ async def list_target_client_leads(request: TargetClientLeadsListRequest) -> Tar
         return TargetClientLeadsListResponse(success=False, error="target_client_domain is required")
 
     try:
-        # Build query with optional source filter
-        if request.source:
-            rows = await pool.fetch("""
-                SELECT id, target_client_domain, first_name, last_name, full_name,
-                       person_linkedin_url, work_email, company_domain, company_name,
-                       company_linkedin_url, source, form_id, form_title, created_at
-                FROM target_client.leads
-                WHERE target_client_domain = $1 AND source = $2
-                ORDER BY created_at DESC
-            """, target_client_domain, request.source)
-        else:
-            rows = await pool.fetch("""
-                SELECT id, target_client_domain, first_name, last_name, full_name,
-                       person_linkedin_url, work_email, company_domain, company_name,
-                       company_linkedin_url, source, form_id, form_title, created_at
-                FROM target_client.leads
-                WHERE target_client_domain = $1
-                ORDER BY created_at DESC
-            """, target_client_domain)
+        # Build query with LEFT JOINs to core tables for enriched data
+        base_query = """
+            SELECT
+                l.id, l.target_client_domain, l.first_name, l.last_name, l.full_name,
+                l.person_linkedin_url, l.work_email, l.company_domain, l.company_name,
+                l.company_linkedin_url, l.source, l.form_id, l.form_title, l.created_at,
+                l.core_company_id, l.core_person_id,
+                -- Enriched company fields
+                c.id as ec_id, c.domain as ec_domain, c.name as ec_name,
+                c.linkedin_url as ec_linkedin_url, c.industry as ec_industry,
+                c.employee_count as ec_employee_count, c.city as ec_city,
+                c.state as ec_state, c.country as ec_country,
+                -- Enriched person fields
+                p.id as ep_id, p.full_name as ep_full_name, p.linkedin_url as ep_linkedin_url,
+                p.title as ep_title, p.seniority as ep_seniority, p.department as ep_department
+            FROM target_client.leads l
+            LEFT JOIN core.companies c ON l.core_company_id = c.id
+            LEFT JOIN core.people p ON l.core_person_id = p.id
+            WHERE l.target_client_domain = $1
+        """
 
-        leads = [
-            TargetClientLead(
+        if request.source:
+            rows = await pool.fetch(
+                base_query + " AND l.source = $2 ORDER BY l.created_at DESC",
+                target_client_domain, request.source
+            )
+        else:
+            rows = await pool.fetch(
+                base_query + " ORDER BY l.created_at DESC",
+                target_client_domain
+            )
+
+        leads = []
+        for row in rows:
+            # Build enriched company if we have core_company_id
+            enriched_company = None
+            if row["core_company_id"]:
+                enriched_company = TargetClientLeadEnrichedCompany(
+                    id=str(row["ec_id"]) if row["ec_id"] else None,
+                    domain=row["ec_domain"],
+                    name=row["ec_name"],
+                    linkedin_url=row["ec_linkedin_url"],
+                    industry=row["ec_industry"],
+                    employee_count=row["ec_employee_count"],
+                    city=row["ec_city"],
+                    state=row["ec_state"],
+                    country=row["ec_country"],
+                )
+
+            # Build enriched person if we have core_person_id
+            enriched_person = None
+            if row["core_person_id"]:
+                enriched_person = TargetClientLeadEnrichedPerson(
+                    id=str(row["ep_id"]) if row["ep_id"] else None,
+                    full_name=row["ep_full_name"],
+                    linkedin_url=row["ep_linkedin_url"],
+                    title=row["ep_title"],
+                    seniority=row["ep_seniority"],
+                    department=row["ep_department"],
+                )
+
+            leads.append(TargetClientLead(
                 id=str(row["id"]),
                 target_client_domain=row["target_client_domain"],
                 first_name=row["first_name"],
@@ -5048,10 +5145,12 @@ async def list_target_client_leads(request: TargetClientLeadsListRequest) -> Tar
                 source=row["source"],
                 form_id=row["form_id"],
                 form_title=row["form_title"],
-                created_at=row["created_at"].isoformat() if row["created_at"] else None
-            )
-            for row in rows
-        ]
+                created_at=row["created_at"].isoformat() if row["created_at"] else None,
+                core_company_id=str(row["core_company_id"]) if row["core_company_id"] else None,
+                core_person_id=str(row["core_person_id"]) if row["core_person_id"] else None,
+                enriched_company=enriched_company,
+                enriched_person=enriched_person,
+            ))
 
         return TargetClientLeadsListResponse(
             success=True,
