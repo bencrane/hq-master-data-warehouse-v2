@@ -5836,7 +5836,6 @@ async def case_study_urls_to_clay(request: dict):
     """
     try:
         webhook_url = request.get("webhook_url")
-        limit = request.get("limit", 1000)
 
         if not webhook_url:
             return CaseStudyUrlsToClayResponse(success=False, errors=["webhook_url is required"])
@@ -5847,8 +5846,7 @@ async def case_study_urls_to_clay(request: dict):
             FROM raw.staging_case_study_urls
             WHERE processed = false
             ORDER BY created_at ASC
-            LIMIT $1
-        """, limit)
+        """)
 
         if not rows:
             return CaseStudyUrlsToClayResponse(
