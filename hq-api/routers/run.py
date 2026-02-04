@@ -4609,12 +4609,12 @@ async def backfill_public_company_ticker(request: BackfillPublicCompanyTickerReq
 
 
 @router.post(
-    "/companies/sec/financials/ingest",
+    "/companies/sec/financials/fetch",
     response_model=SECFinancialsIngestResponse,
-    summary="Ingest SEC financials for a company",
+    summary="Fetch SEC financials for a company",
     description="Wrapper for Modal function: ingest_sec_financials"
 )
-async def ingest_sec_financials(request: SECFinancialsIngestRequest) -> SECFinancialsIngestResponse:
+async def fetch_sec_financials(request: SECFinancialsIngestRequest) -> SECFinancialsIngestResponse:
     """
     Fetch and store SEC EDGAR financial data for a public company.
 
