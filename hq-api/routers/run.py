@@ -5691,16 +5691,39 @@ async def ingest_linkedin_job_video(
 class SalesNavToClayResponse(BaseModel):
     success: bool
     total_rows: int = 0
-    rows_sent: int = 0
-    rows_failed: int = 0
+    message: str = ""
     errors: List[str] = []
+
+
+async def _send_rows_to_clay(
+    rows: List[dict],
+    webhook_url: str,
+    export_title: Optional[str],
+    export_timestamp: Optional[str],
+    notes: Optional[str],
+):
+    """Background task to send rows to Clay webhook at 10 records/second."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for i, row in enumerate(rows):
+            payload = {
+                **row,
+                "_export_title": export_title,
+                "_export_timestamp": export_timestamp,
+                "_notes": notes,
+                "_row_index": i,
+            }
+            try:
+                await client.post(webhook_url, json=payload)
+            except Exception:
+                pass  # Fire and forget
+            await asyncio.sleep(0.1)  # 10 records/second
 
 
 @router.post(
     "/salesnav/export/to-clay",
     response_model=SalesNavToClayResponse,
     summary="Send SalesNav export file to Clay webhook",
-    description="Parses a TSV/CSV file from SalesNav export and sends each row to a Clay webhook at 10 records/second"
+    description="Parses a TSV/CSV file and sends each row to Clay webhook in background at 10 records/second. Returns immediately."
 )
 async def salesnav_export_to_clay(
     file: UploadFile = File(..., description="TSV/CSV file from SalesNav export"),
@@ -5713,10 +5736,10 @@ async def salesnav_export_to_clay(
     Send SalesNav export file to Clay webhook.
 
     1. Parses TSV/CSV file
-    2. Sends each row to Clay webhook
-    3. Rate limited to 10 records/second
+    2. Kicks off background task to send rows to Clay at 10/second
+    3. Returns immediately with row count
 
-    Returns count of successful/failed sends.
+    Check Clay table to monitor progress.
     """
     try:
         # Read file content
@@ -5739,49 +5762,16 @@ async def salesnav_export_to_clay(
             )
 
         total_rows = len(rows)
-        rows_sent = 0
-        rows_failed = 0
-        errors = []
 
-        # Send to Clay webhook at 10 records/second
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            for i, row in enumerate(rows):
-                # Add metadata to each row
-                payload = {
-                    **row,
-                    "_export_title": export_title,
-                    "_export_timestamp": export_timestamp,
-                    "_notes": notes,
-                    "_row_index": i,
-                }
-
-                try:
-                    response = await client.post(
-                        webhook_url,
-                        json=payload,
-                    )
-
-                    if response.status_code in (200, 201, 202):
-                        rows_sent += 1
-                    else:
-                        rows_failed += 1
-                        if len(errors) < 10:  # Limit error messages
-                            errors.append(f"Row {i}: HTTP {response.status_code}")
-
-                except Exception as e:
-                    rows_failed += 1
-                    if len(errors) < 10:
-                        errors.append(f"Row {i}: {str(e)}")
-
-                # Rate limit: 10 records/second = 0.1s between requests
-                await asyncio.sleep(0.1)
+        # Fire off background task and return immediately
+        asyncio.create_task(
+            _send_rows_to_clay(rows, webhook_url, export_title, export_timestamp, notes)
+        )
 
         return SalesNavToClayResponse(
-            success=rows_failed == 0,
+            success=True,
             total_rows=total_rows,
-            rows_sent=rows_sent,
-            rows_failed=rows_failed,
-            errors=errors,
+            message=f"Sending {total_rows} rows to Clay in background. Check Clay table for progress.",
         )
 
     except UnicodeDecodeError:
