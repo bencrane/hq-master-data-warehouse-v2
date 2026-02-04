@@ -101,7 +101,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
             case_study_url = c.get("url")
             if case_study_url:
                 try:
-                    supabase.schema("staging").from_("case_study_urls_to_process").upsert({
+                    supabase.schema("raw").from_("staging_case_study_urls").upsert({
                         "origin_company_name": company_name,
                         "origin_company_domain": domain,
                         "customer_company_name": name,
