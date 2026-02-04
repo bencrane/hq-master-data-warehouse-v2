@@ -77,7 +77,7 @@ def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
                 # Get employee range
                 emp_result = (
                     supabase.schema("core")
-                    .from_("company_employee_ranges")
+                    .from_("company_employee_range")
                     .select("domain, employee_range")
                     .in_("domain", customer_domains)
                     .execute()
@@ -92,7 +92,7 @@ def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
                 industry_result = (
                     supabase.schema("core")
                     .from_("company_industries")
-                    .select("domain, industry")
+                    .select("domain, matched_industry")
                     .in_("domain", customer_domains)
                     .execute()
                 )
@@ -100,7 +100,7 @@ def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
                 industry_map = {}
                 if industry_result.data:
                     for i in industry_result.data:
-                        industry_map[i["domain"]] = i.get("industry")
+                        industry_map[i["domain"]] = i.get("matched_industry")
 
                 # Build customer list
                 for c in customers_result.data:
