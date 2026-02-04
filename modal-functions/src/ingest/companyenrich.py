@@ -122,6 +122,30 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
+        # 0c. Coalesce revenue to core
+        raw_revenue = payload.get("revenue")
+        if raw_revenue:
+            try:
+                rev_lookup = (
+                    supabase.schema("reference")
+                    .from_("revenue_range_lookup")
+                    .select("matched_revenue_range")
+                    .eq("raw_value", raw_revenue)
+                    .execute()
+                )
+                matched_revenue = rev_lookup.data[0]["matched_revenue_range"] if rev_lookup.data else None
+                supabase.schema("core").from_("company_revenue").upsert(
+                    {
+                        "domain": domain,
+                        "source": "companyenrich",
+                        "raw_revenue_range": raw_revenue,
+                        "matched_revenue_range": matched_revenue,
+                    },
+                    on_conflict="domain,source"
+                ).execute()
+            except Exception:
+                pass
+
         # 1. Store raw payload
         raw_insert = (
             supabase.schema("raw")
