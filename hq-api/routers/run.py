@@ -12,6 +12,9 @@ Example:
 """
 
 import httpx
+import csv
+import io
+import asyncio
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, Any, List
@@ -5679,3 +5682,115 @@ async def ingest_linkedin_job_video(
         return LinkedInJobVideoResponse(success=False, error="Request timed out - video processing may take up to 5 minutes")
     except Exception as e:
         return LinkedInJobVideoResponse(success=False, error=str(e))
+
+
+# =============================================================================
+# SalesNav Export to Clay Webhook
+# =============================================================================
+
+class SalesNavToClayResponse(BaseModel):
+    success: bool
+    total_rows: int = 0
+    rows_sent: int = 0
+    rows_failed: int = 0
+    errors: List[str] = []
+
+
+@router.post(
+    "/salesnav/export/to-clay",
+    response_model=SalesNavToClayResponse,
+    summary="Send SalesNav export file to Clay webhook",
+    description="Parses a TSV/CSV file from SalesNav export and sends each row to a Clay webhook at 10 records/second"
+)
+async def salesnav_export_to_clay(
+    file: UploadFile = File(..., description="TSV/CSV file from SalesNav export"),
+    webhook_url: str = Form(..., description="Clay webhook URL to send records to"),
+    export_title: Optional[str] = Form(None, description="Title for this export"),
+    export_timestamp: Optional[str] = Form(None, description="Timestamp from SalesNav export"),
+    notes: Optional[str] = Form(None, description="Additional notes"),
+) -> SalesNavToClayResponse:
+    """
+    Send SalesNav export file to Clay webhook.
+
+    1. Parses TSV/CSV file
+    2. Sends each row to Clay webhook
+    3. Rate limited to 10 records/second
+
+    Returns count of successful/failed sends.
+    """
+    try:
+        # Read file content
+        content = await file.read()
+        text_content = content.decode('utf-8')
+
+        # Detect delimiter (TSV vs CSV)
+        first_line = text_content.split('\n')[0]
+        delimiter = '\t' if '\t' in first_line else ','
+
+        # Parse CSV/TSV
+        reader = csv.DictReader(io.StringIO(text_content), delimiter=delimiter)
+        rows = list(reader)
+
+        if not rows:
+            return SalesNavToClayResponse(
+                success=False,
+                total_rows=0,
+                errors=["No data rows found in file"]
+            )
+
+        total_rows = len(rows)
+        rows_sent = 0
+        rows_failed = 0
+        errors = []
+
+        # Send to Clay webhook at 10 records/second
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for i, row in enumerate(rows):
+                # Add metadata to each row
+                payload = {
+                    **row,
+                    "_export_title": export_title,
+                    "_export_timestamp": export_timestamp,
+                    "_notes": notes,
+                    "_row_index": i,
+                }
+
+                try:
+                    response = await client.post(
+                        webhook_url,
+                        json=payload,
+                    )
+
+                    if response.status_code in (200, 201, 202):
+                        rows_sent += 1
+                    else:
+                        rows_failed += 1
+                        if len(errors) < 10:  # Limit error messages
+                            errors.append(f"Row {i}: HTTP {response.status_code}")
+
+                except Exception as e:
+                    rows_failed += 1
+                    if len(errors) < 10:
+                        errors.append(f"Row {i}: {str(e)}")
+
+                # Rate limit: 10 records/second = 0.1s between requests
+                await asyncio.sleep(0.1)
+
+        return SalesNavToClayResponse(
+            success=rows_failed == 0,
+            total_rows=total_rows,
+            rows_sent=rows_sent,
+            rows_failed=rows_failed,
+            errors=errors,
+        )
+
+    except UnicodeDecodeError:
+        return SalesNavToClayResponse(
+            success=False,
+            errors=["File encoding error - ensure file is UTF-8 encoded"]
+        )
+    except Exception as e:
+        return SalesNavToClayResponse(
+            success=False,
+            errors=[str(e)]
+        )
