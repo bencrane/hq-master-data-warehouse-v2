@@ -146,6 +146,28 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
             except Exception:
                 pass
 
+        # 0d. Coalesce company type to core
+        COMPANY_TYPE_MAP = {
+            "private": "Private Company",
+            "public": "Public Company",
+            "self-owned": "Self-Employed",
+        }
+        raw_type = payload.get("type")
+        if raw_type:
+            matched_type = COMPANY_TYPE_MAP.get(raw_type.lower())
+            try:
+                supabase.schema("core").from_("company_types").upsert(
+                    {
+                        "domain": domain,
+                        "source": "companyenrich",
+                        "raw_type": raw_type,
+                        "matched_type": matched_type,
+                    },
+                    on_conflict="domain,source"
+                ).execute()
+            except Exception:
+                pass
+
         # 1. Store raw payload
         raw_insert = (
             supabase.schema("raw")
