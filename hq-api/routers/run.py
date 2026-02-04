@@ -1593,6 +1593,29 @@ class ClientLeadIngestResponse(BaseModel):
     error: Optional[str] = None
 
 
+class TargetClientLeadIngestRequest(BaseModel):
+    target_client_domain: str
+    form_id: Optional[str] = None
+    form_title: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    full_name: Optional[str] = None
+    person_linkedin_url: Optional[str] = None
+    work_email: Optional[str] = None
+    company_domain: Optional[str] = None
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    source: Optional[str] = None
+
+
+class TargetClientLeadIngestResponse(BaseModel):
+    success: bool
+    lead_id: Optional[str] = None
+    person_id: Optional[str] = None
+    company_id: Optional[str] = None
+    error: Optional[str] = None
+
+
 # =============================================================================
 # Company Endpoints
 # =============================================================================
@@ -4846,6 +4869,96 @@ async def ingest_client_lead(request: ClientLeadIngestRequest) -> ClientLeadInge
 
     except Exception as e:
         return ClientLeadIngestResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+@router.post(
+    "/target-client/leads/ingest",
+    response_model=TargetClientLeadIngestResponse,
+    summary="Ingest a lead for a target client (demo/prospect)",
+    description="Ingests lead data into target_client.leads, target_client.leads_people, and target_client.leads_companies"
+)
+async def ingest_target_client_lead(request: TargetClientLeadIngestRequest) -> TargetClientLeadIngestResponse:
+    """
+    Ingest a lead for a target client (demo/prospect).
+
+    Writes to three tables:
+    - target_client.leads (denormalized, all fields)
+    - target_client.leads_people (normalized person data)
+    - target_client.leads_companies (normalized company data)
+
+    Use this for demos and prospects. Use /client/leads/ingest for paying clients.
+    """
+    pool = get_pool()
+
+    target_client_domain = request.target_client_domain.lower().strip() if request.target_client_domain else None
+    if not target_client_domain:
+        return TargetClientLeadIngestResponse(success=False, error="target_client_domain is required")
+
+    company_domain = request.company_domain.lower().strip().rstrip("/") if request.company_domain else None
+    person_linkedin_url = request.person_linkedin_url.strip() if request.person_linkedin_url else None
+    company_linkedin_url = request.company_linkedin_url.strip() if request.company_linkedin_url else None
+
+    try:
+        # Insert into target_client.leads (denormalized)
+        lead_row = await pool.fetchrow("""
+            INSERT INTO target_client.leads (
+                target_client_domain, first_name, last_name, full_name,
+                person_linkedin_url, work_email, company_domain,
+                company_name, company_linkedin_url, source,
+                form_id, form_title
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            RETURNING id
+        """,
+            target_client_domain, request.first_name, request.last_name, request.full_name,
+            person_linkedin_url, request.work_email, company_domain,
+            request.company_name, company_linkedin_url, request.source,
+            request.form_id, request.form_title
+        )
+        lead_id = str(lead_row["id"])
+
+        # Insert into target_client.leads_people (normalized)
+        person_row = await pool.fetchrow("""
+            INSERT INTO target_client.leads_people (
+                target_client_domain, first_name, last_name, full_name,
+                person_linkedin_url, work_email, company_domain,
+                source, form_id, form_title
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING id
+        """,
+            target_client_domain, request.first_name, request.last_name, request.full_name,
+            person_linkedin_url, request.work_email, company_domain,
+            request.source, request.form_id, request.form_title
+        )
+        person_id = str(person_row["id"])
+
+        # Insert into target_client.leads_companies (normalized) - only if we have company data
+        company_id = None
+        if company_domain or request.company_name or company_linkedin_url:
+            company_row = await pool.fetchrow("""
+                INSERT INTO target_client.leads_companies (
+                    target_client_domain, company_domain, company_name,
+                    company_linkedin_url, source, form_id, form_title
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING id
+            """,
+                target_client_domain, company_domain, request.company_name,
+                company_linkedin_url, request.source,
+                request.form_id, request.form_title
+            )
+            company_id = str(company_row["id"])
+
+        return TargetClientLeadIngestResponse(
+            success=True,
+            lead_id=lead_id,
+            person_id=person_id,
+            company_id=company_id
+        )
+
+    except Exception as e:
+        return TargetClientLeadIngestResponse(
             success=False,
             error=str(e)
         )
