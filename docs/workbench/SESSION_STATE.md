@@ -26,6 +26,36 @@ Created endpoint to send SalesNav export files directly to Clay webhooks:
 - **New table:** `testing.companies` (id, name, domain, linkedin_url, created_at)
 - **New endpoint:** `POST /run/testing/companies` - Insert company into testing table
 
+### CompanyEnrich.com Workflow
+New company enrichment workflow for companyenrich.com data:
+
+**Tables:**
+- `raw.companyenrich_payloads` - Full JSON payload storage
+- `extracted.companyenrich_company` - Flattened company data (firmographics, location, socials, funding summary)
+- `extracted.companyenrich_funding_rounds` - One row per funding round
+
+**Endpoints:**
+- **Modal:** `https://bencrane--hq-master-data-ingest-ingest-companyenrich.modal.run`
+- **API:** `POST /run/companies/companyenrich/ingest`
+
+**Request:**
+```json
+{
+  "domain": "harness.io",
+  "raw_payload": { ... full companyenrich payload ... }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "raw_id": "uuid",
+  "extracted_id": "uuid",
+  "funding_rounds_processed": 8
+}
+```
+
 ---
 
 ## Previously Completed (Phase 2: Client Lead Ingest & Person Profile Enhancement)
@@ -172,8 +202,10 @@ Clay sends: { linkedin_url, workflow_slug, raw_payload }
 
 | File | Changes |
 |------|---------|
-| `/hq-api/routers/run.py` | Added `/run/salesnav/export/to-clay` and `/run/testing/companies` endpoints |
+| `/hq-api/routers/run.py` | Added `/run/salesnav/export/to-clay`, `/run/testing/companies`, `/run/companies/companyenrich/ingest` |
 | `/hq-api/main.py` | Added localhost ports 3000-3015 to CORS allowed origins |
+| `/modal-functions/src/ingest/companyenrich.py` | NEW - CompanyEnrich.com ingestion function |
+| `/modal-functions/src/app.py` | Added companyenrich import |
 
 ## Key Files Modified Previous Session
 
