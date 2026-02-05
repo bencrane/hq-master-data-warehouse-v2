@@ -1756,13 +1756,12 @@ async def discover_competitors_openai(payload: dict):
     """
     Discover top 3-5 competitors using OpenAI.
 
-    Payload: { "company_name": "Stripe", "domain": "stripe.com", "description": "..." }
+    Payload: { "company_name": "Stripe", "domain": "stripe.com" }
 
     Returns: { "competitors": [{"name": "...", "domain": "...", "linkedin_url": "..."}] }
     """
     company_name = payload.get("company_name", "").strip()
     domain = payload.get("domain", "").lower().strip()
-    description = payload.get("description", "").strip()
 
     if not company_name:
         return {"error": "company_name is required", "success": False}
@@ -1770,6 +1769,6 @@ async def discover_competitors_openai(payload: dict):
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             MODAL_DISCOVER_COMPETITORS_URL,
-            json={"company_name": company_name, "domain": domain, "description": description}
+            json={"company_name": company_name, "domain": domain}
         )
         return response.json()

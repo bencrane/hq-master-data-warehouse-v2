@@ -6,8 +6,7 @@ Uses OpenAI to find top 3-5 competitors of a company.
 Expects:
 {
   "company_name": "Stripe",
-  "domain": "stripe.com",
-  "description": "Online payment processing for internet businesses"
+  "domain": "stripe.com"
 }
 
 Returns:
@@ -43,13 +42,11 @@ def discover_competitors_openai(request: dict) -> dict:
     try:
         company_name = request.get("company_name", "").strip()
         domain = request.get("domain", "").lower().strip()
-        description = request.get("description", "").strip()
 
         if not company_name:
             return {"success": False, "error": "No company_name provided"}
 
         prompt = f"""Who are the top 3-5 direct competitors of {company_name}?
-Company description: {description}
 Domain: {domain}
 
 Return a JSON array of competitors. For each competitor, provide:
