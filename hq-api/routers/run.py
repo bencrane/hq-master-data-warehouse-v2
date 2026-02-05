@@ -5917,6 +5917,23 @@ async def case_study_urls_to_clay(request: dict):
 
 
 @router.post(
+    "/unresolved-customers/to-clay",
+    summary="Send unresolved customer names to Clay webhook (via Modal)",
+    description="Proxies to Modal function that sends customers without domains at 10 records/second."
+)
+async def unresolved_customers_to_clay(request: dict):
+    """
+    Proxy to Modal function: send_unresolved_customers_to_clay.
+
+    Body: { "webhook_url": "...", "limit": 100 (optional) }
+    """
+    modal_url = f"{MODAL_BASE_URL}-send-unresolved-customers-to-clay.modal.run"
+    async with httpx.AsyncClient(timeout=660.0) as client:
+        resp = await client.post(modal_url, json=request)
+        return resp.json()
+
+
+@router.post(
     "/companies/case-study-details/lookup",
     summary="Check if a case study URL has already been extracted",
     description="Returns whether extracted.case_study_details has a row for the given case_study_url."
