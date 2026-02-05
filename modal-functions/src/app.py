@@ -74,6 +74,7 @@ from ingest.apollo_companies_cleaned import ingest_apollo_companies_cleaned
 from ingest.company_enrich_similar import find_similar_companies_batch, find_similar_companies_single, get_similar_companies_batch_status
 from ingest.company_enrich_similar_queue import process_similar_companies_queue, get_similar_companies_queue_status
 from ingest.companyenrich_similar_companies_preview_results import ingest_companyenrich_similar_preview_results
+from ingest.send_client_leads_to_clay import send_client_leads_to_clay
 from ingest.company_customers_claygent import ingest_company_customers_claygent
 from ingest.company_customers_structured import ingest_company_customers_structured
 from ingest.send_case_study_urls import send_case_study_urls_to_clay
@@ -294,4 +295,5 @@ __all__ = [
     "resolve_customer_domain",
     "ingest_companyenrich_similar_preview_results",
     "lookup_client_leads",
+    "send_client_leads_to_clay",
 ]

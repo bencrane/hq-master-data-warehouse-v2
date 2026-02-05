@@ -12898,6 +12898,48 @@
         }
       }
     },
+    "/run/client/leads/to-clay": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Send client leads to Clay webhook",
+        "description": "Sends all leads for a client_domain to Clay at ~10 records/second.",
+        "operationId": "send_client_leads_to_clay_run_client_leads_to_clay_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/run/companies/gemini/resolve-customer-domain/ingest": {
       "post": {
         "tags": [

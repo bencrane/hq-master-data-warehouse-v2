@@ -6028,6 +6028,31 @@ async def case_study_urls_to_clay(request: dict):
         return resp.json()
 
 
+# =============================================================================
+# Client Leads: Send to Clay webhook
+# =============================================================================
+
+
+@router.post(
+    "/client/leads/to-clay",
+    summary="Send client leads to Clay webhook",
+    description="Sends all leads for a client_domain to Clay at ~10 records/second."
+)
+async def send_client_leads_to_clay(request: dict):
+    """
+    Send leads for a client to Clay webhook for enrichment.
+
+    Body: { "client_domain": "securitypalhq.com", "webhook_url": "..." (optional override) }
+
+    Modal function: send_client_leads_to_clay
+    Modal URL: https://bencrane--hq-master-data-ingest-send-client-leads-to-clay.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-send-client-leads-to-clay.modal.run"
+    async with httpx.AsyncClient(timeout=660.0) as client:
+        resp = await client.post(modal_url, json=request)
+        return resp.json()
+
+
 @router.post(
     "/companies/gemini/resolve-customer-domain/ingest",
     response_model=ResolveCustomerDomainResponse,
