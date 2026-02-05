@@ -20,7 +20,6 @@ class CaseStudyExtractionRequest(BaseModel):
     origin_company_domain: str
     case_study_url: str
     company_customer_name: str
-    has_case_study_url: bool
     workflow_slug: str
 
 
@@ -148,6 +147,14 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
                 "raw_response": response.text,
             }
 
+        # Extract token usage
+        usage = response.usage_metadata
+        input_tokens = usage.prompt_token_count if usage else 0
+        output_tokens = usage.candidates_token_count if usage else 0
+        total_tokens = input_tokens + output_tokens
+        # Gemini 2.0 Flash pricing: $0.10/1M input, $0.40/1M output
+        cost_usd = (input_tokens * 0.10 / 1_000_000) + (output_tokens * 0.40 / 1_000_000)
+
         # Store raw payload
         raw_insert = (
             supabase.schema("raw")
@@ -157,7 +164,6 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
                 "origin_company_domain": request.origin_company_domain,
                 "origin_company_name": request.origin_company_name,
                 "company_customer_name": request.company_customer_name,
-                "has_case_study_url": request.has_case_study_url,
                 "workflow_slug": request.workflow_slug,
                 "provider": workflow["provider"],
                 "platform": workflow["platform"],
@@ -192,9 +198,18 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
             "success": True,
             "raw_id": raw_id,
             "case_study_id": case_study_id,
+            "origin_company_name": request.origin_company_name,
+            "origin_company_domain": request.origin_company_domain,
+            "company_customer_name": request.company_customer_name,
             "champion_count": champion_count,
+            "champions": gemini_response.get("champions", []),
             "customer_domain_found": gemini_response.get("customer_company_domain") is not None,
+            "customer_domain": gemini_response.get("customer_company_domain"),
             "article_title": gemini_response.get("article_title"),
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+            "cost_usd": round(cost_usd, 6),
         }
 
     except Exception as e:

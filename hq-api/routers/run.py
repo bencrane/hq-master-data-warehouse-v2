@@ -995,7 +995,6 @@ class CaseStudyExtractionRequest(BaseModel):
     origin_company_domain: str
     case_study_url: str
     company_customer_name: str
-    has_case_study_url: bool
     workflow_slug: str
 
 
@@ -1003,9 +1002,18 @@ class CaseStudyExtractionResponse(BaseModel):
     success: bool
     raw_id: Optional[str] = None
     case_study_id: Optional[str] = None
+    origin_company_name: Optional[str] = None
+    origin_company_domain: Optional[str] = None
+    company_customer_name: Optional[str] = None
     champion_count: Optional[int] = None
+    champions: Optional[list] = None
     customer_domain_found: Optional[bool] = None
+    customer_domain: Optional[str] = None
     article_title: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
     error: Optional[str] = None
 
 
