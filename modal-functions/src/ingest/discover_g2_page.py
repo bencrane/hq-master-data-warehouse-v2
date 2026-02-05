@@ -26,21 +26,15 @@ from config import app, image
     image=image,
     timeout=60,
     secrets=[
-        modal.Secret.from_name("supabase-credentials"),
         modal.Secret.from_name("gemini-secret"),
     ],
 )
 @modal.fastapi_endpoint(method="POST")
 def discover_g2_page_gemini(request: dict) -> dict:
     import google.generativeai as genai
-    from supabase import create_client
     import re
 
-    # Setup clients
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    supabase_url = os.environ["SUPABASE_URL"]
-    supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
-    supabase = create_client(supabase_url, supabase_key)
 
     try:
         domain = request.get("domain", "").lower().strip()
@@ -79,14 +73,6 @@ Example not found response: NOT_FOUND"""
             g2_match = re.search(r'https?://(?:www\.)?g2\.com/products/[^\s\'"<>]+', response_text)
             if g2_match:
                 g2_url = g2_match.group(0).rstrip('.,;:)')
-
-        # Store in database if found
-        if g2_url:
-            supabase.schema("core").from_("company_social_urls").upsert({
-                "domain": domain,
-                "g2_url": g2_url,
-                "updated_at": "now()",
-            }, on_conflict="domain").execute()
 
         return {
             "success": True,
