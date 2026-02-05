@@ -1203,6 +1203,25 @@ class SimilarCompaniesLookupResponse(BaseModel):
     error: Optional[str] = None
 
 
+class CompanyEnrichSimilarPreviewResultsRequest(BaseModel):
+    input_domain: str
+    page: Optional[int] = None
+    items: List[dict] = []
+    metadata: Optional[dict] = None
+    totalItems: Optional[int] = None
+    totalPages: Optional[int] = None
+
+
+class CompanyEnrichSimilarPreviewResultsResponse(BaseModel):
+    success: bool
+    input_domain: Optional[str] = None
+    raw_id: Optional[str] = None
+    items_received: Optional[int] = None
+    extracted_count: Optional[int] = None
+    core_count: Optional[int] = None
+    error: Optional[str] = None
+
+
 class ResolveCustomerDomainRequest(BaseModel):
     customer_name: str
     origin_company_name: str
@@ -3743,6 +3762,41 @@ async def lookup_similar_companies(request: SimilarCompaniesLookupRequest) -> Si
             )
             response.raise_for_status()
             return SimilarCompaniesLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/companyenrich/similar-companies-preview-results/ingest",
+    response_model=CompanyEnrichSimilarPreviewResultsResponse,
+    summary="Ingest CompanyEnrich similar companies preview results from Clay",
+    description="Wrapper for Modal function: ingest_companyenrich_similar_preview_results"
+)
+async def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSimilarPreviewResultsRequest) -> CompanyEnrichSimilarPreviewResultsResponse:
+    """
+    Receive CompanyEnrich similar/preview results from Clay.
+
+    Modal function: ingest_companyenrich_similar_preview_results
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-companyenrich-similar-pr-2b89a3.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-ingest-companyenrich-sim-cbc297.modal.run"
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return CompanyEnrichSimilarPreviewResultsResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
