@@ -54,5 +54,8 @@ After reading onboarding docs, you are expected to:
 1. **Self-anneal** — Update docs when you learn something (not optional)
 2. **Update SESSION_STATE.md** — After completing any major milestone
 3. **Keep knowledge in the repo** — Not in chat transcripts
+4. **Always use the Supabase psql connection string** — Never use `$DATABASE_URL`. Always use: `postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres`
+5. **Deploy Modal with uv** — Always `cd modal-functions && uv run modal deploy src/app.py`
+6. **No RPC/raw SQL workarounds** — If a schema isn't accessible via PostgREST, tell the user to expose it in Supabase. Don't hack around it.
 
 See CLAUDE.md for full operating principles.

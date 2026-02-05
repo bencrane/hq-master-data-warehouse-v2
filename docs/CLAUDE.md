@@ -47,6 +47,8 @@ Full onboarding checklist: **[ONBOARDING.md](./ONBOARDING.md)**
 postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres
 ```
 
+**IMPORTANT:** Always use this connection string for ALL psql commands. Never use `$DATABASE_URL` or any other env variable — it may point to a different database. Hardcode this string in every psql call.
+
 **Supabase URL:** `https://ivcemmeywnlhykbuafwv.supabase.co`
 
 ---
@@ -143,10 +145,14 @@ Check `/docs/workbench/TODO.md` for the full task list.
 
 ## Common Gotchas
 
-1. **Modal secrets** - If data isn't appearing, check Modal secrets match Supabase project (`modal secret show supabase-credentials`)
-2. **PostgREST timeouts** - Use asyncpg for function calls, not Supabase client
-3. **API required fields** - Leads must have: `company_name`, `company_country`, `person_country`, `matched_job_function`, `matched_seniority` to appear in dashboard
-4. **Enrichment gaps** - Data in `extracted` may not be in `core` (no automatic sync)
+1. **ALWAYS use the Supabase connection string** - Never use `$DATABASE_URL` for psql. Always use: `postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres`
+2. **Modal deploy** - Always use `cd modal-functions && uv run modal deploy src/app.py` (not bare `modal deploy`)
+3. **Modal secrets** - If data isn't appearing, check Modal secrets match Supabase project (`modal secret show supabase-credentials`)
+4. **PostgREST timeouts** - Use asyncpg for function calls, not Supabase client
+5. **PostgREST schema exposure** - If a schema isn't accessible via the Supabase client, tell the user to expose it in Supabase dashboard (API settings > Exposed schemas). Don't use RPC/raw SQL workarounds.
+6. **API required fields** - Leads must have: `company_name`, `company_country`, `person_country`, `matched_job_function`, `matched_seniority` to appear in dashboard
+7. **Enrichment gaps** - Data in `extracted` may not be in `core` (no automatic sync)
+8. **GitHub push auto-deploys Railway** - The frontend is in a separate repo. Push to this repo deploys the API only.
 
 ---
 
@@ -171,8 +177,8 @@ cd hq-api && uvicorn main:app --reload --port 8000
 # Start frontend locally
 cd frontend && npm run dev
 
-# Deploy Modal functions
-cd modal-functions && modal deploy src/app.py
+# Deploy Modal functions (MUST use uv run)
+cd modal-functions && uv run modal deploy src/app.py
 
 # Regenerate OpenAPI spec (use .venv python)
 cd hq-api && .venv/bin/python -c "from main import app; import json; print(json.dumps(app.openapi(), indent=2))" > openapi.json
