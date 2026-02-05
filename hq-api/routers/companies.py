@@ -1084,6 +1084,45 @@ async def check_companyenrich_status(payload: dict):
         }
 
 
+@router.post("/firmographics-status")
+async def check_firmographics_status(payload: dict):
+    """
+    Check if a company has firmographics data (from Clay/LinkedIn).
+
+    Payload: { "domain": "example.com" }
+
+    Returns whether the domain exists in extracted.company_firmographics
+    and when it was enriched.
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "enriched": False}
+
+    row = await pool.fetchrow("""
+        SELECT id, created_at
+        FROM extracted.company_firmographics
+        WHERE company_domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row:
+        return {
+            "domain": domain,
+            "enriched": True,
+            "extracted_id": str(row["id"]),
+            "enriched_at": str(row["created_at"])
+        }
+    else:
+        return {
+            "domain": domain,
+            "enriched": False,
+            "extracted_id": None,
+            "enriched_at": None
+        }
+
+
 @router.post("/public-company-info")
 async def get_public_company_info(payload: dict):
     """
