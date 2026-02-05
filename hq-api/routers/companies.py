@@ -1195,6 +1195,48 @@ async def get_g2_page_url(payload: dict):
         }
 
 
+@router.post("/social-urls")
+async def get_social_urls(payload: dict):
+    """
+    Get all social URLs for a domain.
+
+    Payload: { "domain": "example.com" }
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    row = await pool.fetchrow("""
+        SELECT linkedin_url, twitter_url, facebook_url, github_url,
+               youtube_url, instagram_url, crunchbase_url, g2_url, angellist_url
+        FROM core.company_social_urls
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row:
+        return {
+            "domain": domain,
+            "found": True,
+            "linkedin_url": row["linkedin_url"],
+            "twitter_url": row["twitter_url"],
+            "facebook_url": row["facebook_url"],
+            "github_url": row["github_url"],
+            "youtube_url": row["youtube_url"],
+            "instagram_url": row["instagram_url"],
+            "crunchbase_url": row["crunchbase_url"],
+            "g2_url": row["g2_url"],
+            "angellist_url": row["angellist_url"]
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False
+        }
+
+
 @router.post("/linkedin-ads-status")
 async def get_linkedin_ads_status(payload: dict):
     """
