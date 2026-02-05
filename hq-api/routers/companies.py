@@ -1853,3 +1853,30 @@ async def ingest_g2_page_url(payload: dict):
         "domain": domain,
         "g2_url": g2_url
     }
+
+
+MODAL_DISCOVER_G2_PAGE_GEMINI_SEARCH_URL = os.getenv(
+    "MODAL_DISCOVER_G2_PAGE_GEMINI_SEARCH_URL",
+    "https://bencrane--hq-master-data-ingest-discover-g2-page-gemini-search.modal.run"
+)
+
+
+@router.post("/discover-g2-page-gemini-search")
+async def discover_g2_page_gemini_search(payload: dict):
+    """
+    Discover G2 page URL using Gemini with search grounding.
+
+    Payload: { "domain": "...", "company_name": "..." }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    company_name = payload.get("company_name", "").strip()
+
+    if not company_name:
+        return {"error": "company_name is required", "success": False}
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            MODAL_DISCOVER_G2_PAGE_GEMINI_SEARCH_URL,
+            json={"domain": domain, "company_name": company_name}
+        )
+        return response.json()

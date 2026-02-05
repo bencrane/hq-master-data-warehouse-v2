@@ -131,6 +131,7 @@ from ingest.minimum_seats import infer_minimum_seats
 from ingest.webinars import infer_webinars
 from ingest.discover_pricing_page import discover_pricing_page_url
 from ingest.discover_g2_page import discover_g2_page_gemini
+from ingest.discover_g2_page_search import discover_g2_page_gemini_search
 from ingest.discover_competitors import discover_competitors_openai
 from ingest.ingest_competitors import ingest_competitors
 from icp.generation import generate_target_client_icp
@@ -292,6 +293,7 @@ __all__ = [
     "infer_webinars",
     "discover_pricing_page_url",
     "discover_g2_page_gemini",
+    "discover_g2_page_gemini_search",
     "discover_competitors_openai",
     "ingest_competitors",
     "read_db_check_existence",
