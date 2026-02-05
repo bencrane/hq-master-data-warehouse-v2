@@ -31,88 +31,23 @@ def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
     supabase = create_client(supabase_url, supabase_key)
 
     try:
-        # Get customers with company details
         customers_result = (
             supabase.schema("core")
             .from_("company_customers")
-            .select("customer_name, customer_domain")
+            .select("origin_company_name, origin_company_domain, customer_name, customer_domain")
             .eq("origin_company_domain", request.domain)
-            .not_.is_("customer_domain", "null")
             .execute()
         )
 
         customers = []
         if customers_result.data:
-            customer_domains = [c["customer_domain"] for c in customers_result.data if c.get("customer_domain")]
-
-            # Get enriched company data for each customer
-            if customer_domains:
-                companies_result = (
-                    supabase.schema("core")
-                    .from_("companies")
-                    .select("domain, name, cleaned_name")
-                    .in_("domain", customer_domains)
-                    .execute()
-                )
-
-                company_map = {}
-                if companies_result.data:
-                    for c in companies_result.data:
-                        company_map[c["domain"]] = c.get("cleaned_name") or c.get("name")
-
-                # Get location and size data
-                locations_result = (
-                    supabase.schema("core")
-                    .from_("company_locations")
-                    .select("domain, country")
-                    .in_("domain", customer_domains)
-                    .execute()
-                )
-
-                location_map = {}
-                if locations_result.data:
-                    for loc in locations_result.data:
-                        location_map[loc["domain"]] = loc.get("country")
-
-                # Get employee range
-                emp_result = (
-                    supabase.schema("core")
-                    .from_("company_employee_range")
-                    .select("domain, employee_range")
-                    .in_("domain", customer_domains)
-                    .execute()
-                )
-
-                emp_map = {}
-                if emp_result.data:
-                    for e in emp_result.data:
-                        emp_map[e["domain"]] = e.get("employee_range")
-
-                # Get industry
-                industry_result = (
-                    supabase.schema("core")
-                    .from_("company_industries")
-                    .select("domain, matched_industry")
-                    .in_("domain", customer_domains)
-                    .execute()
-                )
-
-                industry_map = {}
-                if industry_result.data:
-                    for i in industry_result.data:
-                        industry_map[i["domain"]] = i.get("matched_industry")
-
-                # Build customer list
-                for c in customers_result.data:
-                    domain = c.get("customer_domain")
-                    if domain:
-                        customers.append({
-                            "name": company_map.get(domain) or c.get("customer_name"),
-                            "domain": domain,
-                            "industry": industry_map.get(domain),
-                            "size": emp_map.get(domain),
-                            "country": location_map.get(domain),
-                        })
+            for c in customers_result.data:
+                customers.append({
+                    "origin_company_name": c.get("origin_company_name"),
+                    "origin_company_domain": c.get("origin_company_domain"),
+                    "customer_name": c.get("customer_name"),
+                    "customer_domain": c.get("customer_domain"),
+                })
 
         return {
             "success": True,

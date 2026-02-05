@@ -15,7 +15,6 @@ from config import app, image
 
 
 class ResolveCustomerDomainRequest(BaseModel):
-    id: str
     customer_name: str
     origin_company_name: str
     origin_company_domain: str
@@ -107,13 +106,12 @@ def resolve_customer_domain(request: ResolveCustomerDomainRequest) -> dict:
                 supabase.schema("core").from_("company_customers").update({
                     "customer_domain": customer_domain,
                     "customer_domain_source": "gemini-3-flash-preview",
-                }).eq("id", request.id).execute()
+                }).eq("origin_company_domain", request.origin_company_domain).eq("customer_name", request.customer_name).execute()
             except Exception:
                 pass
 
         return {
             "success": True,
-            "id": request.id,
             "customer_name": request.customer_name,
             "origin_company_name": request.origin_company_name,
             "origin_company_domain": request.origin_company_domain,

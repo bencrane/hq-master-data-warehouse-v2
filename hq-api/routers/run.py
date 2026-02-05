@@ -1192,7 +1192,6 @@ class CompanyAddressResponse(BaseModel):
 
 
 class ResolveCustomerDomainRequest(BaseModel):
-    id: str
     customer_name: str
     origin_company_name: str
     origin_company_domain: str
@@ -1200,7 +1199,6 @@ class ResolveCustomerDomainRequest(BaseModel):
 
 class ResolveCustomerDomainResponse(BaseModel):
     success: bool
-    id: Optional[str] = None
     customer_name: Optional[str] = None
     origin_company_name: Optional[str] = None
     origin_company_domain: Optional[str] = None
@@ -1246,11 +1244,10 @@ class CompanyCustomersLookupRequest(BaseModel):
 
 
 class CustomerInfo(BaseModel):
-    name: Optional[str] = None
-    domain: Optional[str] = None
-    industry: Optional[str] = None
-    size: Optional[str] = None
-    country: Optional[str] = None
+    origin_company_name: Optional[str] = None
+    origin_company_domain: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_domain: Optional[str] = None
 
 
 class CompanyCustomersLookupResponse(BaseModel):
