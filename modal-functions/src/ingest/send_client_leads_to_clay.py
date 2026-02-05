@@ -39,7 +39,7 @@ def send_client_leads_to_clay(request: dict) -> dict:
         result = (
             supabase.schema("client")
             .from_("leads")
-            .select("id, full_name, person_linkedin_url, company_domain, company_name, source")
+            .select("id, full_name, person_linkedin_url, company_domain, company_name, company_linkedin_url, source")
             .eq("client_domain", client_domain)
             .order("company_name")
             .execute()
@@ -49,11 +49,27 @@ def send_client_leads_to_clay(request: dict) -> dict:
         if not rows:
             return {"success": True, "client_domain": client_domain, "total_rows": 0, "sent": 0}
 
+        # Batch lookup company_linkedin_url from core.companies for any missing
+        domains = list({r["company_domain"] for r in rows if r.get("company_domain")})
+        company_linkedin_map = {}
+        if domains:
+            comp_result = (
+                supabase.schema("core")
+                .from_("companies")
+                .select("domain, linkedin_url")
+                .in_("domain", domains)
+                .execute()
+            )
+            for c in (comp_result.data or []):
+                if c.get("linkedin_url"):
+                    company_linkedin_map[c["domain"]] = c["linkedin_url"]
+
         sent_count = 0
         errors = 0
         for row in rows:
             full_name = row.get("full_name") or ""
             name_parts = full_name.strip().split(" ", 1)
+            domain = row.get("company_domain")
 
             payload = {
                 "client_domain": client_domain,
@@ -62,8 +78,9 @@ def send_client_leads_to_clay(request: dict) -> dict:
                 "last_name": name_parts[1] if len(name_parts) > 1 else None,
                 "full_name": full_name,
                 "person_linkedin_url": row.get("person_linkedin_url"),
-                "company_domain": row.get("company_domain"),
+                "company_domain": domain,
                 "company_name": row.get("company_name"),
+                "company_linkedin_url": row.get("company_linkedin_url") or company_linkedin_map.get(domain),
             }
             try:
                 resp = requests.post(webhook_url, json=payload, timeout=10)
