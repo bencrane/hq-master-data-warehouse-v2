@@ -1191,6 +1191,18 @@ class CompanyAddressResponse(BaseModel):
     error: Optional[str] = None
 
 
+class SimilarCompaniesLookupRequest(BaseModel):
+    domain: str
+
+
+class SimilarCompaniesLookupResponse(BaseModel):
+    success: bool
+    found: Optional[bool] = None
+    domain: Optional[str] = None
+    similar_count: Optional[int] = None
+    error: Optional[str] = None
+
+
 class ResolveCustomerDomainRequest(BaseModel):
     customer_name: str
     origin_company_name: str
@@ -3696,6 +3708,41 @@ async def lookup_company_business_model(request: CompanyBusinessModelLookupReque
             )
             response.raise_for_status()
             return CompanyBusinessModelLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/similar-companies/lookup",
+    response_model=SimilarCompaniesLookupResponse,
+    summary="Check if similar companies have been generated for a domain",
+    description="Wrapper for Modal function: lookup_similar_companies"
+)
+async def lookup_similar_companies(request: SimilarCompaniesLookupRequest) -> SimilarCompaniesLookupResponse:
+    """
+    Check if core.company_similar_companies_preview has results for a domain.
+
+    Modal function: lookup_similar_companies
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-similar-companies.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-similar-companies.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return SimilarCompaniesLookupResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
