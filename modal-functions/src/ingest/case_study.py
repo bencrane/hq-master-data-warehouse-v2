@@ -127,7 +127,7 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
         )
 
         # Call Gemini 3 Flash
-        model = genai.GenerativeModel("gemini-2.0-flash")  # Will update to gemini-3-flash when available
+        model = genai.GenerativeModel("gemini-3-flash-preview")
         
         response = model.generate_content(
             prompt,
@@ -152,8 +152,8 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
         input_tokens = usage.prompt_token_count if usage else 0
         output_tokens = usage.candidates_token_count if usage else 0
         total_tokens = input_tokens + output_tokens
-        # Gemini 2.0 Flash pricing: $0.10/1M input, $0.40/1M output
-        cost_usd = (input_tokens * 0.10 / 1_000_000) + (output_tokens * 0.40 / 1_000_000)
+        # Gemini 3 Flash Preview pricing: $0.50/1M input, $3.00/1M output
+        cost_usd = (input_tokens * 0.50 / 1_000_000) + (output_tokens * 3.00 / 1_000_000)
 
         # Store raw payload
         raw_insert = (
@@ -190,7 +190,7 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
         if customer_domain:
             try:
                 supabase.schema("core").from_("company_customers").update(
-                    {"customer_domain": customer_domain}
+                    {"customer_domain": customer_domain, "customer_domain_source": "gemini-3-flash-preview"}
                 ).eq("case_study_url", request.case_study_url).execute()
             except Exception:
                 pass  # Non-fatal — domain update is best-effort
