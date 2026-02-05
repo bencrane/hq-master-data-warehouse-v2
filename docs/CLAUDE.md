@@ -120,17 +120,19 @@ This ensures the next session (or a fresh instance) knows exactly where things s
 
 ## API Endpoint Pattern
 
+**All endpoints use POST.** This is a project-wide convention. Parameters are passed in the request body as JSON, not as URL path params or query strings.
+
 ```python
-@router.get("/endpoint")
-async def get_something(
-    param: str = Query(...),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-):
+@router.post("/endpoint")
+async def do_something(payload: dict):
     """Docstring."""
+    param = payload.get("param", "").strip()
+    if not param:
+        return {"error": "param is required"}
+
     pool = get_pool()
-    rows = await pool.fetch("SELECT * FROM core.view_or_function($1)", param)
-    return {"data": [dict(r) for r in rows], "meta": {"total": len(rows), "limit": limit, "offset": offset}}
+    rows = await pool.fetch("SELECT col1, col2 FROM core.view_or_function($1)", param)
+    return {"data": [dict(r) for r in rows], "meta": {"total": len(rows)}}
 ```
 
 ---
@@ -146,13 +148,14 @@ Check `/docs/workbench/TODO.md` for the full task list.
 ## Common Gotchas
 
 1. **ALWAYS use the Supabase connection string** - Never use `$DATABASE_URL` for psql. Always use: `postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres`
-2. **Modal deploy** - Always use `cd modal-functions && uv run modal deploy src/app.py` (not bare `modal deploy`)
-3. **Modal secrets** - If data isn't appearing, check Modal secrets match Supabase project (`modal secret show supabase-credentials`)
-4. **PostgREST timeouts** - Use asyncpg for function calls, not Supabase client
-5. **PostgREST schema exposure** - If a schema isn't accessible via the Supabase client, tell the user to expose it in Supabase dashboard (API settings > Exposed schemas). Don't use RPC/raw SQL workarounds.
-6. **API required fields** - Leads must have: `company_name`, `company_country`, `person_country`, `matched_job_function`, `matched_seniority` to appear in dashboard
-7. **Enrichment gaps** - Data in `extracted` may not be in `core` (no automatic sync)
-8. **GitHub push auto-deploys Railway** - The frontend is in a separate repo. Push to this repo deploys the API only.
+2. **All API endpoints use POST** - This is a project-wide convention. Never use GET/PUT/PATCH/DELETE. Parameters go in request body as JSON.
+3. **GitHub push auto-deploys Railway** - Push to main branch triggers Railway deployment automatically. Do not manually deploy via CLI.
+4. **Modal deploy** - Always use `cd modal-functions && uv run modal deploy src/app.py` (not bare `modal deploy`)
+5. **Modal secrets** - If data isn't appearing, check Modal secrets match Supabase project (`modal secret show supabase-credentials`)
+6. **PostgREST timeouts** - Use asyncpg for function calls, not Supabase client
+7. **PostgREST schema exposure** - If a schema isn't accessible via the Supabase client, tell the user to expose it in Supabase dashboard (API settings > Exposed schemas). Don't use RPC/raw SQL workarounds.
+8. **API required fields** - Leads must have: `company_name`, `company_country`, `person_country`, `matched_job_function`, `matched_seniority` to appear in dashboard
+9. **Enrichment gaps** - Data in `extracted` may not be in `core` (no automatic sync)
 
 ---
 

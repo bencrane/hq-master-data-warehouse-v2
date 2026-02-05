@@ -66,16 +66,24 @@ The Railway API wrapper goes in the appropriate router file:
 - `views.py` - saved views, filters
 - `filters.py` - filter options/metadata
 
+**IMPORTANT: All endpoints use POST.** This is a project-wide convention. Parameters go in the request body as JSON.
+
 ```python
 # hq-api/routers/companies.py
 
-@router.get("/{domain}/my-feature")
-async def get_my_feature(domain: str):
+@router.post("/my-feature")
+async def my_feature(payload: dict):
     """
     Description of what this does.
+
+    Payload: { "domain": "example.com" }
     """
+    domain = payload.get("domain", "").lower().strip()
+    if not domain:
+        return {"error": "domain is required"}
+
     # Query database directly OR call Modal function
-    result = core().from_("table").select("*").eq("domain", domain).execute()
+    result = core().from_("table").select("col1, col2").eq("domain", domain).execute()
 
     return {
         "success": True,
@@ -136,12 +144,15 @@ hq-master-data-warehouse-v2/
 ## Endpoint Naming Conventions
 
 ### Railway API (what frontend uses)
+
+**All endpoints use POST.** Parameters are passed in the request body as JSON.
+
 ```
-GET  /api/companies/{domain}              # Get single company
-GET  /api/companies/{domain}/customers    # Get company's customers
-GET  /api/companies/{domain}/icp          # Get company's ICP criteria
-POST /api/leads                           # Create/query leads
-GET  /api/views/{slug}                    # Get saved view
+POST /api/companies/lookup         # Body: { "domain": "example.com" }
+POST /api/companies/customers      # Body: { "domain": "example.com" }
+POST /api/companies/icp            # Body: { "domain": "example.com" }
+POST /api/leads                    # Body: { filters... }
+POST /api/views/lookup             # Body: { "slug": "my-view" }
 ```
 
 ### Modal Functions (internal use only)
@@ -225,9 +236,19 @@ grep -r "similar_companies" modal-functions/src/
 ```python
 # hq-api/routers/companies.py
 
-@router.get("/{domain}/similar")
-async def get_similar_companies(domain: str, limit: int = Query(25, le=100)):
-    """Get similar companies for a domain."""
+@router.post("/similar")
+async def get_similar_companies(payload: dict):
+    """
+    Get similar companies for a domain.
+
+    Payload: { "domain": "example.com", "limit": 25 }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    limit = payload.get("limit", 25)
+
+    if not domain:
+        return {"error": "domain is required"}
+
     result = (
         extracted()
         .from_("company_enrich_similar")
@@ -248,13 +269,17 @@ async def get_similar_companies(domain: str, limit: int = Query(25, le=100)):
 ### 3. Commit and push
 ```bash
 git add hq-api/routers/companies.py
-git commit -m "feat: add /api/companies/{domain}/similar endpoint"
+git commit -m "feat: add /api/companies/similar endpoint"
 git push origin main
 ```
 
 ### 4. Frontend uses
 ```javascript
-const response = await fetch(`${API_BASE_URL}/api/companies/${domain}/similar`)
+const response = await fetch(`${API_BASE_URL}/api/companies/similar`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ domain: 'example.com', limit: 25 })
+})
 ```
 
 ---

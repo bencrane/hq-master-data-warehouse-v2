@@ -77,26 +77,30 @@ Does the query need parameters beyond filters?
 
 **Use direct PostgreSQL connections (asyncpg) for calling functions.** PostgREST has timeout constraints that cannot be overridden at the function level.
 
+### HTTP Method Convention
+
+**All endpoints use POST.** This is a project-wide convention — do not use GET, PUT, PATCH, or DELETE. Parameters are passed in the request body as JSON.
+
 ### Standard endpoint structure:
 ```python
-@router.get("/endpoint")
-async def get_something(
-    param1: str = Query(...),
-    param2: Optional[str] = Query(None),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-):
+@router.post("/endpoint")
+async def do_something(payload: dict):
     """Docstring describing the endpoint."""
 
-    # 1. Call database function via asyncpg
+    # 1. Extract and validate params from payload
+    param1 = payload.get("param1", "").strip()
+    if not param1:
+        return {"error": "param1 is required"}
+
+    # 2. Call database via asyncpg
     pool = get_pool()
     rows = await pool.fetch(
-        "SELECT * FROM core.function_name($1, $2, $3)",
-        param1, limit, offset
+        "SELECT col1, col2 FROM core.table_or_function($1)",
+        param1
     )
 
-    # 2. Return shaped response
-    return Response(data=[dict(r) for r in rows], meta=Meta(...))
+    # 3. Return shaped response
+    return {"data": [dict(r) for r in rows], "meta": {"total": len(rows)}}
 ```
 
 ### What is NOT allowed in endpoints:
