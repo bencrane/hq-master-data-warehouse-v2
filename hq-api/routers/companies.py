@@ -1159,6 +1159,201 @@ async def get_pricing_page_url(payload: dict):
         }
 
 
+@router.post("/linkedin-ads-status")
+async def get_linkedin_ads_status(payload: dict):
+    """
+    Check if we have LinkedIn ads data for a domain.
+
+    Payload: { "domain": "example.com" }
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    row = await pool.fetchrow("""
+        SELECT is_running_ads, ad_count, created_at
+        FROM core.company_linkedin_ads
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row:
+        return {
+            "domain": domain,
+            "found": True,
+            "is_running_ads": row["is_running_ads"],
+            "ad_count": row["ad_count"],
+            "checked_at": str(row["created_at"])
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "is_running_ads": None,
+            "ad_count": None,
+            "checked_at": None
+        }
+
+
+@router.post("/google-ads-status")
+async def get_google_ads_status(payload: dict):
+    """
+    Check if we have Google ads data for a domain.
+
+    Payload: { "domain": "example.com" }
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    row = await pool.fetchrow("""
+        SELECT is_running_ads, ad_count, created_at
+        FROM core.company_google_ads
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row:
+        return {
+            "domain": domain,
+            "found": True,
+            "is_running_ads": row["is_running_ads"],
+            "ad_count": row["ad_count"],
+            "checked_at": str(row["created_at"])
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "is_running_ads": None,
+            "ad_count": None,
+            "checked_at": None
+        }
+
+
+@router.post("/meta-ads-status")
+async def get_meta_ads_status(payload: dict):
+    """
+    Check if we have Meta ads data for a domain.
+
+    Payload: { "domain": "example.com" }
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    row = await pool.fetchrow("""
+        SELECT is_running_ads, ad_count, platforms, created_at
+        FROM core.company_meta_ads
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row:
+        return {
+            "domain": domain,
+            "found": True,
+            "is_running_ads": row["is_running_ads"],
+            "ad_count": row["ad_count"],
+            "platforms": row["platforms"],
+            "checked_at": str(row["created_at"])
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "is_running_ads": None,
+            "ad_count": None,
+            "platforms": None,
+            "checked_at": None
+        }
+
+
+@router.post("/customers-status")
+async def get_customers_status(payload: dict):
+    """
+    Check if we have customer data for a domain (as the origin company).
+
+    Payload: { "domain": "example.com" }
+
+    Returns count of customers and list of case study URLs.
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    rows = await pool.fetch("""
+        SELECT customer_name, customer_domain, case_study_url
+        FROM core.company_customers
+        WHERE origin_company_domain = $1
+        ORDER BY customer_name
+    """, domain)
+
+    if rows:
+        case_study_urls = [r["case_study_url"] for r in rows if r["case_study_url"]]
+        return {
+            "domain": domain,
+            "found": True,
+            "customer_count": len(rows),
+            "case_study_url_count": len(case_study_urls),
+            "case_study_urls": case_study_urls
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "customer_count": 0,
+            "case_study_url_count": 0,
+            "case_study_urls": []
+        }
+
+
+@router.post("/case-studies-status")
+async def get_case_studies_status(payload: dict):
+    """
+    Check if we have extracted case study details for a domain (as the origin company).
+
+    Payload: { "domain": "example.com" }
+
+    Returns count and list of case study URLs.
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    rows = await pool.fetch("""
+        SELECT case_study_url, company_customer_name, company_customer_domain
+        FROM extracted.case_study_details
+        WHERE origin_company_domain = $1
+        ORDER BY created_at DESC
+    """, domain)
+
+    if rows:
+        return {
+            "domain": domain,
+            "found": True,
+            "case_study_count": len(rows),
+            "case_study_urls": [r["case_study_url"] for r in rows]
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "case_study_count": 0,
+            "case_study_urls": []
+        }
+
+
 @router.post("/public-company-info")
 async def get_public_company_info(payload: dict):
     """
