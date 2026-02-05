@@ -100,7 +100,26 @@ def resolve_customer_domain(request: ResolveCustomerDomainRequest) -> dict:
 
         customer_domain = gemini_response.get("customer_domain")
         confidence = gemini_response.get("confidence")
+        reasoning = gemini_response.get("reasoning")
 
+        # Store raw payload
+        try:
+            supabase.schema("raw").from_("resolve_customer_domain_payloads").insert({
+                "customer_name": request.customer_name,
+                "origin_company_name": request.origin_company_name,
+                "origin_company_domain": request.origin_company_domain,
+                "customer_domain": customer_domain,
+                "confidence": confidence,
+                "reasoning": reasoning,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+                "cost_usd": cost_usd,
+            }).execute()
+        except Exception:
+            pass
+
+        # Update core if domain resolved
         if customer_domain:
             try:
                 supabase.schema("core").from_("company_customers").update({
