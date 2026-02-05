@@ -1743,3 +1743,33 @@ async def search_social_links_openwebninja(payload: dict):
             }
 
         return response.json()
+
+
+MODAL_DISCOVER_COMPETITORS_URL = os.getenv(
+    "MODAL_DISCOVER_COMPETITORS_URL",
+    "https://bencrane--hq-master-data-ingest-discover-competitors-openai.modal.run"
+)
+
+
+@router.post("/discover-competitors-openai")
+async def discover_competitors_openai(payload: dict):
+    """
+    Discover top 3-5 competitors using OpenAI.
+
+    Payload: { "company_name": "Stripe", "domain": "stripe.com", "description": "..." }
+
+    Returns: { "competitors": [{"name": "...", "domain": "...", "linkedin_url": "..."}] }
+    """
+    company_name = payload.get("company_name", "").strip()
+    domain = payload.get("domain", "").lower().strip()
+    description = payload.get("description", "").strip()
+
+    if not company_name:
+        return {"error": "company_name is required", "success": False}
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            MODAL_DISCOVER_COMPETITORS_URL,
+            json={"company_name": company_name, "domain": domain, "description": description}
+        )
+        return response.json()
