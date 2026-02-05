@@ -1704,3 +1704,42 @@ async def discover_g2_page_gemini(payload: dict):
             json={"domain": domain, "company_name": company_name}
         )
         return response.json()
+
+
+@router.post("/search-social-links-openwebninja")
+async def search_social_links_openwebninja(payload: dict):
+    """
+    Search for social links using OpenWebNinja.
+
+    Payload: {
+        "query": "John Smith Acme Corp",
+        "social_networks": "facebook,tiktok,instagram,snapchat,twitter,youtube,linkedin,github,pinterest"
+    }
+
+    social_networks is optional, defaults to all networks.
+    """
+    import urllib.parse
+
+    query = payload.get("query", "").strip()
+    social_networks = payload.get("social_networks", "facebook,tiktok,instagram,snapchat,twitter,youtube,linkedin,github,pinterest")
+
+    if not query:
+        return {"error": "query is required", "success": False}
+
+    encoded_query = urllib.parse.quote(query)
+    encoded_networks = urllib.parse.quote(social_networks)
+    url = f"https://api.openwebninja.com/social-links-search/search-social-links?query={encoded_query}&social_networks={encoded_networks}"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            url,
+            headers={"x-api-key": OPENWEBNINJA_API_KEY}
+        )
+
+        if response.status_code != 200:
+            return {
+                "success": False,
+                "error": f"OpenWebNinja API error: {response.status_code}"
+            }
+
+        return response.json()
