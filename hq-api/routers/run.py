@@ -5813,14 +5813,14 @@ async def case_study_urls_to_clay(request: dict):
 
 @router.post(
     "/companies/case-study-details/lookup",
-    summary="Check if case study extraction exists for a domain",
-    description="Returns whether extracted.case_study_details has rows for the given domain."
+    summary="Check if a case study URL has already been extracted",
+    description="Returns whether extracted.case_study_details has a row for the given case_study_url."
 )
 async def lookup_case_study_details(request: dict):
     """
     Proxy to Modal function: lookup_case_study_details.
 
-    Body: { "domain": "andela.com" }
+    Body: { "case_study_url": "https://..." }
     """
     modal_url = f"{MODAL_BASE_URL}-lookup-case-study-details.modal.run"
     async with httpx.AsyncClient(timeout=30.0) as client:

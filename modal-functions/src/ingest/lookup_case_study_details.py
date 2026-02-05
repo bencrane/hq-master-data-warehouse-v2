@@ -1,7 +1,7 @@
 """
 Case Study Details Lookup Endpoint
 
-Check if case study extraction has been done for a given domain.
+Check if a case study URL has already been extracted.
 """
 
 import os
@@ -11,7 +11,7 @@ from config import app, image
 
 
 class CaseStudyDetailsLookupRequest(BaseModel):
-    domain: str
+    case_study_url: str
 
 
 @app.function(
@@ -31,7 +31,7 @@ def lookup_case_study_details(request: CaseStudyDetailsLookupRequest) -> dict:
             supabase.schema("extracted")
             .from_("case_study_details")
             .select("id", count="exact")
-            .eq("origin_company_domain", request.domain)
+            .eq("case_study_url", request.case_study_url)
             .limit(1)
             .execute()
         )
@@ -40,9 +40,8 @@ def lookup_case_study_details(request: CaseStudyDetailsLookupRequest) -> dict:
 
         return {
             "exists": count > 0,
-            "domain": request.domain,
-            "count": count,
+            "case_study_url": request.case_study_url,
         }
 
     except Exception as e:
-        return {"exists": False, "domain": request.domain, "error": str(e)}
+        return {"exists": False, "case_study_url": request.case_study_url, "error": str(e)}
