@@ -170,25 +170,19 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
                 pass
 
         # 0d. Coalesce company type to core
-        COMPANY_TYPE_MAP = {
-            "private": "Private Company",
-            "privately held": "Private Company",
-            "public": "Public Company",
-            "public company": "Public Company",
-            "nonprofit": "Non-Profit",
-            "non profit": "Non-Profit",
-            "partnership": "Partnership",
-            "self-owned": "Sole Proprietorship",
-            "self owned": "Sole Proprietorship",
-            "self-employed": "Sole Proprietorship",
-            "self employed": "Sole Proprietorship",
-            "educational": "Educational Institution",
-            "government agency": "Government Agency",
-        }
         raw_type = payload.get("type")
         if raw_type:
-            matched_type = COMPANY_TYPE_MAP.get(raw_type.lower())
+            matched_type = None
             try:
+                type_lookup = (
+                    supabase.schema("reference")
+                    .from_("company_type_lookup")
+                    .select("matched_company_type")
+                    .eq("raw_value", raw_type.lower())
+                    .execute()
+                )
+                if type_lookup.data:
+                    matched_type = type_lookup.data[0]["matched_company_type"]
                 supabase.schema("core").from_("company_types").upsert(
                     {
                         "domain": domain,

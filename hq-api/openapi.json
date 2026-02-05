@@ -13234,6 +13234,26 @@
         }
       }
     },
+    "/read/companies/coverage": {
+      "post": {
+        "tags": [
+          "read"
+        ],
+        "summary": "Get data coverage for focus companies across all core tables",
+        "description": "Returns boolean flags for each core company table indicating whether data exists for each focus company.",
+        "operationId": "get_company_coverage_read_companies_coverage_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",

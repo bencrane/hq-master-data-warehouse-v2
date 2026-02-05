@@ -17,13 +17,6 @@ from config import app, image
 
 SOURCE = "companyenrich-similar-preview"
 
-COMPANY_TYPE_MAP = {
-    "private": "Private Company",
-    "public": "Public Company",
-    "self-owned": "Self-Employed",
-}
-
-
 def parse_datetime(dt_str: Optional[str]) -> Optional[str]:
     """Parse datetime string to ISO format."""
     if not dt_str:
@@ -387,8 +380,17 @@ def ingest_companyenrich_similar_preview_results(data: dict) -> dict:
             # core.company_types
             raw_type = item.get("type")
             if raw_type:
-                matched_type = COMPANY_TYPE_MAP.get(raw_type.lower())
+                matched_type = None
                 try:
+                    type_lookup = (
+                        supabase.schema("reference")
+                        .from_("company_type_lookup")
+                        .select("matched_company_type")
+                        .eq("raw_value", raw_type.lower())
+                        .execute()
+                    )
+                    if type_lookup.data:
+                        matched_type = type_lookup.data[0]["matched_company_type"]
                     supabase.schema("core").from_("company_types").upsert({
                         "domain": company_domain,
                         "source": SOURCE,
