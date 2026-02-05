@@ -1793,3 +1793,31 @@ async def ingest_competitors(payload: dict):
             json=payload
         )
         return response.json()
+
+
+@router.post("/competitors-status")
+async def get_competitors_status(payload: dict):
+    """
+    Check if we have competitors for a domain.
+
+    Payload: { "domain": "canva.com" }
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "has_competitors": False}
+
+    row = await pool.fetchrow("""
+        SELECT COUNT(*) as count
+        FROM core.company_competitors
+        WHERE domain = $1
+    """, domain)
+
+    count = row["count"] if row else 0
+
+    return {
+        "domain": domain,
+        "has_competitors": count > 0,
+        "competitor_count": count
+    }
