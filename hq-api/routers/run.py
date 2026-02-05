@@ -5794,102 +5794,21 @@ async def salesnav_export_to_clay(
 # =============================================================================
 
 
-class CaseStudyUrlsToClayResponse(BaseModel):
-    success: bool
-    total_rows: int = 0
-    message: Optional[str] = None
-    errors: Optional[List[str]] = None
-
-
-async def _send_case_study_urls_to_clay(rows: List[dict], webhook_url: str):
-    """Background task to send case study URLs to Clay webhook at 10 records/second."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        for i, row in enumerate(rows):
-            payload = {
-                "origin_company_name": row.get("origin_company_name"),
-                "origin_company_domain": row.get("origin_company_domain"),
-                "customer_company_name": row.get("customer_company_name"),
-                "case_study_url": row.get("case_study_url"),
-                "_row_index": i,
-            }
-            try:
-                await client.post(webhook_url, json=payload)
-            except Exception:
-                pass  # Fire and forget
-            await asyncio.sleep(0.1)  # 10 records/second
-
-
 @router.post(
     "/case-study-urls/to-clay",
-    response_model=CaseStudyUrlsToClayResponse,
-    summary="Send unprocessed case study URLs to Clay webhook",
-    description="Reads unprocessed URLs from raw.staging_case_study_urls and sends to Clay webhook in background at 10 records/second."
+    summary="Send unsent case study URLs to Clay webhook (via Modal)",
+    description="Proxies to Modal function that sends URLs at 10 records/second and marks each as sent_to_clay."
 )
 async def case_study_urls_to_clay(request: dict):
     """
-    Send unprocessed case study URLs to Clay webhook for Gemini extraction.
+    Proxy to Modal function: send_case_study_urls_to_clay.
 
-    1. Reads unprocessed rows from raw.staging_case_study_urls
-    2. Sends each row to Clay webhook in background at 10/second
-    3. Marks rows as processed
-    4. Returns immediately with row count
+    Body: { "webhook_url": "...", "batch_id": "..." (optional) }
     """
-    try:
-        webhook_url = request.get("webhook_url")
-        batch_id = request.get("batch_id")
-
-        if not webhook_url:
-            return CaseStudyUrlsToClayResponse(success=False, errors=["webhook_url is required"])
-
-        pool = get_pool()
-        if batch_id:
-            rows = await pool.fetch("""
-                SELECT id, origin_company_name, origin_company_domain, customer_company_name, case_study_url
-                FROM raw.staging_case_study_urls
-                WHERE processed = false AND batch_id = $1
-                ORDER BY created_at ASC
-            """, batch_id)
-        else:
-            rows = await pool.fetch("""
-                SELECT id, origin_company_name, origin_company_domain, customer_company_name, case_study_url
-                FROM raw.staging_case_study_urls
-                WHERE processed = false
-                ORDER BY created_at ASC
-            """)
-
-        if not rows:
-            return CaseStudyUrlsToClayResponse(
-                success=True,
-                total_rows=0,
-                message="No unprocessed case study URLs found."
-            )
-
-        row_dicts = [dict(r) for r in rows]
-        row_ids = [r["id"] for r in row_dicts]
-
-        # Mark as processed
-        await pool.execute("""
-            UPDATE raw.staging_case_study_urls
-            SET processed = true
-            WHERE id = ANY($1::uuid[])
-        """, row_ids)
-
-        # Fire off background task
-        asyncio.create_task(
-            _send_case_study_urls_to_clay(row_dicts, webhook_url)
-        )
-
-        return CaseStudyUrlsToClayResponse(
-            success=True,
-            total_rows=len(row_dicts),
-            message=f"Sending {len(row_dicts)} case study URLs to Clay in background at 10/second.",
-        )
-
-    except Exception as e:
-        return CaseStudyUrlsToClayResponse(
-            success=False,
-            errors=[str(e)]
-        )
+    modal_url = f"{MODAL_BASE_URL}-send-case-study-urls-to-clay.modal.run"
+    async with httpx.AsyncClient(timeout=660.0) as client:
+        resp = await client.post(modal_url, json=request)
+        return resp.json()
 
 
 # =============================================================================

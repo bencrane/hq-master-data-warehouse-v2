@@ -1,6 +1,6 @@
 # ingest_case_study_buyers
 
-> **Last Updated:** 2026-01-29
+> **Last Updated:** 2026-02-04
 
 ## Purpose
 Ingests case study buyer extraction results (from Gemini). Stores raw payload and explodes people array into individual rows.
@@ -68,3 +68,16 @@ POST https://bencrane--hq-master-data-ingest-ingest-case-study-buyers.modal.run
 2. Loops through people array
 3. For each person with a fullName, creates a row in `extracted.case_study_buyers`
 4. Returns count of extracted buyers
+
+## Core Table
+`core.case_study_champions` is the canonical table for case study people data. It is populated from two extracted sources:
+
+| Source | Rows | Date Range | Notes |
+|--------|------|------------|-------|
+| `extracted.case_study_champions` | 10,139 | Jan 8 2026 | Older pipeline, fully promoted to core |
+| `extracted.case_study_buyers` | 17,924 | Jan 29-31 2026 | Newer pipeline, ~12,300 promoted to core |
+
+Both tables remain in extracted as source-of-record. The `source` column in `core.case_study_champions` tracks which extracted table each row came from.
+
+### Known Gap (as of 2026-02-04)
+~5,600 rows from `extracted.case_study_buyers` have not been promoted to `core.case_study_champions`. These are buyer records that were extracted but not yet coalesced.

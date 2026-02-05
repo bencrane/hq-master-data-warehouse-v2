@@ -70,6 +70,7 @@ from ingest.company_enrich_similar import find_similar_companies_batch, find_sim
 from ingest.company_enrich_similar_queue import process_similar_companies_queue, get_similar_companies_queue_status
 from ingest.company_customers_claygent import ingest_company_customers_claygent
 from ingest.company_customers_structured import ingest_company_customers_structured
+from ingest.send_case_study_urls import send_case_study_urls_to_clay
 from ingest.company_customers_v2 import ingest_company_customers_v2
 from ingest.company_customers_status import get_company_customers_status
 from ingest.company_public import ingest_public_company
@@ -276,4 +277,5 @@ __all__ = [
     "infer_minimum_seats",
     "infer_webinars",
     "read_db_check_existence",
+    "send_case_study_urls_to_clay",
 ]
