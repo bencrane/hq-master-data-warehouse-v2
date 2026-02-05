@@ -1626,23 +1626,11 @@ async def discover_g2_page_openwebninja(payload: dict):
     if g2_url:
         g2_url = g2_url.rstrip('.,;:)')
 
-    # Store in database if found
-    if g2_url:
-        pool = get_pool()
-        await pool.execute("""
-            INSERT INTO core.company_social_urls (domain, g2_url, updated_at)
-            VALUES ($1, $2, NOW())
-            ON CONFLICT (domain) DO UPDATE SET
-                g2_url = EXCLUDED.g2_url,
-                updated_at = NOW()
-        """, domain, g2_url)
-
     return {
         "success": True,
         "domain": domain,
         "company_name": company_name,
-        "g2_url": g2_url,
-        "raw_response": response_text[:500] if response_text else None
+        "g2_url": g2_url
     }
 
 
