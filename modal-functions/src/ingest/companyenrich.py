@@ -172,8 +172,18 @@ def ingest_companyenrich(request: CompanyEnrichRequest) -> dict:
         # 0d. Coalesce company type to core
         COMPANY_TYPE_MAP = {
             "private": "Private Company",
+            "privately held": "Private Company",
             "public": "Public Company",
-            "self-owned": "Self-Employed",
+            "public company": "Public Company",
+            "nonprofit": "Non-Profit",
+            "non profit": "Non-Profit",
+            "partnership": "Partnership",
+            "self-owned": "Sole Proprietorship",
+            "self owned": "Sole Proprietorship",
+            "self-employed": "Sole Proprietorship",
+            "self employed": "Sole Proprietorship",
+            "educational": "Educational Institution",
+            "government agency": "Government Agency",
         }
         raw_type = payload.get("type")
         if raw_type:
