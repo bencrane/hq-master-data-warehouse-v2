@@ -6,23 +6,43 @@ Single source of truth for all pending work.
 
 ## High Priority
 
-### Modal Secret Misconfiguration
-**Status:** Unresolved
+### CRITICAL: origin_company_name null when sending case study URLs to Clay
+**Status:** Unresolved — needs root cause diagnosis and fix
+**Date:** 2026-02-04
+
+**Problem:** 1,040 rows in `raw.staging_case_study_urls` had `origin_company_name = NULL`. 851 were sent to Clay with null names.
+
+**What was done:**
+- Backfilled names from `core.company_customers` and `core.companies` (26 still null)
+- The 851 rows already sent to Clay still have null names on Clay's side
+
+**Root cause not diagnosed.** Two hypotheses:
+1. Supabase `upsert()` with `on_conflict="case_study_url"` may not update non-conflict columns when matching pre-existing rows (from older pipeline migration)
+2. `origin_company_name` was null in the original Clay webhook payloads
+
+**Action Required:**
+1. Check `raw.claygent_customers_structured_raw` — do the payloads for these domains contain `origin_company_name`?
+2. Test Supabase upsert behavior with `on_conflict` — does it actually UPDATE all columns or just INSERT?
+3. Add validation to `send_case_study_urls_to_clay` — skip/warn on null required fields before sending
+4. Re-send the 851 rows to Clay with corrected names (reset `sent_to_clay = false` on those rows, re-trigger)
+
+**Affected files:**
+- `/modal-functions/src/ingest/company_customers_structured.py` (upsert to staging at line 115)
+- `/modal-functions/src/ingest/send_case_study_urls.py` (no validation before sending)
+
+**Docs:** `/docs/workflows/catalog/send-case-study-urls-to-clay.md`, `/docs/workflows/catalog/ingest-company-customers-structured.md`
+
+---
+
+### Modal Secret Misconfiguration (possibly stale)
+**Status:** Unresolved (may no longer be relevant — `customers-of-2` / `v2` endpoint is deprecated)
 **Date:** 2026-01-31
 
 **Problem:** Modal function `ingest_company_customers_v2` is writing to a different Supabase project than expected. Webhook returns success but records don't appear in the database.
 
-**Evidence:**
-- Webhook returned success with `raw_id: 3e1d7aca-f8a5-4924-b714-28e65e7cda81`
-- Record not found in `raw.claygent_customers_v2_raw`
-- ~223 records sent but 0 new records in database since Jan 29
+**Note:** `customers-of-2` was deprecated on 2026-02-04. Only `customers-of-3` (structured) is active. This issue may be moot.
 
-**Action Required:**
-1. Run `modal secret show supabase-credentials`
-2. Verify `SUPABASE_URL` matches: `https://ivcemmeywnlhykbuafwv.supabase.co`
-3. If different, update the Modal secret with correct credentials
-
-**Affected Endpoint:** `modal-functions/src/ingest/company_customers_v2.py`
+**Affected Endpoint:** `modal-functions/src/ingest/company_customers_v2.py` (deprecated)
 
 ---
 

@@ -6,7 +6,93 @@ This file tracks the current state of work. Update after every major milestone.
 
 ---
 
-## Just Completed (2026-02-04: CompanyEnrich Workflow with Core Coalescing)
+## Just Completed (2026-02-04: Case Study URL Pipeline + Customer Data Cleanup)
+
+### Case Study URL Pipeline (Clay → Gemini extraction)
+
+Built end-to-end pipeline for sending case study URLs to Clay for Gemini extraction:
+
+1. **Ingest customers** → `ingest_company_customers_structured` now pushes case study URLs to `raw.staging_case_study_urls`
+2. **Send to Clay** → `send_case_study_urls_to_clay` Modal function sends staged URLs to Clay webhook at 10/sec
+3. **Check if extracted** → `lookup_case_study_details` checks `extracted.case_study_details` by `case_study_url`
+
+**Endpoints:**
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /run/companies/claygent/customers-of-3/ingest` | Canonical "get customers of" ingest (writes to raw, extracted, core, staging) |
+| `POST /run/case-study-urls/to-clay` | Send staged URLs to Clay webhook (Modal function, 10/sec) |
+| `POST /run/companies/case-study-details/lookup` | Check if a case_study_url has been extracted |
+
+**Table: `raw.staging_case_study_urls`**
+
+| Column | Description |
+|--------|-------------|
+| origin_company_name | Company that published the case study |
+| origin_company_domain | Publisher's domain (normalized bare) |
+| customer_company_name | Featured customer |
+| case_study_url | URL (unique constraint) |
+| processed | Gemini extraction done and results ingested back |
+| sent_to_clay | Fired to Clay webhook |
+| batch_id | Optional batch filter |
+
+Key distinction: `sent_to_clay` and `processed` are independent flags.
+
+### Domain Normalization
+
+Added `normalize_domain()` to `company_customers_structured.py`. Strips `https://`, `www.`, paths, trailing slashes, lowercases.
+
+Cleaned up existing dirty data:
+- `core.company_customers`: 7,336 duplicates deleted, 3,646 updated (10,982 total dirty rows)
+- `raw.staging_case_study_urls`: 1,861 updated
+
+### Customer Ingest Endpoint Consolidation
+
+Deprecated `customers-of-1`, `customers-of-2`, `customers-of-4`. Only `customers-of-3` (structured) is active.
+
+### Customer Data Backfills
+- 200 rows from `extracted.claygent_customers` → `core.company_customers`
+- 845 rows from `extracted.claygent_customers_structured` → `core.company_customers`
+- 4,609 rows from `extracted.case_study_buyers` → `core.case_study_champions`
+
+### Industry Normalization
+Added `reference.industry_lookup` check to `companyenrich.py`. "Software" raw → "Software Development" canonical.
+
+### Fixed Stale Table/Column Names
+- `lookup_company_customers.py`: `company_employee_ranges` → `company_employee_range`, `industry` → `matched_industry`
+- `db_check.py`: Added optional `column_name` parameter
+
+---
+
+## Open Issues / Bugs
+
+### CRITICAL: origin_company_name null in staging table
+**Status:** Not fully resolved
+**Date:** 2026-02-04
+
+1,040 rows in `raw.staging_case_study_urls` had `origin_company_name = NULL`. 851 of these were sent to Clay with null names. Backfilled from `core.company_customers` and `core.companies` (26 still null).
+
+**Root cause not diagnosed.** The ingest code sets `origin_company_name` in the upsert payload. Possible causes:
+- Supabase upsert with `on_conflict="case_study_url"` may not update all columns when matching pre-existing rows
+- The `origin_company_name` field may not have been in the Clay webhook payload
+
+**Action needed:**
+1. Check `raw.claygent_customers_structured_raw` to confirm whether `origin_company_name` was in the original payloads
+2. Test Supabase upsert behavior — does `on_conflict` actually update non-conflict columns?
+3. Add validation to `send_case_study_urls_to_clay` to skip/warn on null required fields
+4. Consider re-sending the 851 rows to Clay with correct names
+
+### Railway background tasks die after HTTP response
+**Status:** Resolved (moved to Modal)
+Railway `asyncio.create_task()` dies when the HTTP response completes. Only 509/1039 rows sent. Solution: moved webhook sending to Modal function with 10min timeout.
+
+### PostgREST `staging` schema not accessible
+**Status:** Resolved (moved table to `raw` schema)
+Despite `staging` appearing in Supabase dashboard config, PostgREST returns `PGRST106: The schema must be one of the following: public, raw, extracted, reference, core, manual, mapped`. Moved `staging.case_study_urls_to_process` → `raw.staging_case_study_urls`. Needed `GRANT ALL` to `service_role`.
+
+---
+
+## Previously Completed (CompanyEnrich Workflow with Core Coalescing)
 
 ### CompanyEnrich.com Workflow (Complete + Core Coalescing)
 Full company enrichment workflow: raw → extracted breakout tables → core tables. Single endpoint populates the entire company profile.
@@ -38,106 +124,79 @@ Full company enrichment workflow: raw → extracted breakout tables → core tab
 | `core.company_vc_backed` | vc_count = distinct investors | Upsert |
 | `core.company_social_urls` | all social URLs | Upsert |
 
-**New Core Tables Created:** `core.company_funding_rounds`, `core.company_categories`, `core.company_keywords`, `core.company_naics_codes`
-
-**Renamed Tables:** `core.company_technologies` → `core.company_tech_on_site`, `core.company_linkedin_urls` → `core.company_social_urls`
-
-**New Reference Lookups Added:**
-- `reference.employee_range_lookup`: companyenrich values (501-1K, 1K-5K, 5K-10K, over-10K)
-- `reference.revenue_range_lookup`: companyenrich values (1m-10m, 10m-50m, etc.) mapped to upper-end canonical
-
 **Documentation:** `/docs/workflows/catalog/ingest-companyenrich.md`
 
-**Tested end-to-end:** pactos.ai (new company, all 16 core tables populated), antimetal.com (existing company, conditional logic verified)
+---
 
-### SalesNav Export to Clay Webhook Endpoint
-Created endpoint to send SalesNav export files directly to Clay webhooks:
-- **Endpoint:** `POST /run/salesnav/export/to-clay`
-- **Features:**
-  - Accepts TSV/CSV file upload + Clay webhook URL
-  - Auto-detects delimiter (TSV vs CSV)
-  - Sends rows to Clay in background at 10 records/second
-  - Returns immediately with row count (fire-and-forget)
-- **Form fields:** `file`, `webhook_url`, `export_title`, `export_timestamp`, `notes`
+## Key Files Modified This Session (2026-02-04)
 
-### CORS Updates
-- Added localhost ports 3000-3015 to allowed origins for development
+| File | Changes |
+|------|---------|
+| `/modal-functions/src/ingest/company_customers_structured.py` | Added `normalize_domain()`, added staging push to `raw.staging_case_study_urls` |
+| `/modal-functions/src/ingest/send_case_study_urls.py` | NEW — Modal function to send staged URLs to Clay webhook |
+| `/modal-functions/src/ingest/lookup_case_study_details.py` | NEW — Check if case_study_url exists in extracted.case_study_details |
+| `/modal-functions/src/ingest/lookup_company_customers.py` | Fixed stale table/column names |
+| `/modal-functions/src/ingest/companyenrich.py` | Added industry normalization via reference.industry_lookup |
+| `/modal-functions/src/read/db_check.py` | Added optional column_name parameter |
+| `/modal-functions/src/app.py` | Added imports for send_case_study_urls_to_clay, lookup_case_study_details |
+| `/hq-api/routers/run.py` | Added API wrappers for case-study-urls/to-clay and case-study-details/lookup. Deprecated customers-of-1,2,4. Replaced Railway background task with Modal proxy. |
+| `/docs/workflows/catalog/ingest-company-customers-structured.md` | Updated with staging push, domain normalization, known issues |
+| `/docs/workflows/catalog/send-case-study-urls-to-clay.md` | NEW |
+| `/docs/workflows/catalog/lookup-case-study-details.md` | NEW |
+| `/docs/workflows/catalog/ingest-case-study-buyers.md` | Updated with core table section |
 
-### Testing Schema & Endpoint
-- **New schema:** `testing`
-- **New table:** `testing.companies` (id, name, domain, linkedin_url, created_at)
-- **New endpoint:** `POST /run/testing/companies` - Insert company into testing table
+## Database Changes This Session
+
+| Change | Details |
+|--------|---------|
+| Created `raw.staging_case_study_urls` | Moved from `staging.case_study_urls_to_process` |
+| Added `sent_to_clay` column | Boolean on `raw.staging_case_study_urls` |
+| Added `batch_id` column | Text on `raw.staging_case_study_urls` |
+| Added `reference.industry_lookup` row | "Software" → "Software Development" |
+| Domain cleanup | 10,982 rows in core.company_customers, 1,861 in staging |
+| Backfill customers to core | 1,045 rows from extracted → core.company_customers |
+| Backfill case study buyers to core | 4,609 rows from extracted → core.case_study_champions |
+| Backfill origin_company_name | 1,014 rows in raw.staging_case_study_urls filled from core tables |
 
 ---
 
-## Previously Completed (Phase 2: Client Lead Ingest & Person Profile Enhancement)
+## Case Study Extraction Pipeline (Reference)
 
-### Generic Database Read/Check Endpoint
-Created a safe, generic endpoint to check if a domain exists in any table:
-- **API Endpoint:** `POST /read/companies/db/check-existence`
-- **Modal Function:** `read_db_check_existence`
-- **Features:** 
-  - Validates schema/table names (alphanumeric only)
-  - Uses parameterized queries for safety
-  - Returns boolean `exists` flag
+Two pipelines exist:
 
-### Client Lead Ingest System
-Created client schema and lead tracking for multi-tenant support:
+### Pipeline 1: case_study_details + case_study_champions (older, Jan 8)
+```
+case_study_url → ingest_case_study_extraction (Gemini Flash)
+    → raw.gemini_case_study_payloads
+    → extracted.case_study_details (9,569 rows)
+    → extracted.case_study_champions (10,139 rows) → core.case_study_champions
+```
 
-- **New schema:** `client.*`
-- **New tables:**
-  - `client.leads` - denormalized lead data with all fields
-  - `client.leads_people` - normalized person data
-  - `client.leads_companies` - normalized company data
-- **New endpoint:** `POST /run/client/leads/ingest`
-- **Fields tracked:** client_domain, client_form_id, client_form_title, person info, company info
+### Pipeline 2: case_study_buyers (newer, Jan 29-31)
+```
+case_study_url → extract_case_study_buyer (Gemini)
+    → raw.case_study_buyers_payloads
+    → extracted.case_study_buyers (17,924 rows) → core.case_study_champions
+```
 
-### Reference Table Lookup/Update Endpoints
-Created modular lookup pattern for Clay orchestration:
+Both pipelines write to `core.case_study_champions` with different `source` values.
 
-**Lookup endpoints (check if exists):**
-- `POST /run/people/db/person-job-title/lookup` - returns cleaned_job_title, seniority_level, job_function
-- `POST /run/people/db/person-location/lookup` - returns city, state, country
-
-**Update endpoints (add new entries):**
-- `POST /run/reference/job-title/update` - add to reference.job_title_lookup
-- `POST /run/reference/location/update` - add to reference.location_lookup
-
-### Person Profile Ingest Extended to Core Tables
-Enhanced `ingest_clay_person_profile` Modal function to populate:
-
-| Core Table | Action | Data Source |
-|------------|--------|-------------|
-| `core.people` | check/insert | linkedin_url, full_name, slug |
-| `core.companies` | check/insert per company | experience array (deduped by domain) |
-| `core.person_locations` | upsert | location_name, country |
-| `core.person_tenure` | upsert | latest job start_date |
-| `core.person_past_employer` | delete+insert | experiences where is_current=false |
-
-**New file:** `/modal-functions/src/extraction/person_core.py`
-
-### Public Company Ticker Backfill
-- Added `ticker` column to `core.company_public`
-- Created `POST /run/companies/db/public-ticker/backfill` endpoint
-- For SEC CIK lookups via Clay
-
-### Job Title Lookup Table Backfill
-Backfilled `reference.job_title_lookup` with job_function and seniority from extracted tables:
-- 13,774 rows updated with job_function
-- 12,908 rows updated with seniority_level
+### Staging → Clay → Gemini flow
+```
+ingest_company_customers_structured
+    → raw.staging_case_study_urls (staged, sent_to_clay=false)
+        → send_case_study_urls_to_clay (Modal, 10/sec)
+            → Clay webhook → Gemini extraction
+                → ingest_case_study_extraction OR extract_case_study_buyer
+                    → extracted tables → core
+                        → mark processed=true in staging
+```
 
 ---
 
-## Enrichment Protocol (Decision Made)
+## Currently In Progress
 
-**Pattern for lookups from Clay:**
-1. Clay calls lookup API (e.g., `/run/people/db/person-job-title/lookup`)
-2. If `match_status: true` → use returned values
-3. If `match_status: false` → run enrichment (Gemini, etc.)
-4. Call update endpoint to add to lookup table (e.g., `/run/reference/job-title/update`)
-5. Proceed with enriched data
-
-**Design decision:** DB does lookups during ingest (not optimized yet). Clay ensures lookup table has entries before sending. Optimization deferred.
+- None (session ending)
 
 ---
 
@@ -147,15 +206,11 @@ Backfilled `reference.job_title_lookup` with job_function and seniority from ext
 ┌─────────────────────────────────────────────────────────────────┐
 │                     api.revenueinfra.com                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  /api/leads/*          │  Existing leads API                    │
-│  /api/companies/*      │  Company lookup/enrichment             │
-│  /api/people/*         │  People work history/enrichment        │
-│  /api/enrichment/*     │  Workflow registry & status            │
-│  /run/*                │  Modal function wrappers (80+)         │
-│  /run/client/*         │  Client lead ingest                    │
-│  /run/reference/*      │  Reference table updates               │
-│  /run/salesnav/*       │  SalesNav export to Clay               │
-│  /run/testing/*        │  Testing/dev endpoints                 │
+│  /run/companies/claygent/customers-of-3/ingest                  │
+│  /run/case-study-urls/to-clay                                   │
+│  /run/companies/case-study-details/lookup                       │
+│  /run/companies/companyenrich/ingest                            │
+│  /run/* (80+ other endpoints)                                   │
 └─────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -167,140 +222,8 @@ Backfilled `reference.job_title_lookup` with job_function and seniority from ext
                                     ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Supabase PostgreSQL                           │
-│  raw.* → extracted.* → reference.* → core.* + client.* + testing.* │
+│  raw.* → extracted.* → reference.* → core.*                     │
 └─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Person Profile Ingest Flow
-
-```
-Clay sends: { linkedin_url, workflow_slug, raw_payload }
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 ingest_clay_person_profile                       │
-├─────────────────────────────────────────────────────────────────┤
-│  1. Store raw payload → raw.person_payloads                     │
-│  2. Extract profile → extracted.person_profile (upsert)         │
-│  3. Extract experience → extracted.person_experience (del+ins)  │
-│     └─ Trigger: sync_person_experience_to_core()                │
-│        └─ Populates: core.person_work_history                   │
-│  4. Extract education → extracted.person_education (del+ins)    │
-│  5. Upsert → core.people                                        │
-│  6. Upsert companies → core.companies (from experience)         │
-│  7. Upsert → core.person_locations                              │
-│  8. Upsert → core.person_tenure                                 │
-│  9. Insert → core.person_past_employer                          │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Currently In Progress
-
-- None
-
----
-
-## Blocked / Waiting
-
-- None
-
----
-
-## Key Files Modified This Session (2026-02-04)
-
-| File | Changes |
-|------|---------|
-| `/hq-api/routers/run.py` | Added `/run/salesnav/export/to-clay`, `/run/testing/companies`, `/run/companies/companyenrich/ingest` |
-| `/hq-api/main.py` | Added localhost ports 3000-3015 to CORS allowed origins |
-| `/modal-functions/src/ingest/companyenrich.py` | NEW - CompanyEnrich.com ingestion with breakout tables + core coalescing (16 core tables) |
-| `/modal-functions/src/app.py` | Added companyenrich import |
-| `/docs/workflows/catalog/ingest-companyenrich.md` | NEW - Full workflow documentation |
-
-## Schema Changes This Session
-
-| Change | Details |
-|--------|---------|
-| Renamed `core.company_technologies` → `core.company_tech_on_site` | Removed first_detected/last_detected, added source |
-| Renamed `core.company_linkedin_urls` → `core.company_social_urls` | Added twitter, facebook, github, youtube, instagram, crunchbase, g2, angellist columns |
-| Created `core.tech_on_site_detections` | domain, technology_id (FK), first_detected, last_detected, source |
-| Created `core.company_funding_rounds` | domain, source, funding_date, funding_type, amount, investors, url |
-| Created `core.company_categories` | domain, category, source |
-| Created `core.company_keywords` | domain, keyword, source |
-| Created `core.company_naics_codes` | domain, naics_code, source |
-
-## Key Files Modified Previous Session
-
-| File | Changes |
-|------|---------|
-| `/hq-api/routers/run.py` | Added client lead, job-title/location update endpoints |
-| `/modal-functions/src/ingest/person.py` | Extended to populate core tables |
-| `/modal-functions/src/extraction/person_core.py` | NEW - Core table extraction functions |
-| `/hq-api/routers/read.py` | NEW - Generic read router |
-| `/modal-functions/src/read/db_check.py` | NEW - Safe DB check function |
-
----
-
-## Key Tables Reference
-
-### Lookup Tables
-| Table | Key | Returns |
-|-------|-----|---------|
-| `reference.job_title_lookup` | latest_title | cleaned_job_title, seniority_level, job_function |
-| `reference.location_lookup` | location_name | city, state, country, has_* |
-
-### Core Person Tables
-| Table | Purpose | Key |
-|-------|---------|-----|
-| `core.people` | Canonical person record | linkedin_url |
-| `core.person_work_history` | All jobs (via trigger) | linkedin_url |
-| `core.person_locations` | Person's location | linkedin_url |
-| `core.person_tenure` | Current job start date | linkedin_url |
-| `core.person_past_employer` | Previous companies | linkedin_url |
-| `core.person_job_titles` | Matched title info | linkedin_url |
-
----
-
-## API Quick Reference
-
-### Client lead ingest
-```bash
-curl -X POST https://api.revenueinfra.com/run/client/leads/ingest \
-  -H "Content-Type: application/json" \
-  -d '{"client_domain":"acme.com","client_form_id":"form1","first_name":"John"}'
-```
-
-### Job title lookup
-```bash
-curl -X POST https://api.revenueinfra.com/run/people/db/person-job-title/lookup \
-  -H "Content-Type: application/json" \
-  -d '{"job_title":"Senior Sales Engineer"}'
-```
-
-### Add to job title lookup
-```bash
-curl -X POST https://api.revenueinfra.com/run/reference/job-title/update \
-  -H "Content-Type: application/json" \
-  -d '{"latest_title":"Senior Sales Engineer","cleaned_job_title":"Sales Engineer","seniority_level":"Senior","job_function":"Sales Engineering"}'
-```
-
-### SalesNav export to Clay (multipart form)
-```bash
-curl -X POST https://api.revenueinfra.com/run/salesnav/export/to-clay \
-  -F "file=@export.csv" \
-  -F "webhook_url=https://api.clay.com/v3/sources/webhook/..." \
-  -F "export_title=Q1 2026 Leads" \
-  -F "export_timestamp=1/25/2026, 10:15 PM"
-```
-
-### Add company to testing table
-```bash
-curl -X POST https://api.revenueinfra.com/run/testing/companies \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Acme Inc","domain":"acme.com","linkedin_url":"https://linkedin.com/company/acme"}'
 ```
 
 ---
