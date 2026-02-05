@@ -47,6 +47,7 @@ from ingest.lookup import lookup_person_location, lookup_salesnav_location, look
 from ingest.lookup_company_name import lookup_company_name
 from ingest.lookup_company_icp import lookup_company_icp
 from ingest.lookup_company_customers import lookup_company_customers
+from ingest.lookup_case_study_details import lookup_case_study_details
 from ingest.create_target_client_view import create_target_client_view
 from ingest.upsert_icp_criteria import upsert_icp_criteria
 from ingest.vc_portfolio import ingest_vc_portfolio
@@ -278,4 +279,5 @@ __all__ = [
     "infer_webinars",
     "read_db_check_existence",
     "send_case_study_urls_to_clay",
+    "lookup_case_study_details",
 ]
