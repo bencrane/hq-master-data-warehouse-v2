@@ -1821,3 +1821,35 @@ async def get_competitors_status(payload: dict):
         "has_competitors": count > 0,
         "competitor_count": count
     }
+
+
+@router.post("/ingest-g2-page-url")
+async def ingest_g2_page_url(payload: dict):
+    """
+    Ingest a G2 page URL from Clay.
+
+    Payload: { "domain": "example.com", "g2_url": "https://www.g2.com/products/example" }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    g2_url = payload.get("g2_url", "").strip()
+
+    if not domain:
+        return {"error": "domain is required", "success": False}
+
+    if not g2_url:
+        return {"error": "g2_url is required", "success": False}
+
+    pool = get_pool()
+    await pool.execute("""
+        INSERT INTO core.company_social_urls (domain, g2_url, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (domain) DO UPDATE SET
+            g2_url = EXCLUDED.g2_url,
+            updated_at = NOW()
+    """, domain, g2_url)
+
+    return {
+        "success": True,
+        "domain": domain,
+        "g2_url": g2_url
+    }
