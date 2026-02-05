@@ -33,6 +33,7 @@ Individual workflow documentation lives in [`catalog/`](./catalog/).
 | [Company Discovery](./catalog/upsert-core-company-full.md) | Company | Yes |
 | [Case Study Buyers](./catalog/ingest-case-study-buyers.md) | Company | Yes |
 | [VC Portfolio](./catalog/ingest-cb-vc-portfolio.md) | Company | No |
+| [Discover Pricing Page](./catalog/discover-pricing-page.md) | Company | Yes (conditional) |
 | [Job Change Signal](./catalog/signal-job-change.md) | Person | Partial |
 | [Promotion Signal](./catalog/signal-promotion.md) | Person | Partial |
 | [Person Job Titles](./catalog/backfill-person-job-titles.md) | Person | Yes |
