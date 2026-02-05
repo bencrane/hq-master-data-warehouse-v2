@@ -1191,6 +1191,19 @@ class CompanyAddressResponse(BaseModel):
     error: Optional[str] = None
 
 
+class CompanyBusinessModelLookupRequest(BaseModel):
+    domain: str
+
+
+class CompanyBusinessModelLookupResponse(BaseModel):
+    success: bool
+    found: Optional[bool] = None
+    domain: Optional[str] = None
+    is_b2b: Optional[bool] = None
+    is_b2c: Optional[bool] = None
+    error: Optional[str] = None
+
+
 class CompanyDescriptionLookupRequest(BaseModel):
     domain: str
 
@@ -3628,6 +3641,41 @@ async def lookup_company_customers(request: CompanyCustomersLookupRequest) -> Co
             )
             response.raise_for_status()
             return CompanyCustomersLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/company-business-model/lookup",
+    response_model=CompanyBusinessModelLookupResponse,
+    summary="Lookup company B2B/B2C classification by domain",
+    description="Wrapper for Modal function: lookup_company_business_model"
+)
+async def lookup_company_business_model(request: CompanyBusinessModelLookupRequest) -> CompanyBusinessModelLookupResponse:
+    """
+    Lookup company B2B/B2C classification from core.company_business_model.
+
+    Modal function: lookup_company_business_model
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-company-business-model.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-company-business-model.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return CompanyBusinessModelLookupResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
