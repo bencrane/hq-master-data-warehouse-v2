@@ -1159,6 +1159,42 @@ async def get_pricing_page_url(payload: dict):
         }
 
 
+@router.post("/g2-page-url")
+async def get_g2_page_url(payload: dict):
+    """
+    Get G2 page URL for a domain.
+
+    Payload: { "domain": "example.com" }
+
+    Returns whether we have a g2_url and its value.
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    row = await pool.fetchrow("""
+        SELECT g2_url
+        FROM core.company_social_urls
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row and row["g2_url"]:
+        return {
+            "domain": domain,
+            "found": True,
+            "g2_url": row["g2_url"]
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "g2_url": None
+        }
+
+
 @router.post("/linkedin-ads-status")
 async def get_linkedin_ads_status(payload: dict):
     """
