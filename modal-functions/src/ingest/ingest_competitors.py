@@ -52,6 +52,10 @@ def ingest_competitors(request: dict) -> dict:
         origin_company_name = request.get("company_name", "").strip()
         competitors = request.get("competitors", [])
 
+        # Handle nested structure from Clay (competitors.competitors[])
+        if isinstance(competitors, dict):
+            competitors = competitors.get("competitors", [])
+
         if not origin_domain:
             return {"success": False, "error": "No domain provided"}
 
@@ -114,6 +118,14 @@ def ingest_competitors(request: dict) -> dict:
                     "linkedin_url": comp_linkedin,
                     "updated_at": "now()",
                 }, on_conflict="domain").execute()
+
+            # 2e. Upsert to core.company_competitors
+            supabase.schema("core").from_("company_competitors").upsert({
+                "domain": origin_domain,
+                "competitor_domain": comp_domain,
+                "competitor_name": comp_name,
+                "updated_at": "now()",
+            }, on_conflict="domain,competitor_domain").execute()
 
             competitors_processed += 1
 
