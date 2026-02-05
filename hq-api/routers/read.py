@@ -9,7 +9,7 @@ Naming convention:
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Any
 
 router = APIRouter(prefix="/read", tags=["read"])
 
@@ -31,6 +31,19 @@ class ExistenceCheckResponse(BaseModel):
     domain: str
     schema_name: str
     table_name: str
+    error: Optional[str] = None
+
+
+class ClientLeadsRequest(BaseModel):
+    client_domain: str
+    limit: Optional[int] = 100
+    offset: Optional[int] = 0
+
+class ClientLeadsResponse(BaseModel):
+    success: bool
+    client_domain: str
+    total: int = 0
+    leads: List[Any] = []
     error: Optional[str] = None
 
 # =============================================================================
@@ -67,6 +80,46 @@ async def read_db_check_existence(request: ExistenceCheckRequest) -> ExistenceCh
             except:
                 error_detail = e.response.text
                 
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {error_detail}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/client/leads",
+    response_model=ClientLeadsResponse,
+    summary="Get leads affiliated with a client domain",
+    description="Wrapper for Modal function: lookup_client_leads"
+)
+async def read_client_leads(request: ClientLeadsRequest) -> ClientLeadsResponse:
+    """
+    Return leads for a client domain, joined with enriched data from core tables.
+
+    Modal function: lookup_client_leads
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-client-leads.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-client-leads.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return ClientLeadsResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            try:
+                error_detail = e.response.json()
+            except:
+                error_detail = e.response.text
+
             raise HTTPException(
                 status_code=e.response.status_code,
                 detail=f"Modal function error: {error_detail}"

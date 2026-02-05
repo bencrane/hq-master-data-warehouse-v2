@@ -29,6 +29,7 @@ from read.db_check import read_db_check_existence
 from read.lookup_company_description import lookup_company_description
 from read.lookup_company_business_model import lookup_company_business_model
 from read.lookup_similar_companies import lookup_similar_companies
+from read.lookup_client_leads import lookup_client_leads
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
 from ingest.case_study import ingest_case_study_extraction
@@ -292,4 +293,5 @@ __all__ = [
     "send_unresolved_customers_to_clay",
     "resolve_customer_domain",
     "ingest_companyenrich_similar_preview_results",
+    "lookup_client_leads",
 ]
