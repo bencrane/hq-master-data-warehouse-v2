@@ -185,6 +185,16 @@ def ingest_case_study_extraction(request: CaseStudyExtractionRequest) -> dict:
             gemini_response,
         )
 
+        # Update core.company_customers with extracted domain
+        customer_domain = gemini_response.get("customer_company_domain")
+        if customer_domain:
+            try:
+                supabase.schema("core").from_("company_customers").update(
+                    {"customer_domain": customer_domain}
+                ).eq("case_study_url", request.case_study_url).execute()
+            except Exception:
+                pass  # Non-fatal — domain update is best-effort
+
         # Extract champions
         champion_count = 0
         if case_study_id:
