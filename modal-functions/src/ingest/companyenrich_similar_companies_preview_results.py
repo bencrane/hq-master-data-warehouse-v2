@@ -27,8 +27,16 @@ def ingest_companyenrich_similar_preview_results(data: dict) -> dict:
     if not input_domain:
         return {"success": False, "error": "input_domain is required"}
 
-    items = data.get("items", [])
-    scores = (data.get("metadata") or {}).get("scores", {})
+    payload = data.get("payload", {})
+    if isinstance(payload, str):
+        import json
+        try:
+            payload = json.loads(payload)
+        except (json.JSONDecodeError, TypeError):
+            return {"success": False, "error": "payload must be valid JSON"}
+
+    items = payload.get("items", [])
+    scores = (payload.get("metadata") or {}).get("scores", {})
 
     try:
         # Store raw payload
@@ -38,7 +46,7 @@ def ingest_companyenrich_similar_preview_results(data: dict) -> dict:
             .insert({
                 "input_domain": input_domain,
                 "similarity_weight": 0.0,
-                "raw_response": data,
+                "raw_response": payload,
                 "status_code": 200,
             })
             .execute()
