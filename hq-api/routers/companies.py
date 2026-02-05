@@ -1566,3 +1566,81 @@ async def ingest_pricing_page_url(payload: dict):
         "domain": domain,
         "pricing_page_url": pricing_page_url
     }
+
+
+OPENWEBNINJA_API_KEY = os.getenv(
+    "OPENWEBNINJA_API_KEY",
+    "ak_5h42dp58t37mjkhdf3920d38h0pybxj99pm1jf61mcie4x1"
+)
+
+
+@router.post("/discover-g2-page")
+async def discover_g2_page(payload: dict):
+    """
+    Discover G2 page URL for a company using OpenWebNinja web search.
+
+    Payload: { "domain": "example.com", "company_name": "Example Inc" }
+    """
+    import urllib.parse
+    import re
+
+    domain = payload.get("domain", "").lower().strip()
+    company_name = payload.get("company_name", "").strip()
+
+    if not domain:
+        return {"error": "domain is required", "success": False}
+
+    if not company_name:
+        return {"error": "company_name is required", "success": False}
+
+    # Build the search prompt
+    prompt = f"Find the G2.com product page URL for {company_name} (website: {domain}). Return only the URL in format https://www.g2.com/products/..."
+
+    # Call OpenWebNinja API
+    encoded_prompt = urllib.parse.quote(prompt)
+    url = f"https://api.openwebninja.com/realtime-web-search/ai-mode?prompt={encoded_prompt}&gl=us&hl=en"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            url,
+            headers={"x-api-key": OPENWEBNINJA_API_KEY}
+        )
+
+        if response.status_code != 200:
+            return {
+                "success": False,
+                "error": f"OpenWebNinja API error: {response.status_code}",
+                "domain": domain
+            }
+
+        result = response.json()
+
+    # Extract G2 URL from response
+    response_text = result.get("result", "") or result.get("answer", "") or str(result)
+
+    # Find G2 URL pattern
+    g2_match = re.search(r'https?://(?:www\.)?g2\.com/products/[^\s\'"<>]+', response_text)
+    g2_url = g2_match.group(0) if g2_match else None
+
+    # Clean up URL (remove trailing punctuation)
+    if g2_url:
+        g2_url = g2_url.rstrip('.,;:)')
+
+    # Store in database if found
+    if g2_url:
+        pool = get_pool()
+        await pool.execute("""
+            INSERT INTO core.company_social_urls (domain, g2_url, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (domain) DO UPDATE SET
+                g2_url = EXCLUDED.g2_url,
+                updated_at = NOW()
+        """, domain, g2_url)
+
+    return {
+        "success": True,
+        "domain": domain,
+        "company_name": company_name,
+        "g2_url": g2_url,
+        "raw_response": response_text[:500] if response_text else None
+    }
