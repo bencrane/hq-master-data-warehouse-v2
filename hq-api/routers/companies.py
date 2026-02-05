@@ -1534,3 +1534,35 @@ async def discover_pricing_page(payload: dict):
             json={"domain": domain, "company_name": company_name}
         )
         return response.json()
+
+
+@router.post("/ingest-pricing-page-url")
+async def ingest_pricing_page_url(payload: dict):
+    """
+    Ingest a pricing page URL from Clay.
+
+    Payload: { "domain": "example.com", "pricing_page_url": "https://example.com/pricing" }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    pricing_page_url = payload.get("pricing_page_url", "").strip()
+
+    if not domain:
+        return {"error": "domain is required", "success": False}
+
+    if not pricing_page_url:
+        return {"error": "pricing_page_url is required", "success": False}
+
+    pool = get_pool()
+    await pool.execute("""
+        INSERT INTO core.ancillary_urls (domain, pricing_page_url, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (domain) DO UPDATE SET
+            pricing_page_url = EXCLUDED.pricing_page_url,
+            updated_at = NOW()
+    """, domain, pricing_page_url)
+
+    return {
+        "success": True,
+        "domain": domain,
+        "pricing_page_url": pricing_page_url
+    }
