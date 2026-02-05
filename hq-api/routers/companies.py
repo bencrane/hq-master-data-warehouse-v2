@@ -1574,8 +1574,8 @@ OPENWEBNINJA_API_KEY = os.getenv(
 )
 
 
-@router.post("/discover-g2-page")
-async def discover_g2_page(payload: dict):
+@router.post("/discover-g2-page-openwebninja")
+async def discover_g2_page_openwebninja(payload: dict):
     """
     Discover G2 page URL for a company using OpenWebNinja web search.
 
@@ -1644,3 +1644,33 @@ async def discover_g2_page(payload: dict):
         "g2_url": g2_url,
         "raw_response": response_text[:500] if response_text else None
     }
+
+
+MODAL_DISCOVER_G2_PAGE_GEMINI_URL = os.getenv(
+    "MODAL_DISCOVER_G2_PAGE_GEMINI_URL",
+    "https://bencrane--hq-master-data-ingest-discover-g2-page-gemini.modal.run"
+)
+
+
+@router.post("/discover-g2-page-gemini")
+async def discover_g2_page_gemini(payload: dict):
+    """
+    Discover G2 page URL for a company using Gemini.
+
+    Payload: { "domain": "example.com", "company_name": "Example Inc" }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    company_name = payload.get("company_name", "").strip()
+
+    if not domain:
+        return {"error": "domain is required", "success": False}
+
+    if not company_name:
+        return {"error": "company_name is required", "success": False}
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            MODAL_DISCOVER_G2_PAGE_GEMINI_URL,
+            json={"domain": domain, "company_name": company_name}
+        )
+        return response.json()
