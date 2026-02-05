@@ -10672,8 +10672,8 @@
         "tags": [
           "run"
         ],
-        "summary": "Ingest company customers (variant 1)",
-        "description": "Wrapper for Modal function: ingest_all_comp_customers",
+        "summary": "[DEPRECATED] Ingest company customers (variant 1) - Use customers-of-3 instead",
+        "description": "DEPRECATED: Use /run/companies/claygent/customers-of-3/ingest instead",
         "operationId": "ingest_all_comp_customers_run_companies_claygent_customers_of_1_ingest_post",
         "requestBody": {
           "content": {
@@ -10706,7 +10706,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/run/companies/claygent/customers-of-2/ingest": {
@@ -10714,8 +10715,8 @@
         "tags": [
           "run"
         ],
-        "summary": "Ingest company customers (variant 2)",
-        "description": "Wrapper for Modal function: ingest_company_customers_v2",
+        "summary": "[DEPRECATED] Ingest company customers (variant 2) - Use customers-of-3 instead",
+        "description": "DEPRECATED: Use /run/companies/claygent/customers-of-3/ingest instead",
         "operationId": "ingest_company_customers_v2_run_companies_claygent_customers_of_2_ingest_post",
         "requestBody": {
           "content": {
@@ -10748,7 +10749,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/run/companies/claygent/customers-of-3/ingest": {
@@ -10798,8 +10800,8 @@
         "tags": [
           "run"
         ],
-        "summary": "Ingest company customers (variant 4 - claygent)",
-        "description": "Wrapper for Modal function: ingest_company_customers_claygent",
+        "summary": "[DEPRECATED] Ingest company customers (variant 4) - Use customers-of-3 instead",
+        "description": "DEPRECATED: Use /run/companies/claygent/customers-of-3/ingest instead",
         "operationId": "ingest_company_customers_claygent_run_companies_claygent_customers_of_4_ingest_post",
         "requestBody": {
           "content": {
@@ -10832,7 +10834,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/run/companies/claygent/company-address-parsing/ingest": {
@@ -10902,6 +10905,176 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CompanyCustomersLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/company-business-model/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup company B2B/B2C classification by domain",
+        "description": "Wrapper for Modal function: lookup_company_business_model",
+        "operationId": "lookup_company_business_model_run_companies_db_company_business_model_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyBusinessModelLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyBusinessModelLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/similar-companies/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Check if similar companies have been generated for a domain",
+        "description": "Wrapper for Modal function: lookup_similar_companies",
+        "operationId": "lookup_similar_companies_run_companies_db_similar_companies_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarCompaniesLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarCompaniesLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/companyenrich/similar-companies-preview-results/ingest": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Ingest CompanyEnrich similar companies preview results from Clay",
+        "description": "Wrapper for Modal function: ingest_companyenrich_similar_preview_results",
+        "operationId": "ingest_companyenrich_similar_preview_results_run_companies_companyenrich_similar_companies_preview_results_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyEnrichSimilarPreviewResultsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/company-description/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup company description by domain",
+        "description": "Wrapper for Modal function: lookup_company_description",
+        "operationId": "lookup_company_description_run_companies_db_company_description_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyDescriptionLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDescriptionLookupResponse"
                 }
               }
             }
@@ -12641,6 +12814,384 @@
         }
       }
     },
+    "/run/salesnav/export/to-clay": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Send SalesNav export file to Clay webhook",
+        "description": "Parses a TSV/CSV file and sends each row to Clay webhook in background at 10 records/second. Returns immediately.",
+        "operationId": "salesnav_export_to_clay_run_salesnav_export_to_clay_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_salesnav_export_to_clay_run_salesnav_export_to_clay_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesNavToClayResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/case-study-urls/to-clay": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Send unsent case study URLs to Clay webhook (via Modal)",
+        "description": "Proxies to Modal function that sends URLs at 10 records/second and marks each as sent_to_clay.",
+        "operationId": "case_study_urls_to_clay_run_case_study_urls_to_clay_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/gemini/resolve-customer-domain/ingest": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Resolve customer company domain using Gemini",
+        "description": "Wrapper for Modal function: resolve_customer_domain",
+        "operationId": "resolve_customer_domain_run_companies_gemini_resolve_customer_domain_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCustomerDomainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveCustomerDomainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/unresolved-customers/to-clay": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Send unresolved customer names to Clay webhook (via Modal)",
+        "description": "Proxies to Modal function that sends customers without domains at 10 records/second.",
+        "operationId": "unresolved_customers_to_clay_run_unresolved_customers_to_clay_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/case-study-details/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Check if a case study URL has already been extracted",
+        "description": "Returns whether extracted.case_study_details has a row for the given case_study_url.",
+        "operationId": "lookup_case_study_details_run_companies_case_study_details_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/testing/companies": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Add a company to testing.companies",
+        "description": "Insert a company into testing.companies table.",
+        "operationId": "add_testing_company_run_testing_companies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestingCompanyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestingCompanyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/companyenrich/ingest": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Ingest company data from CompanyEnrich.com",
+        "description": "Stores raw payload and extracts company firmographics + funding rounds",
+        "operationId": "ingest_companyenrich_run_companies_companyenrich_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyEnrichRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyEnrichResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read/companies/db/check-existence": {
+      "post": {
+        "tags": [
+          "read"
+        ],
+        "summary": "Check if a company exists in a specific database table",
+        "description": "Wrapper for Modal function: read_db_check_existence",
+        "operationId": "read_db_check_existence_read_companies_db_check_existence_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExistenceCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExistenceCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read/client/leads": {
+      "post": {
+        "tags": [
+          "read"
+        ],
+        "summary": "Get leads affiliated with a client domain",
+        "description": "Wrapper for Modal function: lookup_client_leads",
+        "operationId": "read_client_leads_read_client_leads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientLeadsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientLeadsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -13742,6 +14293,63 @@
         ],
         "title": "Body_ingest_linkedin_job_video_run_linkedin_job_video_ingest_post"
       },
+      "Body_salesnav_export_to_clay_run_salesnav_export_to_clay_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "TSV/CSV file from SalesNav export"
+          },
+          "webhook_url": {
+            "type": "string",
+            "title": "Webhook Url",
+            "description": "Clay webhook URL to send records to"
+          },
+          "export_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Title",
+            "description": "Title for this export"
+          },
+          "export_timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Timestamp",
+            "description": "Timestamp from SalesNav export"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Additional notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "webhook_url"
+        ],
+        "title": "Body_salesnav_export_to_clay_run_salesnav_export_to_clay_post"
+      },
       "BuiltWithIngestRequest": {
         "properties": {
           "domain": {
@@ -14050,10 +14658,6 @@
             "type": "string",
             "title": "Company Customer Name"
           },
-          "has_case_study_url": {
-            "type": "boolean",
-            "title": "Has Case Study Url"
-          },
           "workflow_slug": {
             "type": "string",
             "title": "Workflow Slug"
@@ -14065,7 +14669,6 @@
           "origin_company_domain",
           "case_study_url",
           "company_customer_name",
-          "has_case_study_url",
           "workflow_slug"
         ],
         "title": "CaseStudyExtractionRequest"
@@ -14098,6 +14701,39 @@
             ],
             "title": "Case Study Id"
           },
+          "origin_company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Company Name"
+          },
+          "origin_company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Company Domain"
+          },
+          "company_customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Customer Name"
+          },
           "champion_count": {
             "anyOf": [
               {
@@ -14108,6 +14744,18 @@
               }
             ],
             "title": "Champion Count"
+          },
+          "champions": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champions"
           },
           "customer_domain_found": {
             "anyOf": [
@@ -14120,6 +14768,17 @@
             ],
             "title": "Customer Domain Found"
           },
+          "customer_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Domain"
+          },
           "article_title": {
             "anyOf": [
               {
@@ -14130,6 +14789,50 @@
               }
             ],
             "title": "Article Title"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
           },
           "error": {
             "anyOf": [
@@ -15713,6 +16416,83 @@
         ],
         "title": "ClientLeadIngestResponse"
       },
+      "ClientLeadsRequest": {
+        "properties": {
+          "client_domain": {
+            "type": "string",
+            "title": "Client Domain"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "default": 100
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_domain"
+        ],
+        "title": "ClientLeadsRequest"
+      },
+      "ClientLeadsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "client_domain": {
+            "type": "string",
+            "title": "Client Domain"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "leads": {
+            "items": {},
+            "type": "array",
+            "title": "Leads",
+            "default": []
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "client_domain"
+        ],
+        "title": "ClientLeadsResponse"
+      },
       "CompaniesResponse": {
         "properties": {
           "data": {
@@ -16047,6 +16827,87 @@
           "success"
         ],
         "title": "CompanyAddressResponse"
+      },
+      "CompanyBusinessModelLookupRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "CompanyBusinessModelLookupRequest"
+      },
+      "CompanyBusinessModelLookupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "is_b2b": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is B2B"
+          },
+          "is_b2c": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is B2C"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "CompanyBusinessModelLookupResponse"
       },
       "CompanyClassificationRequest": {
         "properties": {
@@ -16602,6 +17463,98 @@
         ],
         "title": "CompanyCustomersV2Response"
       },
+      "CompanyDescriptionLookupRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "CompanyDescriptionLookupRequest"
+      },
+      "CompanyDescriptionLookupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "tagline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagline"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "CompanyDescriptionLookupResponse"
+      },
       "CompanyDiscoveryRequest": {
         "properties": {
           "company_domain": {
@@ -16737,6 +17690,161 @@
           "success"
         ],
         "title": "CompanyDiscoveryResponse"
+      },
+      "CompanyEnrichRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "raw_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "raw_payload"
+        ],
+        "title": "CompanyEnrichRequest"
+      },
+      "CompanyEnrichResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "raw_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Id"
+          },
+          "extracted_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Id"
+          },
+          "funding_rounds_processed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Funding Rounds Processed"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "CompanyEnrichResponse"
+      },
+      "CompanyEnrichSimilarPreviewResultsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "input_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Domain"
+          },
+          "raw_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Id"
+          },
+          "items_received": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items Received"
+          },
+          "extracted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Count"
+          },
+          "core_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Core Count"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "CompanyEnrichSimilarPreviewResultsResponse"
       },
       "CompanyFirmographicsRequest": {
         "properties": {
@@ -18196,7 +19304,7 @@
       },
       "CustomerInfo": {
         "properties": {
-          "name": {
+          "origin_company_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -18205,9 +19313,9 @@
                 "type": "null"
               }
             ],
-            "title": "Name"
+            "title": "Origin Company Name"
           },
-          "domain": {
+          "origin_company_domain": {
             "anyOf": [
               {
                 "type": "string"
@@ -18216,9 +19324,9 @@
                 "type": "null"
               }
             ],
-            "title": "Domain"
+            "title": "Origin Company Domain"
           },
-          "industry": {
+          "customer_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -18227,9 +19335,9 @@
                 "type": "null"
               }
             ],
-            "title": "Industry"
+            "title": "Customer Name"
           },
-          "size": {
+          "customer_domain": {
             "anyOf": [
               {
                 "type": "string"
@@ -18238,18 +19346,7 @@
                 "type": "null"
               }
             ],
-            "title": "Size"
-          },
-          "country": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Country"
+            "title": "Customer Domain"
           }
         },
         "type": "object",
@@ -18509,6 +19606,73 @@
           "success"
         ],
         "title": "EnterpriseTierResponse"
+      },
+      "ExistenceCheckRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "schema_name": {
+            "type": "string",
+            "title": "Schema Name"
+          },
+          "table_name": {
+            "type": "string",
+            "title": "Table Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "schema_name",
+          "table_name"
+        ],
+        "title": "ExistenceCheckRequest"
+      },
+      "ExistenceCheckResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "exists": {
+            "type": "boolean",
+            "title": "Exists"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "schema_name": {
+            "type": "string",
+            "title": "Schema Name"
+          },
+          "table_name": {
+            "type": "string",
+            "title": "Table Name"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "exists",
+          "domain",
+          "schema_name",
+          "table_name"
+        ],
+        "title": "ExistenceCheckResponse"
       },
       "FilterOption": {
         "properties": {
@@ -24408,6 +25572,163 @@
         ],
         "title": "PublicCompanyResponse"
       },
+      "ResolveCustomerDomainRequest": {
+        "properties": {
+          "customer_name": {
+            "type": "string",
+            "title": "Customer Name"
+          },
+          "origin_company_name": {
+            "type": "string",
+            "title": "Origin Company Name"
+          },
+          "origin_company_domain": {
+            "type": "string",
+            "title": "Origin Company Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_name",
+          "origin_company_name",
+          "origin_company_domain"
+        ],
+        "title": "ResolveCustomerDomainRequest"
+      },
+      "ResolveCustomerDomainResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "origin_company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Company Name"
+          },
+          "origin_company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Company Domain"
+          },
+          "customer_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Domain"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ResolveCustomerDomainResponse"
+      },
       "SECFilingInfo": {
         "properties": {
           "filing_date": {
@@ -25427,6 +26748,37 @@
         ],
         "title": "SalesNavPersonResponse"
       },
+      "SalesNavToClayResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "SalesNavToClayResponse"
+      },
       "SalesnavLocationLookupRequest": {
         "properties": {
           "location_raw": {
@@ -25993,6 +27345,76 @@
           "success"
         ],
         "title": "SignalPromotionResponse"
+      },
+      "SimilarCompaniesLookupRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "SimilarCompaniesLookupRequest"
+      },
+      "SimilarCompaniesLookupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "found": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "similar_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similar Count"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "SimilarCompaniesLookupResponse"
       },
       "StagingCompanyLinkedInRequest": {
         "properties": {
@@ -27283,6 +28705,70 @@
           "url"
         ],
         "title": "TargetClientViewResponse"
+      },
+      "TestingCompanyRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "domain"
+        ],
+        "title": "TestingCompanyRequest"
+      },
+      "TestingCompanyResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "TestingCompanyResponse"
       },
       "TopVCMissingCustomersResponse": {
         "properties": {
