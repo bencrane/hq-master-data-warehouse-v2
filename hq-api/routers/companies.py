@@ -1123,6 +1123,42 @@ async def check_firmographics_status(payload: dict):
         }
 
 
+@router.post("/pricing-page-url")
+async def get_pricing_page_url(payload: dict):
+    """
+    Get pricing page URL for a domain.
+
+    Payload: { "domain": "example.com" }
+
+    Returns whether we have a pricing_page_url and its value.
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip()
+
+    if not domain:
+        return {"error": "domain is required", "found": False}
+
+    row = await pool.fetchrow("""
+        SELECT pricing_page_url
+        FROM core.ancillary_urls
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row and row["pricing_page_url"]:
+        return {
+            "domain": domain,
+            "found": True,
+            "pricing_page_url": row["pricing_page_url"]
+        }
+    else:
+        return {
+            "domain": domain,
+            "found": False,
+            "pricing_page_url": None
+        }
+
+
 @router.post("/public-company-info")
 async def get_public_company_info(payload: dict):
     """
