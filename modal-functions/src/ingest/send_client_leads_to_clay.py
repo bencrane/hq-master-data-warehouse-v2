@@ -1,8 +1,10 @@
 """
-Send Client Leads to Clay Webhook
+Send Client Leads to Clay Webhooks
 
 Reads leads for a given client_domain from client.leads
-and sends each to a Clay webhook at ~10 records/second.
+and sends each to two Clay webhooks at ~10 records/second:
+  1. People table  — all lead fields (one row per lead)
+  2. Companies table — company_name, domain, company_linkedin_url (deduplicated)
 """
 
 import os
@@ -12,7 +14,8 @@ import requests
 from config import app, image
 
 
-CLAY_WEBHOOK_URL = "https://api.clay.com/v3/sources/webhook/pull-in-data-from-a-webhook-8ed82c8d-3740-4206-8dd5-51e580a5cbe2"
+CLAY_PEOPLE_WEBHOOK_URL = "https://api.clay.com/v3/sources/webhook/pull-in-data-from-a-webhook-c457c170-b2bf-4e66-83f5-83eda8f27092"
+CLAY_COMPANIES_WEBHOOK_URL = "https://api.clay.com/v3/sources/webhook/pull-in-data-from-a-webhook-965490f3-a855-4622-837e-be7224a13271"
 
 
 @app.function(
@@ -32,7 +35,7 @@ def send_client_leads_to_clay(request: dict) -> dict:
     if not client_domain:
         return {"success": False, "error": "client_domain is required"}
 
-    webhook_url = request.get("webhook_url", CLAY_WEBHOOK_URL)
+    client_name = request.get("client_name", "")
 
     try:
         # Get leads for this client
@@ -47,7 +50,7 @@ def send_client_leads_to_clay(request: dict) -> dict:
         rows = result.data or []
 
         if not rows:
-            return {"success": True, "client_domain": client_domain, "total_rows": 0, "sent": 0}
+            return {"success": True, "client_domain": client_domain, "total_rows": 0, "people_sent": 0, "companies_sent": 0}
 
         # Batch lookup company_linkedin_url from core.companies for any missing
         domains = list({r["company_domain"] for r in rows if r.get("company_domain")})
@@ -64,15 +67,20 @@ def send_client_leads_to_clay(request: dict) -> dict:
                 if c.get("linkedin_url"):
                     company_linkedin_map[c["domain"]] = c["linkedin_url"]
 
-        sent_count = 0
-        errors = 0
+        # --- Send people (one row per lead) ---
+        people_sent = 0
+        people_errors = 0
+        seen_companies = {}  # domain -> company payload (for dedup)
+
         for row in rows:
             full_name = row.get("full_name") or ""
             name_parts = full_name.strip().split(" ", 1)
             domain = row.get("company_domain")
+            company_linkedin_url = row.get("company_linkedin_url") or company_linkedin_map.get(domain)
 
             payload = {
                 "client_domain": client_domain,
+                "client_name": client_name,
                 "lead_id": row["id"],
                 "first_name": name_parts[0] if name_parts else None,
                 "last_name": name_parts[1] if len(name_parts) > 1 else None,
@@ -80,25 +88,51 @@ def send_client_leads_to_clay(request: dict) -> dict:
                 "person_linkedin_url": row.get("person_linkedin_url"),
                 "company_domain": domain,
                 "company_name": row.get("company_name"),
-                "company_linkedin_url": row.get("company_linkedin_url") or company_linkedin_map.get(domain),
+                "company_linkedin_url": company_linkedin_url,
             }
             try:
-                resp = requests.post(webhook_url, json=payload, timeout=10)
+                resp = requests.post(CLAY_PEOPLE_WEBHOOK_URL, json=payload, timeout=10)
                 if resp.status_code < 400:
-                    sent_count += 1
+                    people_sent += 1
                 else:
-                    errors += 1
+                    people_errors += 1
             except Exception:
-                errors += 1
+                people_errors += 1
 
+            # Collect unique companies for the companies webhook
+            if domain and domain not in seen_companies:
+                seen_companies[domain] = {
+                    "client_domain": client_domain,
+                    "client_name": client_name,
+                    "company_name": row.get("company_name"),
+                    "domain": domain,
+                    "company_linkedin_url": company_linkedin_url,
+                }
+
+            time.sleep(0.1)
+
+        # --- Send companies (deduplicated by domain) ---
+        companies_sent = 0
+        companies_errors = 0
+        for company_payload in seen_companies.values():
+            try:
+                resp = requests.post(CLAY_COMPANIES_WEBHOOK_URL, json=company_payload, timeout=10)
+                if resp.status_code < 400:
+                    companies_sent += 1
+                else:
+                    companies_errors += 1
+            except Exception:
+                companies_errors += 1
             time.sleep(0.1)
 
         return {
             "success": True,
             "client_domain": client_domain,
             "total_rows": len(rows),
-            "sent": sent_count,
-            "errors": errors,
+            "people_sent": people_sent,
+            "people_errors": people_errors,
+            "companies_sent": companies_sent,
+            "companies_errors": companies_errors,
         }
 
     except Exception as e:

@@ -6042,7 +6042,7 @@ async def send_client_leads_to_clay(request: dict):
     """
     Send leads for a client to Clay webhook for enrichment.
 
-    Body: { "client_domain": "securitypalhq.com", "webhook_url": "..." (optional override) }
+    Body: { "client_domain": "securitypalhq.com", "client_name": "SecurityPal AI" (optional) }
 
     Modal function: send_client_leads_to_clay
     Modal URL: https://bencrane--hq-master-data-ingest-send-client-leads-to-clay.modal.run
