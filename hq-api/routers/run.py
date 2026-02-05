@@ -1191,6 +1191,29 @@ class CompanyAddressResponse(BaseModel):
     error: Optional[str] = None
 
 
+class ResolveCustomerDomainRequest(BaseModel):
+    id: str
+    customer_name: str
+    origin_company_name: str
+    origin_company_domain: str
+
+
+class ResolveCustomerDomainResponse(BaseModel):
+    success: bool
+    id: Optional[str] = None
+    customer_name: Optional[str] = None
+    origin_company_name: Optional[str] = None
+    origin_company_domain: Optional[str] = None
+    customer_domain: Optional[str] = None
+    confidence: Optional[str] = None
+    reasoning: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+    error: Optional[str] = None
+
+
 class CompanyBusinessModelLookupRequest(BaseModel):
     domain: str
 
@@ -5914,6 +5937,42 @@ async def case_study_urls_to_clay(request: dict):
     async with httpx.AsyncClient(timeout=660.0) as client:
         resp = await client.post(modal_url, json=request)
         return resp.json()
+
+
+@router.post(
+    "/companies/gemini/resolve-customer-domain/ingest",
+    response_model=ResolveCustomerDomainResponse,
+    summary="Resolve customer company domain using Gemini",
+    description="Wrapper for Modal function: resolve_customer_domain"
+)
+async def resolve_customer_domain(request: ResolveCustomerDomainRequest) -> ResolveCustomerDomainResponse:
+    """
+    Use Gemini 3 Flash to resolve a customer company's domain from its name
+    and the context of which company it is a customer of.
+
+    Modal function: resolve_customer_domain
+    Modal URL: https://bencrane--hq-master-data-ingest-resolve-customer-domain.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-resolve-customer-domain.modal.run"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return ResolveCustomerDomainResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
 
 
 @router.post(

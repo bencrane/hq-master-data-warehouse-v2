@@ -75,6 +75,7 @@ from ingest.company_customers_claygent import ingest_company_customers_claygent
 from ingest.company_customers_structured import ingest_company_customers_structured
 from ingest.send_case_study_urls import send_case_study_urls_to_clay
 from ingest.send_unresolved_customers_to_clay import send_unresolved_customers_to_clay
+from ingest.resolve_customer_domain import resolve_customer_domain
 from ingest.company_customers_v2 import ingest_company_customers_v2
 from ingest.company_customers_status import get_company_customers_status
 from ingest.company_public import ingest_public_company
@@ -286,4 +287,5 @@ __all__ = [
     "send_case_study_urls_to_clay",
     "lookup_case_study_details",
     "send_unresolved_customers_to_clay",
+    "resolve_customer_domain",
 ]
