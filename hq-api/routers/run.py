@@ -1191,6 +1191,20 @@ class CompanyAddressResponse(BaseModel):
     error: Optional[str] = None
 
 
+class CompanyDescriptionLookupRequest(BaseModel):
+    domain: str
+
+
+class CompanyDescriptionLookupResponse(BaseModel):
+    success: bool
+    found: Optional[bool] = None
+    domain: Optional[str] = None
+    description: Optional[str] = None
+    tagline: Optional[str] = None
+    source: Optional[str] = None
+    error: Optional[str] = None
+
+
 class CompanyCustomersLookupRequest(BaseModel):
     domain: str
 
@@ -3614,6 +3628,41 @@ async def lookup_company_customers(request: CompanyCustomersLookupRequest) -> Co
             )
             response.raise_for_status()
             return CompanyCustomersLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/company-description/lookup",
+    response_model=CompanyDescriptionLookupResponse,
+    summary="Lookup company description by domain",
+    description="Wrapper for Modal function: lookup_company_description"
+)
+async def lookup_company_description(request: CompanyDescriptionLookupRequest) -> CompanyDescriptionLookupResponse:
+    """
+    Lookup company description and tagline from core.company_descriptions.
+
+    Modal function: lookup_company_description
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-company-description.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-company-description.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return CompanyDescriptionLookupResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
