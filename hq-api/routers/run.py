@@ -5836,17 +5836,26 @@ async def case_study_urls_to_clay(request: dict):
     """
     try:
         webhook_url = request.get("webhook_url")
+        batch_id = request.get("batch_id")
 
         if not webhook_url:
             return CaseStudyUrlsToClayResponse(success=False, errors=["webhook_url is required"])
 
         pool = get_pool()
-        rows = await pool.fetch("""
-            SELECT id, origin_company_name, origin_company_domain, customer_company_name, case_study_url
-            FROM raw.staging_case_study_urls
-            WHERE processed = false
-            ORDER BY created_at ASC
-        """)
+        if batch_id:
+            rows = await pool.fetch("""
+                SELECT id, origin_company_name, origin_company_domain, customer_company_name, case_study_url
+                FROM raw.staging_case_study_urls
+                WHERE processed = false AND batch_id = $1
+                ORDER BY created_at ASC
+            """, batch_id)
+        else:
+            rows = await pool.fetch("""
+                SELECT id, origin_company_name, origin_company_domain, customer_company_name, case_study_url
+                FROM raw.staging_case_study_urls
+                WHERE processed = false
+                ORDER BY created_at ASC
+            """)
 
         if not rows:
             return CaseStudyUrlsToClayResponse(
