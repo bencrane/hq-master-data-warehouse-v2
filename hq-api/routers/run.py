@@ -5927,7 +5927,7 @@ async def unresolved_customers_to_clay(request: dict):
 
     Body: { "webhook_url": "...", "limit": 100 (optional) }
     """
-    modal_url = f"{MODAL_BASE_URL}-send-unresolved-customers-to-clay.modal.run"
+    modal_url = f"{MODAL_BASE_URL}-send-unresolved-customer-74dc0a.modal.run"
     async with httpx.AsyncClient(timeout=660.0) as client:
         resp = await client.post(modal_url, json=request)
         return resp.json()
