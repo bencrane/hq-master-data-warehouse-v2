@@ -189,7 +189,7 @@ COVERAGE_TABLES = {
 }
 
 
-@router.get(
+@router.post(
     "/companies/coverage",
     summary="Get data coverage for focus companies across all core tables",
     description="Returns boolean flags for each core company table indicating whether data exists for each focus company.",
