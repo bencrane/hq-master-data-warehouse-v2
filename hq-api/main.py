@@ -21,6 +21,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+    redirect_slashes=False,  # Prevent 307 redirects that break POST requests from Clay
 )
 
 # CORS - allowed origins for revenueactivation.com and radarrevenue.com
