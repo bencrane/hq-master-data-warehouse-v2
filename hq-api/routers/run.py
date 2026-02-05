@@ -1203,15 +1203,6 @@ class SimilarCompaniesLookupResponse(BaseModel):
     error: Optional[str] = None
 
 
-class CompanyEnrichSimilarPreviewResultsRequest(BaseModel):
-    input_domain: str
-    page: Optional[int] = None
-    items: List[dict] = []
-    metadata: Optional[dict] = None
-    totalItems: Optional[int] = None
-    totalPages: Optional[int] = None
-
-
 class CompanyEnrichSimilarPreviewResultsResponse(BaseModel):
     success: bool
     input_domain: Optional[str] = None
@@ -3780,12 +3771,12 @@ async def lookup_similar_companies(request: SimilarCompaniesLookupRequest) -> Si
     summary="Ingest CompanyEnrich similar companies preview results from Clay",
     description="Wrapper for Modal function: ingest_companyenrich_similar_preview_results"
 )
-async def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSimilarPreviewResultsRequest) -> CompanyEnrichSimilarPreviewResultsResponse:
+async def ingest_companyenrich_similar_preview_results(data: dict) -> CompanyEnrichSimilarPreviewResultsResponse:
     """
     Receive CompanyEnrich similar/preview results from Clay.
 
     Modal function: ingest_companyenrich_similar_preview_results
-    Modal URL: https://bencrane--hq-master-data-ingest-ingest-companyenrich-similar-pr-2b89a3.modal.run
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-companyenrich-sim-cbc297.modal.run
     """
     modal_url = f"{MODAL_BASE_URL}-ingest-companyenrich-sim-cbc297.modal.run"
 
@@ -3793,7 +3784,7 @@ async def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSim
         try:
             response = await client.post(
                 modal_url,
-                json=request.model_dump(exclude_none=True)
+                json=data
             )
             response.raise_for_status()
             return CompanyEnrichSimilarPreviewResultsResponse(**response.json())

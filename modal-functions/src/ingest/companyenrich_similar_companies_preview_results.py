@@ -7,18 +7,7 @@ stores raw payload, extracts to extracted table, upserts to core.
 
 import os
 import modal
-from pydantic import BaseModel
-from typing import Optional, List
 from config import app, image
-
-
-class CompanyEnrichSimilarPreviewResultsRequest(BaseModel):
-    input_domain: str
-    page: Optional[int] = None
-    items: List[dict] = []
-    metadata: Optional[dict] = None
-    totalItems: Optional[int] = None
-    totalPages: Optional[int] = None
 
 
 @app.function(
@@ -27,15 +16,19 @@ class CompanyEnrichSimilarPreviewResultsRequest(BaseModel):
     timeout=120,
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSimilarPreviewResultsRequest) -> dict:
+def ingest_companyenrich_similar_preview_results(data: dict) -> dict:
     from supabase import create_client
 
     supabase_url = os.environ["SUPABASE_URL"]
     supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
     supabase = create_client(supabase_url, supabase_key)
 
-    input_domain = request.input_domain.lower().strip()
-    scores = (request.metadata or {}).get("scores", {})
+    input_domain = data.get("input_domain", "").lower().strip()
+    if not input_domain:
+        return {"success": False, "error": "input_domain is required"}
+
+    items = data.get("items", [])
+    scores = (data.get("metadata") or {}).get("scores", {})
 
     try:
         # Store raw payload
@@ -45,13 +38,7 @@ def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSimilarPr
             .insert({
                 "input_domain": input_domain,
                 "similarity_weight": 0.0,
-                "raw_response": {
-                    "page": request.page,
-                    "items": request.items,
-                    "metadata": request.metadata,
-                    "totalItems": request.totalItems,
-                    "totalPages": request.totalPages,
-                },
+                "raw_response": data,
                 "status_code": 200,
             })
             .execute()
@@ -61,7 +48,7 @@ def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSimilarPr
         extracted_count = 0
         core_count = 0
 
-        for item in request.items:
+        for item in items:
             company_id = item.get("id")
             company_domain = item.get("domain")
             score = scores.get(str(company_id)) if company_id else None
@@ -105,7 +92,7 @@ def ingest_companyenrich_similar_preview_results(request: CompanyEnrichSimilarPr
             "success": True,
             "input_domain": input_domain,
             "raw_id": raw_id,
-            "items_received": len(request.items),
+            "items_received": len(items),
             "extracted_count": extracted_count,
             "core_count": core_count,
         }
