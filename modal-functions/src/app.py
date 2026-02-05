@@ -129,6 +129,7 @@ from ingest.money_back_guarantee import infer_money_back_guarantee
 from ingest.comparison_page_exists import infer_comparison_page_exists
 from ingest.minimum_seats import infer_minimum_seats
 from ingest.webinars import infer_webinars
+from ingest.discover_pricing_page import discover_pricing_page_url
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -286,6 +287,7 @@ __all__ = [
     "infer_comparison_page_exists",
     "infer_minimum_seats",
     "infer_webinars",
+    "discover_pricing_page_url",
     "read_db_check_existence",
     "lookup_company_description",
     "lookup_company_business_model",

@@ -1503,3 +1503,34 @@ async def get_company_by_domain(domain: str):
     company_data["lead_count"] = lead_count_result.count or 0
 
     return Company(**company_data)
+
+
+MODAL_DISCOVER_PRICING_PAGE_URL = os.getenv(
+    "MODAL_DISCOVER_PRICING_PAGE_URL",
+    "https://bencrane--hq-master-data-ingest-discover-pricing-page-url.modal.run"
+)
+
+
+@router.post("/discover-pricing-page")
+async def discover_pricing_page(payload: dict):
+    """
+    Discover the pricing page URL for a company using Gemini.
+
+    Takes a domain, fetches the homepage, and uses AI to find the pricing page URL.
+
+    Payload: { "domain": "example.com", "company_name": "Example Inc" (optional) }
+
+    Returns: { "success": true, "pricing_page_url": "...", "confidence": "high|medium|low" }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    if not domain:
+        return {"error": "domain is required", "success": False}
+
+    company_name = payload.get("company_name", "")
+
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        response = await client.post(
+            MODAL_DISCOVER_PRICING_PAGE_URL,
+            json={"domain": domain, "company_name": company_name}
+        )
+        return response.json()
