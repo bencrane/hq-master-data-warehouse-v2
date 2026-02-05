@@ -132,6 +132,7 @@ from ingest.webinars import infer_webinars
 from ingest.discover_pricing_page import discover_pricing_page_url
 from ingest.discover_g2_page import discover_g2_page_gemini
 from ingest.discover_competitors import discover_competitors_openai
+from ingest.ingest_competitors import ingest_competitors
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -292,6 +293,7 @@ __all__ = [
     "discover_pricing_page_url",
     "discover_g2_page_gemini",
     "discover_competitors_openai",
+    "ingest_competitors",
     "read_db_check_existence",
     "lookup_company_description",
     "lookup_company_business_model",

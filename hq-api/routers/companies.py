@@ -1772,3 +1772,24 @@ async def discover_competitors_openai(payload: dict):
             json={"company_name": company_name, "domain": domain}
         )
         return response.json()
+
+
+MODAL_INGEST_COMPETITORS_URL = os.getenv(
+    "MODAL_INGEST_COMPETITORS_URL",
+    "https://bencrane--hq-master-data-ingest-ingest-competitors.modal.run"
+)
+
+
+@router.post("/ingest-competitors")
+async def ingest_competitors(payload: dict):
+    """
+    Ingest competitors data into raw/extracted/core tables.
+
+    Payload: { "domain": "canva.com", "company_name": "Canva", "competitors": [...] }
+    """
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            MODAL_INGEST_COMPETITORS_URL,
+            json=payload
+        )
+        return response.json()
