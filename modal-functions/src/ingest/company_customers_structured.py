@@ -14,8 +14,19 @@ Expects flat payload:
 """
 
 import os
+import re
 import modal
 from config import app, image
+
+
+def normalize_domain(raw: str) -> str:
+    """Strip protocol, path, www. prefix — return bare domain."""
+    d = raw.lower().strip()
+    d = re.sub(r'^https?://', '', d)
+    d = d.split('/')[0]
+    if d.startswith('www.'):
+        d = d[4:]
+    return d
 
 
 @app.function(
@@ -31,7 +42,7 @@ def ingest_company_customers_structured(request: dict) -> dict:
     supabase = create_client(supabase_url, supabase_key)
 
     try:
-        domain = request.get("origin_company_domain", "").lower().strip()
+        domain = normalize_domain(request.get("origin_company_domain", ""))
         company_name = request.get("origin_company_name")
 
         # Flat fields
