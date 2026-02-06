@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Json
 from typing import Optional, List, Any, Union, Dict
-from datetime import date
+from datetime import date, datetime
 
 
 class Lead(BaseModel):
@@ -96,6 +96,7 @@ class WorkHistoryEntry(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_current: Optional[bool] = None
+    created_at: Optional[datetime] = None
 
 
 class PersonWorkHistoryResponse(BaseModel):

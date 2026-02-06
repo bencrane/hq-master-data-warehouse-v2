@@ -104,7 +104,7 @@ async def get_person_work_history(body: LinkedInUrlRequest):
         SELECT
             company_name, company_domain, company_linkedin_url,
             title, matched_job_function, matched_seniority,
-            start_date, end_date, is_current
+            start_date, end_date, is_current, created_at
         FROM core.person_work_history
         WHERE linkedin_url = $1
         ORDER BY is_current DESC, start_date DESC NULLS LAST
@@ -120,7 +120,8 @@ async def get_person_work_history(body: LinkedInUrlRequest):
             matched_seniority=row["matched_seniority"],
             start_date=row["start_date"],
             end_date=row["end_date"],
-            is_current=row["is_current"]
+            is_current=row["is_current"],
+            created_at=row["created_at"]
         )
         for row in rows
     ]
