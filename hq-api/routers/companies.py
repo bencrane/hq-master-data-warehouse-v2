@@ -1956,3 +1956,24 @@ async def search_parallel_ai(payload: dict):
             json=payload
         )
         return response.json()
+
+
+MODAL_INGEST_STAFFING_PARALLEL_SEARCH_URL = os.getenv(
+    "MODAL_INGEST_STAFFING_PARALLEL_SEARCH_URL",
+    "https://bencrane--hq-master-data-ingest-ingest-staffing-parallel-search.modal.run"
+)
+
+
+@router.post("/ingest-staffing-parallel-search")
+async def ingest_staffing_parallel_search(payload: dict):
+    """
+    Ingest Parallel AI search results for staffing research.
+
+    Payload: Full response from search-parallel-ai endpoint
+    """
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            MODAL_INGEST_STAFFING_PARALLEL_SEARCH_URL,
+            json=payload
+        )
+        return response.json()
