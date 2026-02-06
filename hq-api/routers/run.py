@@ -15,18 +15,11 @@ Example:
 import httpx
 import csv
 import io
-import os
-import json
 import asyncio
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, Any, List
-from openai import AsyncOpenAI
 from db import get_pool
-
-# OpenAI client
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 router = APIRouter(prefix="/run", tags=["run"])
 
@@ -6234,6 +6227,7 @@ async def ingest_companyenrich(request: CompanyEnrichRequest) -> CompanyEnrichRe
 # OpenAI Native - B2B/B2C Classification (DB Direct)
 # =============================================================================
 
+MODAL_CLASSIFY_B2B_B2C_URL = f"{MODAL_BASE_URL}-classify-b2b-b2c-openai-db-direct.modal.run"
 WORKFLOW_SOURCE_B2B_B2C = "openai-native/b2b-b2c/classify/db-direct"
 DEFAULT_MODEL_B2B_B2C = "gpt-4o"
 
@@ -6256,80 +6250,29 @@ class B2bB2cClassifyResponse(BaseModel):
     errors: Optional[List[dict]] = None
 
 
-async def call_openai_for_b2b_b2c(
-    domain: str,
-    company_name: str,
-    description: str,
-    model: str = DEFAULT_MODEL_B2B_B2C
-) -> dict:
-    """
-    Call OpenAI to classify a company as B2B and/or B2C.
-
-    Returns dict with is_b2b, b2b_reason, is_b2c, b2c_reason, tokens_used.
-    """
-    if not openai_client:
-        raise ValueError("OpenAI API key not configured")
-
-    prompt = f"""Given this company information:
-- Company Name: {company_name}
-- Domain: {domain}
-- Description: {description}
-
-Determine if the company primarily sells to businesses/organizations (B2B) and separately if it sells to individual consumers (B2C). Answer each independently with YES or NO, each followed by a one-sentence rationale grounded only in the description.
-
-Respond in this exact JSON format:
-{{
-    "is_b2b": true/false,
-    "b2b_reason": "One sentence rationale",
-    "is_b2c": true/false,
-    "b2c_reason": "One sentence rationale"
-}}"""
-
-    response = await openai_client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": "You are a business analyst. Respond only with valid JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1,
-        response_format={"type": "json_object"}
-    )
-
-    content = response.choices[0].message.content
-    tokens_used = response.usage.total_tokens if response.usage else None
-
-    result = json.loads(content)
-    result["tokens_used"] = tokens_used
-    result["prompt"] = prompt
-    result["raw_response"] = content
-
-    return result
-
-
 @router.post(
     "/companies/openai-native/b2b-b2c/classify/db-direct",
     response_model=B2bB2cClassifyResponse,
     summary="Classify companies as B2B/B2C using OpenAI and write directly to DB",
-    description="Looks up domain in extracted table first. If not found, calls OpenAI and writes to raw, extracted, and core tables."
+    description="""
+    Looks up domain in extracted table first. If not found, calls Modal function
+    which uses OpenAI and writes to raw, extracted, and core tables.
+
+    Modal URL: https://bencrane--hq-master-data-ingest-classify-b2b-b2c-openai-db-direct.modal.run
+    """
 )
 async def classify_b2b_b2c_openai_db_direct(request: B2bB2cClassifyRequest) -> B2bB2cClassifyResponse:
     """
-    Classify companies as B2B/B2C using OpenAI, writing directly to database.
+    Classify companies as B2B/B2C using OpenAI via Modal, writing directly to database.
 
     1. Lookup domain in extracted.company_classification_db_direct
     2. If found -> skip
-    3. If not found -> call OpenAI with company name, domain, description
-    4. Write to:
+    3. If not found -> call Modal function with company name, domain, description
+    4. Modal writes to:
        - raw.company_classification_db_direct (request/response)
        - extracted.company_classification_db_direct (parsed results)
        - core.company_business_model (canonical booleans)
     """
-    if not openai_client:
-        return B2bB2cClassifyResponse(
-            success=False,
-            errors=[{"error": "OpenAI API key not configured"}]
-        )
-
     pool = get_pool()
 
     # Get domains to process
@@ -6369,8 +6312,7 @@ async def classify_b2b_b2c_openai_db_direct(request: B2bB2cClassifyRequest) -> B
     if not domains_to_process:
         return B2bB2cClassifyResponse(
             success=True,
-            records_evaluated=0,
-            message="No domains found to process"
+            records_evaluated=0
         )
 
     # Check which domains are already classified
@@ -6389,77 +6331,48 @@ async def classify_b2b_b2c_openai_db_direct(request: B2bB2cClassifyRequest) -> B
     records_missing_description = 0
     errors = []
 
-    for record in domains_to_process:
-        domain = record["domain"]
-        company_name = record["company_name"] or domain
-        description = record["description"]
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for record in domains_to_process:
+            domain = record["domain"]
+            company_name = record["company_name"] or domain
+            description = record["description"]
 
-        try:
-            # Skip if already classified
-            if domain in already_classified:
-                records_already_classified += 1
-                continue
+            try:
+                # Skip if already classified
+                if domain in already_classified:
+                    records_already_classified += 1
+                    continue
 
-            # Skip if no description
-            if not description:
-                records_missing_description += 1
-                continue
+                # Skip if no description
+                if not description:
+                    records_missing_description += 1
+                    continue
 
-            # Call OpenAI
-            result = await call_openai_for_b2b_b2c(
-                domain=domain,
-                company_name=company_name,
-                description=description,
-                model=request.model
-            )
+                # Call Modal function
+                response = await client.post(
+                    MODAL_CLASSIFY_B2B_B2C_URL,
+                    json={
+                        "domain": domain,
+                        "company_name": company_name,
+                        "description": description,
+                        "model": request.model,
+                        "workflow_source": WORKFLOW_SOURCE_B2B_B2C
+                    }
+                )
 
-            is_b2b = result.get("is_b2b")
-            b2b_reason = result.get("b2b_reason")
-            is_b2c = result.get("is_b2c")
-            b2c_reason = result.get("b2c_reason")
-            tokens_used = result.get("tokens_used")
+                if response.status_code != 200:
+                    errors.append({"domain": domain, "error": f"Modal returned {response.status_code}"})
+                    continue
 
-            # 1. Write to raw table
-            raw_id = await pool.fetchval("""
-                INSERT INTO raw.company_classification_db_direct
-                    (domain, company_name, description, model, prompt, response, tokens_used)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                RETURNING id
-            """, domain, company_name, description, request.model,
-                result.get("prompt"), json.dumps({"raw": result.get("raw_response")}), tokens_used)
+                result = response.json()
+                if result.get("success"):
+                    fields_updated += 1
+                    records_classified_by_ai += 1
+                else:
+                    errors.append({"domain": domain, "error": result.get("error", "Unknown error")})
 
-            # 2. Write to extracted table
-            await pool.execute("""
-                INSERT INTO extracted.company_classification_db_direct
-                    (raw_id, domain, is_b2b, b2b_reason, is_b2c, b2c_reason, model, workflow_source)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                ON CONFLICT (domain) DO UPDATE SET
-                    is_b2b = EXCLUDED.is_b2b,
-                    b2b_reason = EXCLUDED.b2b_reason,
-                    is_b2c = EXCLUDED.is_b2c,
-                    b2c_reason = EXCLUDED.b2c_reason,
-                    model = EXCLUDED.model,
-                    raw_id = EXCLUDED.raw_id
-            """, raw_id, domain, is_b2b, b2b_reason, is_b2c, b2c_reason,
-                request.model, WORKFLOW_SOURCE_B2B_B2C)
-
-            # 3. Write to core table (coalesce)
-            await pool.execute("""
-                INSERT INTO core.company_business_model
-                    (domain, is_b2b, is_b2c, workflow_source, updated_at)
-                VALUES ($1, $2, $3, $4, NOW())
-                ON CONFLICT (domain) DO UPDATE SET
-                    is_b2b = EXCLUDED.is_b2b,
-                    is_b2c = EXCLUDED.is_b2c,
-                    workflow_source = EXCLUDED.workflow_source,
-                    updated_at = NOW()
-            """, domain, is_b2b, is_b2c, WORKFLOW_SOURCE_B2B_B2C)
-
-            fields_updated += 1
-            records_classified_by_ai += 1
-
-        except Exception as e:
-            errors.append({"domain": domain, "error": str(e)})
+            except Exception as e:
+                errors.append({"domain": domain, "error": str(e)})
 
     return B2bB2cClassifyResponse(
         success=True,
