@@ -1019,3 +1019,112 @@ async def resolve_company_location_from_domain(payload: dict):
         "records_no_match": records_no_match,
         "errors": errors if errors else None
     }
+
+
+@router.post("/resolve-person-location-from-linkedin")
+async def resolve_person_location_from_linkedin(payload: dict):
+    """
+    Resolve person_city, person_state, person_country from person_linkedin_url
+    by matching against extracted.person_discovery_location_parsed.
+
+    Payload: {
+        "record_ids": ["uuid1", "uuid2", ...]  // IDs from hq.clients_normalized_crm_data
+    }
+
+    Or to resolve all records for a client:
+    {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Logic:
+    1. Get records that have person_linkedin_url
+    2. Match against extracted.person_discovery_location_parsed.linkedin_url
+    3. If match → populate person_city, person_state, person_country
+
+    Updates hq.clients_normalized_crm_data person location fields
+    """
+    pool = get_pool()
+
+    record_ids = payload.get("record_ids", [])
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not record_ids and not client_domain:
+        return {"success": False, "error": "Either record_ids or client_domain is required"}
+
+    # Fetch normalized records that have person_linkedin_url
+    if record_ids:
+        rows = await pool.fetch("""
+            SELECT id, person_linkedin_url
+            FROM hq.clients_normalized_crm_data
+            WHERE id = ANY($1::uuid[])
+              AND person_linkedin_url IS NOT NULL
+        """, record_ids)
+    else:
+        rows = await pool.fetch("""
+            SELECT id, person_linkedin_url
+            FROM hq.clients_normalized_crm_data
+            WHERE client_domain = $1
+              AND person_linkedin_url IS NOT NULL
+        """, client_domain)
+
+    if not rows:
+        return {"success": True, "records_processed": 0, "message": "No records found with person_linkedin_url"}
+
+    # Get unique LinkedIn URLs to look up
+    linkedin_urls = list(set(row["person_linkedin_url"] for row in rows if row["person_linkedin_url"]))
+
+    # Batch lookup locations from extracted.person_discovery_location_parsed
+    linkedin_to_location = {}
+    if linkedin_urls:
+        existing = await pool.fetch("""
+            SELECT linkedin_url, city, state, country
+            FROM extracted.person_discovery_location_parsed
+            WHERE linkedin_url = ANY($1)
+              AND (city IS NOT NULL OR state IS NOT NULL OR country IS NOT NULL)
+        """, linkedin_urls)
+        for row in existing:
+            linkedin_to_location[row["linkedin_url"]] = {
+                "city": row["city"],
+                "state": row["state"],
+                "country": row["country"]
+            }
+
+    # Process records
+    records_processed = 0
+    records_matched = 0
+    records_no_match = 0
+    errors = []
+
+    for record in rows:
+        try:
+            record_id = record["id"]
+            linkedin_url = record["person_linkedin_url"]
+
+            # Check if we have a match
+            if linkedin_url in linkedin_to_location:
+                location = linkedin_to_location[linkedin_url]
+                records_matched += 1
+
+                # Update the location fields
+                await pool.execute("""
+                    UPDATE hq.clients_normalized_crm_data
+                    SET person_city = COALESCE($1, person_city),
+                        person_state = COALESCE($2, person_state),
+                        person_country = COALESCE($3, person_country),
+                        updated_at = NOW()
+                    WHERE id = $4
+                """, location["city"], location["state"], location["country"], record_id)
+                records_processed += 1
+            else:
+                records_no_match += 1
+
+        except Exception as e:
+            errors.append({"record_id": str(record["id"]), "linkedin_url": record["person_linkedin_url"], "error": str(e)})
+
+    return {
+        "success": True,
+        "records_processed": records_processed,
+        "records_matched": records_matched,
+        "records_no_match": records_no_match,
+        "errors": errors if errors else None
+    }
