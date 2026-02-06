@@ -65,7 +65,7 @@ def ingest_staffing_parallel_search(request: dict) -> dict:
         excerpts_summary = "\n\n---\n\n".join(excerpts_parts) if excerpts_parts else None
 
         # 1. Store raw payload
-        raw_result = supabase.table("staffing_parallel_search_payloads").insert({
+        raw_result = supabase.schema("raw").table("staffing_parallel_search_payloads").insert({
             "domain": domain,
             "company_name": company_name,
             "objective": objective,
@@ -75,7 +75,7 @@ def ingest_staffing_parallel_search(request: dict) -> dict:
         raw_id = raw_result.data[0]["id"] if raw_result.data else None
 
         # 2. Store extracted data
-        supabase.table("staffing_parallel_search").insert({
+        supabase.schema("extracted").table("staffing_parallel_search").insert({
             "domain": domain,
             "company_name": company_name,
             "search_id": search_id,
