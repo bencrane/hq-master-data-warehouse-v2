@@ -6631,3 +6631,126 @@ async def ingest_meta_ads_db_direct(request: MetaAdsDbDirectRequest) -> MetaAdsD
             domain=domain,
             error=str(e)
         )
+
+
+# =============================================================================
+# Adyntel Native - Google Ads (DB Direct)
+# =============================================================================
+
+MODAL_GOOGLE_ADS_DB_DIRECT_URL = f"{MODAL_BASE_URL}-ingest-google-ads-db-direct.modal.run"
+WORKFLOW_SOURCE_GOOGLE_ADS = "adyntel-native/google-ads/ingest/db-direct"
+
+
+class GoogleAdsDbDirectRequest(BaseModel):
+    """Request for Google ads ingestion (db-direct)."""
+    domain: str
+    google_ads_payload: dict
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class GoogleAdsDbDirectResponse(BaseModel):
+    """Response for Google ads ingestion (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    raw_payload_id: Optional[str] = None
+    ads_extracted: Optional[int] = None
+    total_ads: Optional[int] = None
+    is_running_ads: Optional[bool] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/adyntel-native/google-ads/ingest/db-direct",
+    response_model=GoogleAdsDbDirectResponse,
+    summary="Ingest Google ads from Adyntel and write directly to DB",
+    description="""
+    Receives Google ads payload from UI/Prefect (which called Adyntel),
+    writes to raw, extracted, and core tables.
+
+    TTL logic:
+    - ttl_days=None: skip if domain already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if last_checked_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-google-ads-db-direct.modal.run
+    """
+)
+async def ingest_google_ads_db_direct(request: GoogleAdsDbDirectRequest) -> GoogleAdsDbDirectResponse:
+    """
+    Ingest Google ads data from Adyntel, writing directly to database.
+
+    1. Check TTL to decide if should process
+    2. If should process, call Modal function
+    3. Modal writes to raw, extracted, core tables
+    """
+    pool = get_pool()
+    domain = request.domain
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists (any)
+        existing = await pool.fetchrow("""
+            SELECT domain, last_checked_at
+            FROM core.company_google_ads
+            WHERE domain = $1
+        """, domain)
+        if existing:
+            return GoogleAdsDbDirectResponse(
+                success=True,
+                domain=domain,
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, last_checked_at
+            FROM core.company_google_ads
+            WHERE domain = $1
+        """, domain)
+        if existing and existing["last_checked_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["last_checked_at"] > cutoff:
+                return GoogleAdsDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    skipped_ttl=True
+                )
+    # ttl_days=0 means always refresh, so no skip check
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                MODAL_GOOGLE_ADS_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "google_ads_payload": request.google_ads_payload,
+                    "workflow_source": WORKFLOW_SOURCE_GOOGLE_ADS
+                }
+            )
+
+            if response.status_code != 200:
+                return GoogleAdsDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return GoogleAdsDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                raw_payload_id=result.get("raw_payload_id"),
+                ads_extracted=result.get("ads_extracted"),
+                total_ads=result.get("total_ads"),
+                is_running_ads=result.get("is_running_ads"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return GoogleAdsDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
