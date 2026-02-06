@@ -808,3 +808,105 @@ async def resolve_linkedin_from_domain(payload: dict):
         "records_no_match": records_no_match,
         "errors": errors if errors else None
     }
+
+
+@router.post("/resolve-person-linkedin-from-email")
+async def resolve_person_linkedin_from_email(payload: dict):
+    """
+    Resolve person_linkedin_url from work_email by matching against reference.email_to_person.
+
+    Payload: {
+        "record_ids": ["uuid1", "uuid2", ...]  // IDs from hq.clients_normalized_crm_data
+    }
+
+    Or to resolve all records for a client:
+    {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Logic:
+    1. Get records that have work_email
+    2. Match against reference.email_to_person.email
+    3. If match → populate person_linkedin_url from reference.email_to_person.person_linkedin_url
+
+    Updates hq.clients_normalized_crm_data.person_linkedin_url
+    """
+    pool = get_pool()
+
+    record_ids = payload.get("record_ids", [])
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not record_ids and not client_domain:
+        return {"success": False, "error": "Either record_ids or client_domain is required"}
+
+    # Fetch normalized records that have work_email
+    if record_ids:
+        rows = await pool.fetch("""
+            SELECT id, work_email, person_linkedin_url
+            FROM hq.clients_normalized_crm_data
+            WHERE id = ANY($1::uuid[])
+              AND work_email IS NOT NULL
+        """, record_ids)
+    else:
+        rows = await pool.fetch("""
+            SELECT id, work_email, person_linkedin_url
+            FROM hq.clients_normalized_crm_data
+            WHERE client_domain = $1
+              AND work_email IS NOT NULL
+        """, client_domain)
+
+    if not rows:
+        return {"success": True, "records_processed": 0, "message": "No records found with work_email"}
+
+    # Get unique emails to look up
+    emails = list(set(row["work_email"] for row in rows if row["work_email"]))
+
+    # Batch lookup LinkedIn URLs from reference.email_to_person
+    email_to_linkedin = {}
+    if emails:
+        existing = await pool.fetch("""
+            SELECT email, person_linkedin_url
+            FROM reference.email_to_person
+            WHERE email = ANY($1)
+              AND person_linkedin_url IS NOT NULL
+        """, emails)
+        for row in existing:
+            email_to_linkedin[row["email"]] = row["person_linkedin_url"]
+
+    # Process records
+    records_processed = 0
+    records_matched = 0
+    records_no_match = 0
+    errors = []
+
+    for record in rows:
+        try:
+            record_id = record["id"]
+            work_email = record["work_email"]
+
+            # Check if we have a match
+            if work_email in email_to_linkedin:
+                linkedin_url = email_to_linkedin[work_email]
+                records_matched += 1
+
+                # Update the person_linkedin_url
+                await pool.execute("""
+                    UPDATE hq.clients_normalized_crm_data
+                    SET person_linkedin_url = $1,
+                        updated_at = NOW()
+                    WHERE id = $2
+                """, linkedin_url, record_id)
+                records_processed += 1
+            else:
+                records_no_match += 1
+
+        except Exception as e:
+            errors.append({"record_id": str(record["id"]), "work_email": record["work_email"], "error": str(e)})
+
+    return {
+        "success": True,
+        "records_processed": records_processed,
+        "records_matched": records_matched,
+        "records_no_match": records_no_match,
+        "errors": errors if errors else None
+    }
