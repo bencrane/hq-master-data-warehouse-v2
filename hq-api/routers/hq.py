@@ -142,3 +142,111 @@ async def upload_client_csv(payload: dict):
         "rows_inserted": rows_inserted,
         "errors": errors if errors else None
     }
+
+
+@router.post("/clients/raw-leads")
+async def get_raw_leads(payload: dict):
+    """
+    Get raw leads data from hq.clients_raw_data.
+
+    Payload: {
+        "client_domain": "securitypalhq.com",
+        "limit": 100,
+        "offset": 0
+    }
+    """
+    client_domain = payload.get("client_domain", "").strip()
+    limit = payload.get("limit", 100)
+    offset = payload.get("offset", 0)
+
+    if not client_domain:
+        return {"success": False, "error": "client_domain is required"}
+
+    pool = get_pool()
+
+    # Get total count
+    count_row = await pool.fetchrow("""
+        SELECT COUNT(*) as total
+        FROM hq.clients_raw_data
+        WHERE client_domain = $1
+    """, client_domain)
+    total = count_row["total"] if count_row else 0
+
+    # Get data
+    rows = await pool.fetch("""
+        SELECT id, client_domain, first_name, last_name, full_name,
+               person_linkedin_url, person_city, person_state, person_country,
+               work_email, phone_number, company_name, domain,
+               company_linkedin_url, company_city, company_state, company_country,
+               raw_payload, created_at
+        FROM hq.clients_raw_data
+        WHERE client_domain = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+    """, client_domain, limit, offset)
+
+    return {
+        "success": True,
+        "data": [dict(r) for r in rows],
+        "meta": {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "client_domain": client_domain
+        }
+    }
+
+
+@router.post("/clients/normalized-leads")
+async def get_normalized_leads(payload: dict):
+    """
+    Get normalized leads data from hq.clients_normalized_crm_data.
+
+    Payload: {
+        "client_domain": "securitypalhq.com",
+        "limit": 100,
+        "offset": 0
+    }
+    """
+    client_domain = payload.get("client_domain", "").strip()
+    limit = payload.get("limit", 100)
+    offset = payload.get("offset", 0)
+
+    if not client_domain:
+        return {"success": False, "error": "client_domain is required"}
+
+    pool = get_pool()
+
+    # Get total count
+    count_row = await pool.fetchrow("""
+        SELECT COUNT(*) as total
+        FROM hq.clients_normalized_crm_data
+        WHERE client_domain = $1
+    """, client_domain)
+    total = count_row["total"] if count_row else 0
+
+    # Get data
+    rows = await pool.fetch("""
+        SELECT id, raw_data_id, client_domain, first_name, last_name, full_name,
+               person_linkedin_url, person_city, person_state, person_country,
+               work_email, phone_number, company_name, domain,
+               company_linkedin_url, company_city, company_state, company_country,
+               title, status, notes,
+               cleaned_company_name, cleaned_company_name_source,
+               normalized_at, created_at, updated_at
+        FROM hq.clients_normalized_crm_data
+        WHERE client_domain = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+    """, client_domain, limit, offset)
+
+    return {
+        "success": True,
+        "data": [dict(r) for r in rows],
+        "meta": {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "client_domain": client_domain
+        }
+    }
