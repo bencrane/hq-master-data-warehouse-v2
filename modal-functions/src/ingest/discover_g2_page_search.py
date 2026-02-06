@@ -62,6 +62,12 @@ If you cannot find it, return exactly: NOT_FOUND"""
 
         response_text = response.text.strip()
 
+        # Get token counts
+        input_tokens = response.usage_metadata.prompt_token_count
+        output_tokens = response.usage_metadata.candidates_token_count
+        # Gemini 2.0 Flash pricing: $0.10/1M input, $0.40/1M output
+        cost_usd = (input_tokens * 0.10 / 1_000_000) + (output_tokens * 0.40 / 1_000_000)
+
         g2_url = None
         if response_text != "NOT_FOUND":
             g2_match = re.search(r'https?://(?:www\.)?g2\.com/(?:products|sellers|vendors)/[^\s\'"<>]+', response_text)
@@ -72,7 +78,10 @@ If you cannot find it, return exactly: NOT_FOUND"""
             "success": True,
             "domain": domain,
             "company_name": company_name,
-            "g2_url": g2_url
+            "g2_url": g2_url,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cost_usd": cost_usd
         }
 
     except Exception as e:
