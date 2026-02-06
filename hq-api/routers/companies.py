@@ -1880,3 +1880,51 @@ async def discover_g2_page_gemini_search(payload: dict):
             json={"domain": domain, "company_name": company_name}
         )
         return response.json()
+
+
+MODAL_INGEST_G2_PAGE_SCRAPE_ZENROWS_URL = os.getenv(
+    "MODAL_INGEST_G2_PAGE_SCRAPE_ZENROWS_URL",
+    "https://bencrane--hq-master-data-ingest-ingest-g2-page-scrape-zenrows.modal.run"
+)
+
+
+@router.post("/ingest-g2-page-scrape-clay-zenrows")
+async def ingest_g2_page_scrape_clay_zenrows(payload: dict):
+    """
+    Ingest G2 page scrape from Clay-Zenrows.
+
+    Payload: {
+        "domain": "example.com",
+        "g2_url": "https://www.g2.com/products/example/competitors/alternatives",
+        "scrape_data": {
+            "links": [...],
+            "title": "...",
+            "bodyText": "...",
+            "description": "...",
+            "socialLinks": {...}
+        }
+    }
+    """
+    domain = payload.get("domain", "").lower().strip()
+    g2_url = payload.get("g2_url", "").strip()
+    scrape_data = payload.get("scrape_data", {})
+
+    if not domain:
+        return {"error": "domain is required", "success": False}
+
+    if not g2_url:
+        return {"error": "g2_url is required", "success": False}
+
+    if not scrape_data:
+        return {"error": "scrape_data is required", "success": False}
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            MODAL_INGEST_G2_PAGE_SCRAPE_ZENROWS_URL,
+            json={
+                "domain": domain,
+                "g2_url": g2_url,
+                "scrape_data": scrape_data
+            }
+        )
+        return response.json()
