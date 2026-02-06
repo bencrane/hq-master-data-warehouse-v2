@@ -37,6 +37,11 @@ def ingest_staffing_parallel_search(request: dict) -> dict:
     supabase = create_client(supabase_url, supabase_key)
 
     try:
+        # Handle double-nested structure from Clay
+        # Clay may send: { "parallel_response": { "domain": ..., "parallel_response": {...} } }
+        if "parallel_response" in request and "domain" not in request:
+            request = request.get("parallel_response", {})
+
         domain = request.get("domain", "").lower().strip()
         company_name = request.get("company_name", "")
         objective = request.get("objective", "")
