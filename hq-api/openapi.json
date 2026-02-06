@@ -14304,6 +14304,342 @@
         }
       }
     },
+    "/api/workflows/normalize": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Normalize Records",
+        "description": "Normalize a batch of raw records from hq.clients_raw_data.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_raw_data\n}\n\nOr to normalize all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nWrites normalized results to hq.clients_normalized_crm_data.",
+        "operationId": "normalize_records_api_workflows_normalize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-company-name": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Company Name",
+        "description": "Resolve cleaned company names for normalized records.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Look up domain in extracted.cleaned_company_names\n2. If found \u2192 use it, source = \"matched-extracted.cleaned_company_names\"\n3. If not found \u2192 call Parallel AI, source = \"parallel\"\n   Also writes new mapping to extracted.cleaned_company_names\n\nUpdates hq.clients_normalized_crm_data with cleaned_company_name and source.",
+        "operationId": "resolve_company_name_api_workflows_resolve_company_name_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-domain-from-linkedin": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Domain From Linkedin",
+        "description": "Resolve domain from company_linkedin_url by matching against core.companies.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Get records that have company_linkedin_url\n2. Match against core.companies.linkedin_url\n3. If match \u2192 populate domain from core.companies.domain\n\nUpdates hq.clients_normalized_crm_data.domain",
+        "operationId": "resolve_domain_from_linkedin_api_workflows_resolve_domain_from_linkedin_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-domain-from-email": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Domain From Email",
+        "description": "Resolve domain from work_email.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Try to match work_email against reference.email_to_person to get domain\n2. If no match, extract domain from email (part after @)\n3. Does NOT write back to lookup table\n\nUpdates hq.clients_normalized_crm_data.domain",
+        "operationId": "resolve_domain_from_email_api_workflows_resolve_domain_from_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-linkedin-from-domain": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Linkedin From Domain",
+        "description": "Resolve company_linkedin_url from domain by matching against core.companies.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Get records that have domain\n2. Match against core.companies.domain\n3. If match \u2192 populate company_linkedin_url from core.companies.linkedin_url\n\nUpdates hq.clients_normalized_crm_data.company_linkedin_url",
+        "operationId": "resolve_linkedin_from_domain_api_workflows_resolve_linkedin_from_domain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-person-linkedin-from-email": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Person Linkedin From Email",
+        "description": "Resolve person_linkedin_url from work_email by matching against reference.email_to_person.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Get records that have work_email\n2. Match against reference.email_to_person.email\n3. If match \u2192 populate person_linkedin_url from reference.email_to_person.person_linkedin_url\n\nUpdates hq.clients_normalized_crm_data.person_linkedin_url",
+        "operationId": "resolve_person_linkedin_from_email_api_workflows_resolve_person_linkedin_from_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-company-location-from-domain": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Company Location From Domain",
+        "description": "Resolve company_city, company_state, company_country from domain\nby matching against core.company_locations.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Get records that have domain\n2. Match against core.company_locations.domain\n3. If match \u2192 populate company_city, company_state, company_country\n\nUpdates hq.clients_normalized_crm_data location fields",
+        "operationId": "resolve_company_location_from_domain_api_workflows_resolve_company_location_from_domain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-person-location-from-linkedin": {
+      "post": {
+        "tags": [
+          "workflows"
+        ],
+        "summary": "Resolve Person Location From Linkedin",
+        "description": "Resolve person_city, person_state, person_country from person_linkedin_url\nby matching against extracted.person_discovery_location_parsed.\n\nPayload: {\n    \"record_ids\": [\"uuid1\", \"uuid2\", ...]  // IDs from hq.clients_normalized_crm_data\n}\n\nOr to resolve all records for a client:\n{\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nLogic:\n1. Get records that have person_linkedin_url\n2. Match against extracted.person_discovery_location_parsed.linkedin_url\n3. If match \u2192 populate person_city, person_state, person_country\n\nUpdates hq.clients_normalized_crm_data person location fields",
+        "operationId": "resolve_person_location_from_linkedin_api_workflows_resolve_person_location_from_linkedin_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
