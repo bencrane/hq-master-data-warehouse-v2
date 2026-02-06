@@ -338,3 +338,176 @@ async def get_normalized_leads(payload: dict):
             "client_domain": client_domain
         }
     }
+
+
+@router.post("/clients/workflow-sequences")
+async def get_workflow_sequences(payload: dict):
+    """
+    Get workflow sequences for a client.
+
+    Payload: {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Returns workflows in sequence order.
+    """
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not client_domain:
+        return {"success": False, "error": "client_domain is required"}
+
+    pool = get_pool()
+
+    rows = await pool.fetch("""
+        SELECT id, client_domain, workflow_slug, endpoint_url, description,
+               sequence_order, created_at, updated_at
+        FROM hq.client_workflow_sequences
+        WHERE client_domain = $1
+        ORDER BY sequence_order ASC
+    """, client_domain)
+
+    return {
+        "success": True,
+        "data": [dict(r) for r in rows],
+        "meta": {"total": len(rows), "client_domain": client_domain}
+    }
+
+
+@router.post("/clients/workflow-sequences/add")
+async def add_workflow_sequence(payload: dict):
+    """
+    Add a workflow step to a client's sequence.
+
+    Payload: {
+        "client_domain": "securitypalhq.com",
+        "workflow_slug": "resolve-company-name",
+        "endpoint_url": "https://api.revenueinfra.com/api/workflows/resolve-company-name",
+        "description": "Resolve cleaned company names",
+        "sequence_order": 1
+    }
+    """
+    client_domain = payload.get("client_domain", "").strip()
+    workflow_slug = payload.get("workflow_slug", "").strip()
+    endpoint_url = payload.get("endpoint_url", "").strip()
+    description = payload.get("description", "").strip() or None
+    sequence_order = payload.get("sequence_order", 0)
+
+    if not client_domain:
+        return {"success": False, "error": "client_domain is required"}
+    if not workflow_slug:
+        return {"success": False, "error": "workflow_slug is required"}
+    if not endpoint_url:
+        return {"success": False, "error": "endpoint_url is required"}
+
+    pool = get_pool()
+
+    try:
+        row = await pool.fetchrow("""
+            INSERT INTO hq.client_workflow_sequences
+                (client_domain, workflow_slug, endpoint_url, description, sequence_order)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (client_domain, workflow_slug) DO UPDATE SET
+                endpoint_url = EXCLUDED.endpoint_url,
+                description = EXCLUDED.description,
+                sequence_order = EXCLUDED.sequence_order,
+                updated_at = NOW()
+            RETURNING id, client_domain, workflow_slug, endpoint_url, description, sequence_order
+        """, client_domain, workflow_slug, endpoint_url, description, sequence_order)
+
+        return {
+            "success": True,
+            "data": dict(row)
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/clients/workflow-sequences/update")
+async def update_workflow_sequence(payload: dict):
+    """
+    Update a workflow step.
+
+    Payload: {
+        "id": "uuid",
+        "workflow_slug": "new-slug",  // optional
+        "endpoint_url": "new-url",    // optional
+        "description": "new desc",    // optional
+        "sequence_order": 2           // optional
+    }
+    """
+    sequence_id = payload.get("id", "").strip()
+
+    if not sequence_id:
+        return {"success": False, "error": "id is required"}
+
+    pool = get_pool()
+
+    # Build dynamic update
+    updates = []
+    values = [sequence_id]
+    param_idx = 2
+
+    if "workflow_slug" in payload:
+        updates.append(f"workflow_slug = ${param_idx}")
+        values.append(payload["workflow_slug"])
+        param_idx += 1
+    if "endpoint_url" in payload:
+        updates.append(f"endpoint_url = ${param_idx}")
+        values.append(payload["endpoint_url"])
+        param_idx += 1
+    if "description" in payload:
+        updates.append(f"description = ${param_idx}")
+        values.append(payload["description"])
+        param_idx += 1
+    if "sequence_order" in payload:
+        updates.append(f"sequence_order = ${param_idx}")
+        values.append(payload["sequence_order"])
+        param_idx += 1
+
+    if not updates:
+        return {"success": False, "error": "No fields to update"}
+
+    updates.append("updated_at = NOW()")
+
+    query = f"""
+        UPDATE hq.client_workflow_sequences
+        SET {', '.join(updates)}
+        WHERE id = $1
+        RETURNING id, client_domain, workflow_slug, endpoint_url, description, sequence_order
+    """
+
+    try:
+        row = await pool.fetchrow(query, *values)
+        if row:
+            return {"success": True, "data": dict(row)}
+        else:
+            return {"success": False, "error": "Workflow sequence not found"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/clients/workflow-sequences/delete")
+async def delete_workflow_sequence(payload: dict):
+    """
+    Delete a workflow step.
+
+    Payload: {
+        "id": "uuid"
+    }
+    """
+    sequence_id = payload.get("id", "").strip()
+
+    if not sequence_id:
+        return {"success": False, "error": "id is required"}
+
+    pool = get_pool()
+
+    result = await pool.execute("""
+        DELETE FROM hq.client_workflow_sequences
+        WHERE id = $1
+    """, sequence_id)
+
+    if result == "DELETE 1":
+        return {"success": True, "deleted": True}
+    else:
+        return {"success": False, "error": "Workflow sequence not found"}
