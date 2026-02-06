@@ -6383,3 +6383,126 @@ async def classify_b2b_b2c_openai_db_direct(request: B2bB2cClassifyRequest) -> B
         records_missing_description=records_missing_description,
         errors=errors if errors else None
     )
+
+
+# =============================================================================
+# Adyntel Native - LinkedIn Ads (DB Direct)
+# =============================================================================
+
+MODAL_LINKEDIN_ADS_DB_DIRECT_URL = f"{MODAL_BASE_URL}-ingest-linkedin-ads-db-direct.modal.run"
+WORKFLOW_SOURCE_LINKEDIN_ADS = "adyntel-native/linkedin-ads/ingest/db-direct"
+
+
+class LinkedInAdsDbDirectRequest(BaseModel):
+    """Request for LinkedIn ads ingestion (db-direct)."""
+    domain: str
+    linkedin_ads_payload: dict
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class LinkedInAdsDbDirectResponse(BaseModel):
+    """Response for LinkedIn ads ingestion (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    raw_payload_id: Optional[str] = None
+    ads_extracted: Optional[int] = None
+    total_ads: Optional[int] = None
+    is_running_ads: Optional[bool] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/adyntel-native/linkedin-ads/ingest/db-direct",
+    response_model=LinkedInAdsDbDirectResponse,
+    summary="Ingest LinkedIn ads from Adyntel and write directly to DB",
+    description="""
+    Receives LinkedIn ads payload from UI/Prefect (which called Adyntel),
+    writes to raw, extracted, and core tables.
+
+    TTL logic:
+    - ttl_days=None: skip if domain already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if last_checked_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-linkedin-ads-db-direct.modal.run
+    """
+)
+async def ingest_linkedin_ads_db_direct(request: LinkedInAdsDbDirectRequest) -> LinkedInAdsDbDirectResponse:
+    """
+    Ingest LinkedIn ads data from Adyntel, writing directly to database.
+
+    1. Check TTL to decide if should process
+    2. If should process, call Modal function
+    3. Modal writes to raw, extracted, core tables
+    """
+    pool = get_pool()
+    domain = request.domain
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists (any)
+        existing = await pool.fetchrow("""
+            SELECT domain, last_checked_at
+            FROM core.company_linkedin_ads
+            WHERE domain = $1
+        """, domain)
+        if existing:
+            return LinkedInAdsDbDirectResponse(
+                success=True,
+                domain=domain,
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, last_checked_at
+            FROM core.company_linkedin_ads
+            WHERE domain = $1
+        """, domain)
+        if existing and existing["last_checked_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["last_checked_at"] > cutoff:
+                return LinkedInAdsDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    skipped_ttl=True
+                )
+    # ttl_days=0 means always refresh, so no skip check
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                MODAL_LINKEDIN_ADS_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "linkedin_ads_payload": request.linkedin_ads_payload,
+                    "workflow_source": WORKFLOW_SOURCE_LINKEDIN_ADS
+                }
+            )
+
+            if response.status_code != 200:
+                return LinkedInAdsDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return LinkedInAdsDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                raw_payload_id=result.get("raw_payload_id"),
+                ads_extracted=result.get("ads_extracted"),
+                total_ads=result.get("total_ads"),
+                is_running_ads=result.get("is_running_ads"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return LinkedInAdsDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
