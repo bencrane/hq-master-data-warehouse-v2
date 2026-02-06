@@ -14368,6 +14368,132 @@
         }
       }
     },
+    "/run/companies/parallel-native/g2-url/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer G2 URL using Parallel AI Search",
+        "description": "Find G2 reviews page URL using Parallel AI Search API.\n\n    Modal URL: https://bencrane--hq-master-data-ingest-infer-g2-url-db-direct.modal.run\n\n    Workflow: parallel-native/g2-url/infer/db-direct\n\n    TTL Logic:\n    - ttl_days=None (default): Skip if g2_url exists\n    - ttl_days=0: Always refresh\n    - ttl_days=N: Refresh if older than N days",
+        "operationId": "infer_g2_url_db_direct_run_companies_parallel_native_g2_url_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/G2UrlDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/G2UrlDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-native/g2-url/infer/db-direct/batch": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Batch infer G2 URLs using Parallel AI Search",
+        "description": "Process multiple domains for G2 URL inference.",
+        "operationId": "infer_g2_url_db_direct_batch_run_companies_parallel_native_g2_url_infer_db_direct_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/G2UrlDbDirectBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/G2UrlDbDirectBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/gemini-native/g2-insights/extract/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Extract G2 review insights using Gemini",
+        "description": "Extract insights from G2 reviews page using Gemini.\n\n    Modal URL: https://bencrane--hq-master-data-ingest-extract-g2-insights-db-direct.modal.run\n\n    Workflow: gemini-native/g2-insights/extract/db-direct\n\n    Extracts:\n    - Overall rating\n    - Total reviews\n    - Top complaints/pain points\n    - Top praise points\n    - Negative quotes",
+        "operationId": "extract_g2_insights_db_direct_run_companies_gemini_native_g2_insights_extract_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/G2InsightsDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/G2InsightsDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/read/companies/db/check-existence": {
       "post": {
         "tags": [
@@ -22004,6 +22130,299 @@
           "success"
         ],
         "title": "FreeTrialResponse"
+      },
+      "G2InsightsDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "g2_url": {
+            "type": "string",
+            "title": "G2 Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "g2_url"
+        ],
+        "title": "G2InsightsDbDirectRequest",
+        "description": "Request for G2 insights extraction (db-direct)."
+      },
+      "G2InsightsDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "g2_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "G2 Url"
+          },
+          "overall_rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Rating"
+          },
+          "total_reviews": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Reviews"
+          },
+          "top_complaints": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Complaints"
+          },
+          "top_praise": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Praise"
+          },
+          "negative_quotes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negative Quotes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "domain"
+        ],
+        "title": "G2InsightsDbDirectResponse",
+        "description": "Response for G2 insights extraction (db-direct)."
+      },
+      "G2UrlDbDirectBatchRequest": {
+        "properties": {
+          "domains": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domains"
+          },
+          "client_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Domain"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "title": "G2UrlDbDirectBatchRequest",
+        "description": "Batch request for G2 URL inference (db-direct)."
+      },
+      "G2UrlDbDirectBatchResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "records_evaluated": {
+            "type": "integer",
+            "title": "Records Evaluated",
+            "default": 0
+          },
+          "fields_updated": {
+            "type": "integer",
+            "title": "Fields Updated",
+            "default": 0
+          },
+          "records_already_had_value": {
+            "type": "integer",
+            "title": "Records Already Had Value",
+            "default": 0
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "G2UrlDbDirectBatchResponse",
+        "description": "Batch response for G2 URL inference (db-direct)."
+      },
+      "G2UrlDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "cleaned_company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleaned Company Name"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "G2UrlDbDirectRequest",
+        "description": "Request for G2 URL inference (db-direct)."
+      },
+      "G2UrlDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "g2_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "G2 Url"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "domain"
+        ],
+        "title": "G2UrlDbDirectResponse",
+        "description": "Response for G2 URL inference (db-direct)."
       },
       "GapCountResponse": {
         "properties": {
