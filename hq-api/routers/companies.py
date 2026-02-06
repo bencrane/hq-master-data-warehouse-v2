@@ -1928,3 +1928,31 @@ async def ingest_g2_page_scrape_clay_zenrows(payload: dict):
             }
         )
         return response.json()
+
+
+MODAL_SEARCH_PARALLEL_AI_URL = os.getenv(
+    "MODAL_SEARCH_PARALLEL_AI_URL",
+    "https://bencrane--hq-master-data-ingest-search-parallel-ai.modal.run"
+)
+
+
+@router.post("/search-parallel-ai")
+async def search_parallel_ai(payload: dict):
+    """
+    Passthrough to Parallel AI Search API.
+
+    Payload: {
+        "objective": "Find information about...",
+        "search_queries": ["query1", "query2"],  # optional
+        "mode": "one-shot",  # one-shot, agentic, fast
+        "max_results": 10,  # 1-20
+        "domain": "example.com",  # optional
+        "company_name": "Example Inc"  # optional
+    }
+    """
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        response = await client.post(
+            MODAL_SEARCH_PARALLEL_AI_URL,
+            json=payload
+        )
+        return response.json()
