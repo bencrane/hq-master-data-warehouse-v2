@@ -706,3 +706,105 @@ async def resolve_domain_from_email(payload: dict):
         "records_from_extraction": records_from_extraction,
         "errors": errors if errors else None
     }
+
+
+@router.post("/resolve-linkedin-from-domain")
+async def resolve_linkedin_from_domain(payload: dict):
+    """
+    Resolve company_linkedin_url from domain by matching against core.companies.
+
+    Payload: {
+        "record_ids": ["uuid1", "uuid2", ...]  // IDs from hq.clients_normalized_crm_data
+    }
+
+    Or to resolve all records for a client:
+    {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Logic:
+    1. Get records that have domain
+    2. Match against core.companies.domain
+    3. If match → populate company_linkedin_url from core.companies.linkedin_url
+
+    Updates hq.clients_normalized_crm_data.company_linkedin_url
+    """
+    pool = get_pool()
+
+    record_ids = payload.get("record_ids", [])
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not record_ids and not client_domain:
+        return {"success": False, "error": "Either record_ids or client_domain is required"}
+
+    # Fetch normalized records that have domain
+    if record_ids:
+        rows = await pool.fetch("""
+            SELECT id, domain, company_linkedin_url
+            FROM hq.clients_normalized_crm_data
+            WHERE id = ANY($1::uuid[])
+              AND domain IS NOT NULL
+        """, record_ids)
+    else:
+        rows = await pool.fetch("""
+            SELECT id, domain, company_linkedin_url
+            FROM hq.clients_normalized_crm_data
+            WHERE client_domain = $1
+              AND domain IS NOT NULL
+        """, client_domain)
+
+    if not rows:
+        return {"success": True, "records_processed": 0, "message": "No records found with domain"}
+
+    # Get unique domains to look up
+    domains = list(set(row["domain"] for row in rows if row["domain"]))
+
+    # Batch lookup LinkedIn URLs from core.companies
+    domain_to_linkedin = {}
+    if domains:
+        existing = await pool.fetch("""
+            SELECT domain, linkedin_url
+            FROM core.companies
+            WHERE domain = ANY($1)
+              AND linkedin_url IS NOT NULL
+        """, domains)
+        for row in existing:
+            domain_to_linkedin[row["domain"]] = row["linkedin_url"]
+
+    # Process records
+    records_processed = 0
+    records_matched = 0
+    records_no_match = 0
+    errors = []
+
+    for record in rows:
+        try:
+            record_id = record["id"]
+            domain = record["domain"]
+
+            # Check if we have a match
+            if domain in domain_to_linkedin:
+                linkedin_url = domain_to_linkedin[domain]
+                records_matched += 1
+
+                # Update the company_linkedin_url
+                await pool.execute("""
+                    UPDATE hq.clients_normalized_crm_data
+                    SET company_linkedin_url = $1,
+                        updated_at = NOW()
+                    WHERE id = $2
+                """, linkedin_url, record_id)
+                records_processed += 1
+            else:
+                records_no_match += 1
+
+        except Exception as e:
+            errors.append({"record_id": str(record["id"]), "domain": record["domain"], "error": str(e)})
+
+    return {
+        "success": True,
+        "records_processed": records_processed,
+        "records_matched": records_matched,
+        "records_no_match": records_no_match,
+        "errors": errors if errors else None
+    }
