@@ -910,3 +910,112 @@ async def resolve_person_linkedin_from_email(payload: dict):
         "records_no_match": records_no_match,
         "errors": errors if errors else None
     }
+
+
+@router.post("/resolve-company-location-from-domain")
+async def resolve_company_location_from_domain(payload: dict):
+    """
+    Resolve company_city, company_state, company_country from domain
+    by matching against core.company_locations.
+
+    Payload: {
+        "record_ids": ["uuid1", "uuid2", ...]  // IDs from hq.clients_normalized_crm_data
+    }
+
+    Or to resolve all records for a client:
+    {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Logic:
+    1. Get records that have domain
+    2. Match against core.company_locations.domain
+    3. If match → populate company_city, company_state, company_country
+
+    Updates hq.clients_normalized_crm_data location fields
+    """
+    pool = get_pool()
+
+    record_ids = payload.get("record_ids", [])
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not record_ids and not client_domain:
+        return {"success": False, "error": "Either record_ids or client_domain is required"}
+
+    # Fetch normalized records that have domain
+    if record_ids:
+        rows = await pool.fetch("""
+            SELECT id, domain
+            FROM hq.clients_normalized_crm_data
+            WHERE id = ANY($1::uuid[])
+              AND domain IS NOT NULL
+        """, record_ids)
+    else:
+        rows = await pool.fetch("""
+            SELECT id, domain
+            FROM hq.clients_normalized_crm_data
+            WHERE client_domain = $1
+              AND domain IS NOT NULL
+        """, client_domain)
+
+    if not rows:
+        return {"success": True, "records_processed": 0, "message": "No records found with domain"}
+
+    # Get unique domains to look up
+    domains = list(set(row["domain"] for row in rows if row["domain"]))
+
+    # Batch lookup locations from core.company_locations
+    domain_to_location = {}
+    if domains:
+        existing = await pool.fetch("""
+            SELECT domain, city, state, country
+            FROM core.company_locations
+            WHERE domain = ANY($1)
+              AND (city IS NOT NULL OR state IS NOT NULL OR country IS NOT NULL)
+        """, domains)
+        for row in existing:
+            domain_to_location[row["domain"]] = {
+                "city": row["city"],
+                "state": row["state"],
+                "country": row["country"]
+            }
+
+    # Process records
+    records_processed = 0
+    records_matched = 0
+    records_no_match = 0
+    errors = []
+
+    for record in rows:
+        try:
+            record_id = record["id"]
+            domain = record["domain"]
+
+            # Check if we have a match
+            if domain in domain_to_location:
+                location = domain_to_location[domain]
+                records_matched += 1
+
+                # Update the location fields
+                await pool.execute("""
+                    UPDATE hq.clients_normalized_crm_data
+                    SET company_city = COALESCE($1, company_city),
+                        company_state = COALESCE($2, company_state),
+                        company_country = COALESCE($3, company_country),
+                        updated_at = NOW()
+                    WHERE id = $4
+                """, location["city"], location["state"], location["country"], record_id)
+                records_processed += 1
+            else:
+                records_no_match += 1
+
+        except Exception as e:
+            errors.append({"record_id": str(record["id"]), "domain": record["domain"], "error": str(e)})
+
+    return {
+        "success": True,
+        "records_processed": records_processed,
+        "records_matched": records_matched,
+        "records_no_match": records_no_match,
+        "errors": errors if errors else None
+    }
