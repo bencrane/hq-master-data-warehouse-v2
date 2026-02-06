@@ -6754,3 +6754,268 @@ async def ingest_google_ads_db_direct(request: GoogleAdsDbDirectRequest) -> Goog
             domain=domain,
             error=str(e)
         )
+
+
+# =============================================================================
+# Parallel Native - Company Description (DB Direct)
+# =============================================================================
+
+MODAL_DESCRIPTION_DB_DIRECT_URL = f"{MODAL_BASE_URL}-infer-description-db-direct.modal.run"
+WORKFLOW_SOURCE_DESCRIPTION = "parallel-native/description/infer/db-direct"
+
+
+class DescriptionDbDirectRequest(BaseModel):
+    """Request for company description inference (db-direct)."""
+    domain: str
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class DescriptionDbDirectBatchRequest(BaseModel):
+    """Batch request for company description inference (db-direct)."""
+    client_domain: Optional[str] = None  # For batch processing HQ client records
+    domains: Optional[List[str]] = None  # For direct domain list
+    ttl_days: Optional[int] = None
+
+
+class DescriptionDbDirectResponse(BaseModel):
+    """Response for company description inference (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    description: Optional[str] = None
+    tagline: Optional[str] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+class DescriptionDbDirectBatchResponse(BaseModel):
+    """Batch response for company description inference (db-direct)."""
+    success: bool
+    records_evaluated: int = 0
+    fields_updated: int = 0
+    records_already_had_value: int = 0
+    records_inferred: int = 0
+    errors: Optional[List[dict]] = None
+
+
+@router.post(
+    "/companies/parallel-native/description/infer/db-direct",
+    response_model=DescriptionDbDirectResponse,
+    summary="Infer company description using Parallel AI and write directly to DB",
+    description="""
+    Checks core.company_descriptions first. If not found (or TTL expired),
+    calls Parallel AI Task Enrichment API to get description.
+
+    TTL logic:
+    - ttl_days=None: skip if description already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if updated_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-infer-description-db-direct.modal.run
+    """
+)
+async def infer_description_db_direct(request: DescriptionDbDirectRequest) -> DescriptionDbDirectResponse:
+    """
+    Infer company description using Parallel AI, writing directly to database.
+    """
+    pool = get_pool()
+    domain = request.domain
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists with description
+        existing = await pool.fetchrow("""
+            SELECT domain, description, updated_at
+            FROM core.company_descriptions
+            WHERE domain = $1 AND description IS NOT NULL
+        """, domain)
+        if existing:
+            return DescriptionDbDirectResponse(
+                success=True,
+                domain=domain,
+                description=existing["description"],
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, description, updated_at
+            FROM core.company_descriptions
+            WHERE domain = $1 AND description IS NOT NULL
+        """, domain)
+        if existing and existing["updated_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["updated_at"] > cutoff:
+                return DescriptionDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    description=existing["description"],
+                    skipped_ttl=True
+                )
+
+    # Get company info if not provided
+    company_name = request.company_name
+    company_linkedin_url = request.company_linkedin_url
+
+    if not company_name:
+        company_row = await pool.fetchrow("""
+            SELECT name, linkedin_url FROM core.companies WHERE domain = $1
+        """, domain)
+        if company_row:
+            company_name = company_row["name"]
+            company_linkedin_url = company_linkedin_url or company_row["linkedin_url"]
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                MODAL_DESCRIPTION_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "company_name": company_name or domain,
+                    "company_linkedin_url": company_linkedin_url,
+                    "workflow_source": WORKFLOW_SOURCE_DESCRIPTION
+                }
+            )
+
+            if response.status_code != 200:
+                return DescriptionDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return DescriptionDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                description=result.get("description"),
+                tagline=result.get("tagline"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return DescriptionDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
+
+
+@router.post(
+    "/companies/parallel-native/description/infer/db-direct/batch",
+    response_model=DescriptionDbDirectBatchResponse,
+    summary="Batch infer company descriptions using Parallel AI",
+    description="Process multiple domains for description inference."
+)
+async def infer_description_db_direct_batch(request: DescriptionDbDirectBatchRequest) -> DescriptionDbDirectBatchResponse:
+    """
+    Batch infer company descriptions using Parallel AI.
+    """
+    pool = get_pool()
+
+    # Get domains to process
+    domains_to_process = []
+
+    if request.client_domain:
+        rows = await pool.fetch("""
+            SELECT DISTINCT n.domain, n.company_name, n.company_linkedin_url
+            FROM hq.clients_normalized_crm_data n
+            WHERE n.client_domain = $1
+              AND n.domain IS NOT NULL
+        """, request.client_domain)
+        domains_to_process = [
+            {"domain": r["domain"], "company_name": r["company_name"], "company_linkedin_url": r["company_linkedin_url"]}
+            for r in rows
+        ]
+    elif request.domains:
+        rows = await pool.fetch("""
+            SELECT domain, name as company_name, linkedin_url as company_linkedin_url
+            FROM core.companies
+            WHERE domain = ANY($1)
+        """, request.domains)
+        domain_map = {r["domain"]: r for r in rows}
+        domains_to_process = [
+            {"domain": d, "company_name": domain_map.get(d, {}).get("company_name"), "company_linkedin_url": domain_map.get(d, {}).get("company_linkedin_url")}
+            for d in request.domains
+        ]
+    else:
+        return DescriptionDbDirectBatchResponse(
+            success=False,
+            errors=[{"error": "Either client_domain or domains is required"}]
+        )
+
+    if not domains_to_process:
+        return DescriptionDbDirectBatchResponse(success=True, records_evaluated=0)
+
+    # Check which domains already have descriptions
+    domain_list = [d["domain"] for d in domains_to_process]
+
+    if request.ttl_days is None:
+        existing = await pool.fetch("""
+            SELECT domain FROM core.company_descriptions
+            WHERE domain = ANY($1) AND description IS NOT NULL
+        """, domain_list)
+        already_have_description = {r["domain"] for r in existing}
+    elif request.ttl_days > 0:
+        from datetime import datetime, timedelta, timezone
+        cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+        existing = await pool.fetch("""
+            SELECT domain FROM core.company_descriptions
+            WHERE domain = ANY($1) AND description IS NOT NULL AND updated_at > $2
+        """, domain_list, cutoff)
+        already_have_description = {r["domain"] for r in existing}
+    else:
+        already_have_description = set()
+
+    # Process records
+    records_evaluated = len(domains_to_process)
+    fields_updated = 0
+    records_already_had_value = 0
+    records_inferred = 0
+    errors = []
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        for record in domains_to_process:
+            domain = record["domain"]
+            company_name = record["company_name"] or domain
+            company_linkedin_url = record["company_linkedin_url"]
+
+            try:
+                if domain in already_have_description:
+                    records_already_had_value += 1
+                    continue
+
+                response = await client.post(
+                    MODAL_DESCRIPTION_DB_DIRECT_URL,
+                    json={
+                        "domain": domain,
+                        "company_name": company_name,
+                        "company_linkedin_url": company_linkedin_url,
+                        "workflow_source": WORKFLOW_SOURCE_DESCRIPTION
+                    }
+                )
+
+                if response.status_code != 200:
+                    errors.append({"domain": domain, "error": f"Modal returned {response.status_code}"})
+                    continue
+
+                result = response.json()
+                if result.get("success"):
+                    fields_updated += 1
+                    records_inferred += 1
+                else:
+                    errors.append({"domain": domain, "error": result.get("error", "Unknown error")})
+
+            except Exception as e:
+                errors.append({"domain": domain, "error": str(e)})
+
+    return DescriptionDbDirectBatchResponse(
+        success=True,
+        records_evaluated=records_evaluated,
+        fields_updated=fields_updated,
+        records_already_had_value=records_already_had_value,
+        records_inferred=records_inferred,
+        errors=errors if errors else None
+    )
