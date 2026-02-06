@@ -420,16 +420,32 @@ async def resolve_company_name(payload: dict):
             }
 
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = 0
+    records_already_had_value = 0
     records_matched = 0
     records_from_parallel = 0
     errors = []
+
+    # Check which records already have cleaned_company_name
+    record_ids_list = [row["id"] for row in rows]
+    existing_cleaned = await pool.fetch("""
+        SELECT id, cleaned_company_name
+        FROM hq.clients_normalized_crm_data
+        WHERE id = ANY($1::uuid[])
+    """, record_ids_list)
+    already_cleaned = {row["id"]: row["cleaned_company_name"] for row in existing_cleaned}
 
     for record in rows:
         try:
             record_id = record["id"]
             domain = record["domain"]
             original_company_name = record["company_name"]
+
+            # Skip if already has a cleaned_company_name value
+            if already_cleaned.get(record_id):
+                records_already_had_value += 1
+                continue
 
             cleaned_company_name = None
             source = None
@@ -473,14 +489,16 @@ async def resolve_company_name(payload: dict):
                         updated_at = NOW()
                     WHERE id = $3
                 """, cleaned_company_name, source, record_id)
-                records_processed += 1
+                fields_updated += 1
 
         except Exception as e:
             errors.append({"record_id": str(record["id"]), "domain": record["domain"], "error": str(e)})
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_already_had_value": records_already_had_value,
         "records_matched": records_matched,
         "records_from_parallel": records_from_parallel,
         "errors": errors if errors else None
@@ -551,7 +569,9 @@ async def resolve_domain_from_linkedin(payload: dict):
             linkedin_to_domain[row["linkedin_url"]] = row["domain"]
 
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = 0
+    records_already_had_value = 0
     records_matched = 0
     records_no_match = 0
     errors = []
@@ -561,6 +581,11 @@ async def resolve_domain_from_linkedin(payload: dict):
             record_id = record["id"]
             linkedin_url = record["company_linkedin_url"]
             current_domain = record["domain"]
+
+            # Skip if already has a domain value
+            if current_domain:
+                records_already_had_value += 1
+                continue
 
             # Check if we have a match
             if linkedin_url in linkedin_to_domain:
@@ -574,7 +599,7 @@ async def resolve_domain_from_linkedin(payload: dict):
                         updated_at = NOW()
                     WHERE id = $2
                 """, matched_domain, record_id)
-                records_processed += 1
+                fields_updated += 1
             else:
                 records_no_match += 1
 
@@ -583,7 +608,9 @@ async def resolve_domain_from_linkedin(payload: dict):
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_already_had_value": records_already_had_value,
         "records_matched": records_matched,
         "records_no_match": records_no_match,
         "errors": errors if errors else None
@@ -643,7 +670,7 @@ async def resolve_domain_from_email(payload: dict):
         """, client_domain)
 
     if not rows:
-        return {"success": True, "records_processed": 0, "message": "No records found with work_email"}
+        return {"success": True, "records_evaluated": 0, "fields_updated": 0, "message": "No records found with work_email"}
 
     # Get unique emails to look up
     emails = list(set(row["work_email"] for row in rows if row["work_email"]))
@@ -661,7 +688,9 @@ async def resolve_domain_from_email(payload: dict):
             email_to_domain[row["email"]] = row["domain"]
 
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = 0
+    records_already_had_value = 0
     records_from_lookup = 0
     records_from_extraction = 0
     errors = []
@@ -670,6 +699,12 @@ async def resolve_domain_from_email(payload: dict):
         try:
             record_id = record["id"]
             work_email = record["work_email"]
+            current_domain = record["domain"]
+
+            # Skip if already has a domain value
+            if current_domain:
+                records_already_had_value += 1
+                continue
 
             resolved_domain = None
             source = None
@@ -694,14 +729,16 @@ async def resolve_domain_from_email(payload: dict):
                         updated_at = NOW()
                     WHERE id = $2
                 """, resolved_domain, record_id)
-                records_processed += 1
+                fields_updated += 1
 
         except Exception as e:
             errors.append({"record_id": str(record["id"]), "work_email": record["work_email"], "error": str(e)})
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_already_had_value": records_already_had_value,
         "records_from_lookup": records_from_lookup,
         "records_from_extraction": records_from_extraction,
         "errors": errors if errors else None
@@ -754,7 +791,7 @@ async def resolve_linkedin_from_domain(payload: dict):
         """, client_domain)
 
     if not rows:
-        return {"success": True, "records_processed": 0, "message": "No records found with domain"}
+        return {"success": True, "records_evaluated": 0, "fields_updated": 0, "message": "No records found with domain"}
 
     # Get unique domains to look up
     domains = list(set(row["domain"] for row in rows if row["domain"]))
@@ -772,7 +809,9 @@ async def resolve_linkedin_from_domain(payload: dict):
             domain_to_linkedin[row["domain"]] = row["linkedin_url"]
 
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = 0
+    records_already_had_value = 0
     records_matched = 0
     records_no_match = 0
     errors = []
@@ -781,6 +820,12 @@ async def resolve_linkedin_from_domain(payload: dict):
         try:
             record_id = record["id"]
             domain = record["domain"]
+            current_linkedin = record["company_linkedin_url"]
+
+            # Skip if already has a company_linkedin_url value
+            if current_linkedin:
+                records_already_had_value += 1
+                continue
 
             # Check if we have a match
             if domain in domain_to_linkedin:
@@ -794,7 +839,7 @@ async def resolve_linkedin_from_domain(payload: dict):
                         updated_at = NOW()
                     WHERE id = $2
                 """, linkedin_url, record_id)
-                records_processed += 1
+                fields_updated += 1
             else:
                 records_no_match += 1
 
@@ -803,7 +848,9 @@ async def resolve_linkedin_from_domain(payload: dict):
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_already_had_value": records_already_had_value,
         "records_matched": records_matched,
         "records_no_match": records_no_match,
         "errors": errors if errors else None
@@ -856,7 +903,7 @@ async def resolve_person_linkedin_from_email(payload: dict):
         """, client_domain)
 
     if not rows:
-        return {"success": True, "records_processed": 0, "message": "No records found with work_email"}
+        return {"success": True, "records_evaluated": 0, "fields_updated": 0, "message": "No records found with work_email"}
 
     # Get unique emails to look up
     emails = list(set(row["work_email"] for row in rows if row["work_email"]))
@@ -874,7 +921,9 @@ async def resolve_person_linkedin_from_email(payload: dict):
             email_to_linkedin[row["email"]] = row["person_linkedin_url"]
 
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = 0
+    records_already_had_value = 0
     records_matched = 0
     records_no_match = 0
     errors = []
@@ -883,6 +932,12 @@ async def resolve_person_linkedin_from_email(payload: dict):
         try:
             record_id = record["id"]
             work_email = record["work_email"]
+            current_linkedin = record["person_linkedin_url"]
+
+            # Skip if already has a person_linkedin_url value
+            if current_linkedin:
+                records_already_had_value += 1
+                continue
 
             # Check if we have a match
             if work_email in email_to_linkedin:
@@ -896,7 +951,7 @@ async def resolve_person_linkedin_from_email(payload: dict):
                         updated_at = NOW()
                     WHERE id = $2
                 """, linkedin_url, record_id)
-                records_processed += 1
+                fields_updated += 1
             else:
                 records_no_match += 1
 
@@ -905,7 +960,9 @@ async def resolve_person_linkedin_from_email(payload: dict):
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_already_had_value": records_already_had_value,
         "records_matched": records_matched,
         "records_no_match": records_no_match,
         "errors": errors if errors else None
@@ -959,7 +1016,7 @@ async def resolve_company_location_from_domain(payload: dict):
         """, client_domain)
 
     if not rows:
-        return {"success": True, "records_processed": 0, "message": "No records found with domain"}
+        return {"success": True, "records_evaluated": 0, "fields_updated": {"city": 0, "state": 0, "country": 0}, "message": "No records found with domain"}
 
     # Get unique domains to look up
     domains = list(set(row["domain"] for row in rows if row["domain"]))
@@ -980,32 +1037,60 @@ async def resolve_company_location_from_domain(payload: dict):
                 "country": row["country"]
             }
 
+    # Get current values to check what's already filled
+    record_ids_list = [row["id"] for row in rows]
+    current_values = await pool.fetch("""
+        SELECT id, company_city, company_state, company_country
+        FROM hq.clients_normalized_crm_data
+        WHERE id = ANY($1::uuid[])
+    """, record_ids_list)
+    current_map = {row["id"]: row for row in current_values}
+
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = {"city": 0, "state": 0, "country": 0}
     records_matched = 0
     records_no_match = 0
+    records_all_fields_had_value = 0
     errors = []
 
     for record in rows:
         try:
             record_id = record["id"]
             domain = record["domain"]
+            current = current_map.get(record_id, {})
 
             # Check if we have a match
             if domain in domain_to_location:
                 location = domain_to_location[domain]
                 records_matched += 1
 
-                # Update the location fields
+                # Check which fields need updating
+                city_to_update = location["city"] if not current.get("company_city") and location["city"] else None
+                state_to_update = location["state"] if not current.get("company_state") and location["state"] else None
+                country_to_update = location["country"] if not current.get("company_country") and location["country"] else None
+
+                # Skip if all fields already have values
+                if not city_to_update and not state_to_update and not country_to_update:
+                    records_all_fields_had_value += 1
+                    continue
+
+                # Update the location fields (only fill in missing values)
                 await pool.execute("""
                     UPDATE hq.clients_normalized_crm_data
-                    SET company_city = COALESCE($1, company_city),
-                        company_state = COALESCE($2, company_state),
-                        company_country = COALESCE($3, company_country),
+                    SET company_city = COALESCE(company_city, $1),
+                        company_state = COALESCE(company_state, $2),
+                        company_country = COALESCE(company_country, $3),
                         updated_at = NOW()
                     WHERE id = $4
                 """, location["city"], location["state"], location["country"], record_id)
-                records_processed += 1
+
+                if city_to_update:
+                    fields_updated["city"] += 1
+                if state_to_update:
+                    fields_updated["state"] += 1
+                if country_to_update:
+                    fields_updated["country"] += 1
             else:
                 records_no_match += 1
 
@@ -1014,7 +1099,9 @@ async def resolve_company_location_from_domain(payload: dict):
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_all_fields_had_value": records_all_fields_had_value,
         "records_matched": records_matched,
         "records_no_match": records_no_match,
         "errors": errors if errors else None
@@ -1068,7 +1155,7 @@ async def resolve_person_location_from_linkedin(payload: dict):
         """, client_domain)
 
     if not rows:
-        return {"success": True, "records_processed": 0, "message": "No records found with person_linkedin_url"}
+        return {"success": True, "records_evaluated": 0, "fields_updated": {"city": 0, "state": 0, "country": 0}, "message": "No records found with person_linkedin_url"}
 
     # Get unique LinkedIn URLs to look up
     linkedin_urls = list(set(row["person_linkedin_url"] for row in rows if row["person_linkedin_url"]))
@@ -1089,32 +1176,60 @@ async def resolve_person_location_from_linkedin(payload: dict):
                 "country": row["country"]
             }
 
+    # Get current values to check what's already filled
+    record_ids_list = [row["id"] for row in rows]
+    current_values = await pool.fetch("""
+        SELECT id, person_city, person_state, person_country
+        FROM hq.clients_normalized_crm_data
+        WHERE id = ANY($1::uuid[])
+    """, record_ids_list)
+    current_map = {row["id"]: row for row in current_values}
+
     # Process records
-    records_processed = 0
+    records_evaluated = len(rows)
+    fields_updated = {"city": 0, "state": 0, "country": 0}
     records_matched = 0
     records_no_match = 0
+    records_all_fields_had_value = 0
     errors = []
 
     for record in rows:
         try:
             record_id = record["id"]
             linkedin_url = record["person_linkedin_url"]
+            current = current_map.get(record_id, {})
 
             # Check if we have a match
             if linkedin_url in linkedin_to_location:
                 location = linkedin_to_location[linkedin_url]
                 records_matched += 1
 
-                # Update the location fields
+                # Check which fields need updating
+                city_to_update = location["city"] if not current.get("person_city") and location["city"] else None
+                state_to_update = location["state"] if not current.get("person_state") and location["state"] else None
+                country_to_update = location["country"] if not current.get("person_country") and location["country"] else None
+
+                # Skip if all fields already have values
+                if not city_to_update and not state_to_update and not country_to_update:
+                    records_all_fields_had_value += 1
+                    continue
+
+                # Update the location fields (only fill in missing values)
                 await pool.execute("""
                     UPDATE hq.clients_normalized_crm_data
-                    SET person_city = COALESCE($1, person_city),
-                        person_state = COALESCE($2, person_state),
-                        person_country = COALESCE($3, person_country),
+                    SET person_city = COALESCE(person_city, $1),
+                        person_state = COALESCE(person_state, $2),
+                        person_country = COALESCE(person_country, $3),
                         updated_at = NOW()
                     WHERE id = $4
                 """, location["city"], location["state"], location["country"], record_id)
-                records_processed += 1
+
+                if city_to_update:
+                    fields_updated["city"] += 1
+                if state_to_update:
+                    fields_updated["state"] += 1
+                if country_to_update:
+                    fields_updated["country"] += 1
             else:
                 records_no_match += 1
 
@@ -1123,7 +1238,9 @@ async def resolve_person_location_from_linkedin(payload: dict):
 
     return {
         "success": True,
-        "records_processed": records_processed,
+        "records_evaluated": records_evaluated,
+        "fields_updated": fields_updated,
+        "records_all_fields_had_value": records_all_fields_had_value,
         "records_matched": records_matched,
         "records_no_match": records_no_match,
         "errors": errors if errors else None
