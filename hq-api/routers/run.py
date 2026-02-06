@@ -7019,3 +7019,338 @@ async def infer_description_db_direct_batch(request: DescriptionDbDirectBatchReq
         records_inferred=records_inferred,
         errors=errors if errors else None
     )
+
+
+# =============================================================================
+# G2 URL Inference (Parallel AI Search API) - DB Direct
+# =============================================================================
+
+MODAL_G2_URL_DB_DIRECT_URL = f"{MODAL_BASE_URL}-infer-g2-url-db-direct.modal.run"
+WORKFLOW_SOURCE_G2_URL = "parallel-native/g2-url/infer/db-direct"
+
+
+class G2UrlDbDirectRequest(BaseModel):
+    """Request for G2 URL inference (db-direct)."""
+    domain: str
+    company_name: str
+    cleaned_company_name: Optional[str] = None
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=days
+
+
+class G2UrlDbDirectResponse(BaseModel):
+    """Response for G2 URL inference (db-direct)."""
+    success: bool
+    domain: str
+    g2_url: Optional[str] = None
+    error: Optional[str] = None
+
+
+class G2UrlDbDirectBatchRequest(BaseModel):
+    """Batch request for G2 URL inference (db-direct)."""
+    domains: Optional[List[str]] = None
+    client_domain: Optional[str] = None
+    ttl_days: Optional[int] = None
+
+
+class G2UrlDbDirectBatchResponse(BaseModel):
+    """Batch response for G2 URL inference (db-direct)."""
+    success: bool
+    records_evaluated: int = 0
+    fields_updated: int = 0
+    records_already_had_value: int = 0
+    errors: Optional[List[dict]] = None
+
+
+@router.post(
+    "/companies/parallel-native/g2-url/infer/db-direct",
+    response_model=G2UrlDbDirectResponse,
+    summary="Infer G2 URL using Parallel AI Search",
+    description="""
+    Find G2 reviews page URL using Parallel AI Search API.
+
+    Modal URL: https://bencrane--hq-master-data-ingest-infer-g2-url-db-direct.modal.run
+
+    Workflow: parallel-native/g2-url/infer/db-direct
+
+    TTL Logic:
+    - ttl_days=None (default): Skip if g2_url exists
+    - ttl_days=0: Always refresh
+    - ttl_days=N: Refresh if older than N days
+    """
+)
+async def infer_g2_url_db_direct(request: G2UrlDbDirectRequest) -> G2UrlDbDirectResponse:
+    """
+    Infer G2 URL using Parallel AI Search API.
+    """
+    pool = get_pool()
+    domain = request.domain.lower().strip()
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        existing = await pool.fetchrow("""
+            SELECT g2_url FROM core.company_g2
+            WHERE domain = $1 AND g2_url IS NOT NULL
+        """, domain)
+        if existing:
+            return G2UrlDbDirectResponse(
+                success=True,
+                domain=domain,
+                g2_url=existing["g2_url"]
+            )
+    elif request.ttl_days > 0:
+        from datetime import datetime, timedelta, timezone
+        cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+        existing = await pool.fetchrow("""
+            SELECT g2_url FROM core.company_g2
+            WHERE domain = $1 AND g2_url IS NOT NULL AND updated_at > $2
+        """, domain, cutoff)
+        if existing:
+            return G2UrlDbDirectResponse(
+                success=True,
+                domain=domain,
+                g2_url=existing["g2_url"]
+            )
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # Use cleaned_company_name if provided, otherwise company_name
+            search_name = request.cleaned_company_name if request.cleaned_company_name else request.company_name
+
+            response = await client.post(
+                MODAL_G2_URL_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "company_name": request.company_name,
+                    "cleaned_company_name": request.cleaned_company_name,
+                    "workflow_source": WORKFLOW_SOURCE_G2_URL
+                }
+            )
+
+            if response.status_code != 200:
+                return G2UrlDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return G2UrlDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                g2_url=result.get("g2_url"),
+                error=result.get("error")
+            )
+
+    except Exception as e:
+        return G2UrlDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
+
+
+@router.post(
+    "/companies/parallel-native/g2-url/infer/db-direct/batch",
+    response_model=G2UrlDbDirectBatchResponse,
+    summary="Batch infer G2 URLs using Parallel AI Search",
+    description="Process multiple domains for G2 URL inference."
+)
+async def infer_g2_url_db_direct_batch(request: G2UrlDbDirectBatchRequest) -> G2UrlDbDirectBatchResponse:
+    """
+    Batch infer G2 URLs using Parallel AI Search API.
+    """
+    pool = get_pool()
+
+    # Get domains to process
+    domains_to_process = []
+
+    if request.client_domain:
+        rows = await pool.fetch("""
+            SELECT DISTINCT n.domain, n.company_name, n.cleaned_company_name
+            FROM hq.clients_normalized_crm_data n
+            WHERE n.client_domain = $1
+              AND n.domain IS NOT NULL
+        """, request.client_domain)
+        domains_to_process = [
+            {"domain": r["domain"], "company_name": r["company_name"], "cleaned_company_name": r.get("cleaned_company_name")}
+            for r in rows
+        ]
+    elif request.domains:
+        rows = await pool.fetch("""
+            SELECT domain, name as company_name
+            FROM core.companies
+            WHERE domain = ANY($1)
+        """, request.domains)
+        domain_map = {r["domain"]: r for r in rows}
+        domains_to_process = [
+            {"domain": d, "company_name": domain_map.get(d, {}).get("company_name") or d, "cleaned_company_name": None}
+            for d in request.domains
+        ]
+    else:
+        return G2UrlDbDirectBatchResponse(
+            success=False,
+            errors=[{"error": "Either client_domain or domains is required"}]
+        )
+
+    if not domains_to_process:
+        return G2UrlDbDirectBatchResponse(success=True, records_evaluated=0)
+
+    # Check which domains already have G2 URLs
+    domain_list = [d["domain"] for d in domains_to_process]
+
+    if request.ttl_days is None:
+        existing = await pool.fetch("""
+            SELECT domain FROM core.company_g2
+            WHERE domain = ANY($1) AND g2_url IS NOT NULL
+        """, domain_list)
+        already_have_g2 = {r["domain"] for r in existing}
+    elif request.ttl_days > 0:
+        from datetime import datetime, timedelta, timezone
+        cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+        existing = await pool.fetch("""
+            SELECT domain FROM core.company_g2
+            WHERE domain = ANY($1) AND g2_url IS NOT NULL AND updated_at > $2
+        """, domain_list, cutoff)
+        already_have_g2 = {r["domain"] for r in existing}
+    else:
+        already_have_g2 = set()
+
+    # Process records
+    records_evaluated = len(domains_to_process)
+    fields_updated = 0
+    records_already_had_value = 0
+    errors = []
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for record in domains_to_process:
+            domain = record["domain"]
+            company_name = record["company_name"] or domain
+            cleaned_company_name = record.get("cleaned_company_name")
+
+            try:
+                if domain in already_have_g2:
+                    records_already_had_value += 1
+                    continue
+
+                response = await client.post(
+                    MODAL_G2_URL_DB_DIRECT_URL,
+                    json={
+                        "domain": domain,
+                        "company_name": company_name,
+                        "cleaned_company_name": cleaned_company_name,
+                        "workflow_source": WORKFLOW_SOURCE_G2_URL
+                    }
+                )
+
+                if response.status_code != 200:
+                    errors.append({"domain": domain, "error": f"Modal returned {response.status_code}"})
+                    continue
+
+                result = response.json()
+                if result.get("success"):
+                    fields_updated += 1
+                else:
+                    errors.append({"domain": domain, "error": result.get("error", "Unknown error")})
+
+            except Exception as e:
+                errors.append({"domain": domain, "error": str(e)})
+
+    return G2UrlDbDirectBatchResponse(
+        success=True,
+        records_evaluated=records_evaluated,
+        fields_updated=fields_updated,
+        records_already_had_value=records_already_had_value,
+        errors=errors if errors else None
+    )
+
+
+# =============================================================================
+# G2 Insights Extraction (Gemini) - DB Direct
+# =============================================================================
+
+MODAL_G2_INSIGHTS_DB_DIRECT_URL = f"{MODAL_BASE_URL}-extract-g2-insights-db-direct.modal.run"
+WORKFLOW_SOURCE_G2_INSIGHTS = "gemini-native/g2-insights/extract/db-direct"
+
+
+class G2InsightsDbDirectRequest(BaseModel):
+    """Request for G2 insights extraction (db-direct)."""
+    domain: str
+    g2_url: str
+
+
+class G2InsightsDbDirectResponse(BaseModel):
+    """Response for G2 insights extraction (db-direct)."""
+    success: bool
+    domain: str
+    g2_url: Optional[str] = None
+    overall_rating: Optional[str] = None
+    total_reviews: Optional[str] = None
+    top_complaints: Optional[List[str]] = None
+    top_praise: Optional[List[str]] = None
+    negative_quotes: Optional[List[str]] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/gemini-native/g2-insights/extract/db-direct",
+    response_model=G2InsightsDbDirectResponse,
+    summary="Extract G2 review insights using Gemini",
+    description="""
+    Extract insights from G2 reviews page using Gemini.
+
+    Modal URL: https://bencrane--hq-master-data-ingest-extract-g2-insights-db-direct.modal.run
+
+    Workflow: gemini-native/g2-insights/extract/db-direct
+
+    Extracts:
+    - Overall rating
+    - Total reviews
+    - Top complaints/pain points
+    - Top praise points
+    - Negative quotes
+    """
+)
+async def extract_g2_insights_db_direct(request: G2InsightsDbDirectRequest) -> G2InsightsDbDirectResponse:
+    """
+    Extract G2 review insights using Gemini.
+    """
+    domain = request.domain.lower().strip()
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                MODAL_G2_INSIGHTS_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "g2_url": request.g2_url,
+                    "workflow_source": WORKFLOW_SOURCE_G2_INSIGHTS
+                }
+            )
+
+            if response.status_code != 200:
+                return G2InsightsDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return G2InsightsDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                g2_url=result.get("g2_url"),
+                overall_rating=result.get("overall_rating"),
+                total_reviews=result.get("total_reviews"),
+                top_complaints=result.get("top_complaints"),
+                top_praise=result.get("top_praise"),
+                negative_quotes=result.get("negative_quotes"),
+                error=result.get("error")
+            )
+
+    except Exception as e:
+        return G2InsightsDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
