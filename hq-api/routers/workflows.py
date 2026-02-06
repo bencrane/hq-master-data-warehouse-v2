@@ -588,3 +588,121 @@ async def resolve_domain_from_linkedin(payload: dict):
         "records_no_match": records_no_match,
         "errors": errors if errors else None
     }
+
+
+def extract_domain_from_email(email: str) -> str | None:
+    """Extract domain from email address (part after @)."""
+    if not email or "@" not in email:
+        return None
+    return email.split("@")[1].lower().strip()
+
+
+@router.post("/resolve-domain-from-email")
+async def resolve_domain_from_email(payload: dict):
+    """
+    Resolve domain from work_email.
+
+    Payload: {
+        "record_ids": ["uuid1", "uuid2", ...]  // IDs from hq.clients_normalized_crm_data
+    }
+
+    Or to resolve all records for a client:
+    {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Logic:
+    1. Try to match work_email against reference.email_to_person to get domain
+    2. If no match, extract domain from email (part after @)
+    3. Does NOT write back to lookup table
+
+    Updates hq.clients_normalized_crm_data.domain
+    """
+    pool = get_pool()
+
+    record_ids = payload.get("record_ids", [])
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not record_ids and not client_domain:
+        return {"success": False, "error": "Either record_ids or client_domain is required"}
+
+    # Fetch normalized records that have work_email but missing domain
+    if record_ids:
+        rows = await pool.fetch("""
+            SELECT id, work_email, domain
+            FROM hq.clients_normalized_crm_data
+            WHERE id = ANY($1::uuid[])
+              AND work_email IS NOT NULL
+        """, record_ids)
+    else:
+        rows = await pool.fetch("""
+            SELECT id, work_email, domain
+            FROM hq.clients_normalized_crm_data
+            WHERE client_domain = $1
+              AND work_email IS NOT NULL
+        """, client_domain)
+
+    if not rows:
+        return {"success": True, "records_processed": 0, "message": "No records found with work_email"}
+
+    # Get unique emails to look up
+    emails = list(set(row["work_email"] for row in rows if row["work_email"]))
+
+    # Batch lookup domains from reference.email_to_person
+    email_to_domain = {}
+    if emails:
+        existing = await pool.fetch("""
+            SELECT email, domain
+            FROM reference.email_to_person
+            WHERE email = ANY($1)
+              AND domain IS NOT NULL
+        """, emails)
+        for row in existing:
+            email_to_domain[row["email"]] = row["domain"]
+
+    # Process records
+    records_processed = 0
+    records_from_lookup = 0
+    records_from_extraction = 0
+    errors = []
+
+    for record in rows:
+        try:
+            record_id = record["id"]
+            work_email = record["work_email"]
+
+            resolved_domain = None
+            source = None
+
+            # Try lookup first
+            if work_email in email_to_domain:
+                resolved_domain = email_to_domain[work_email]
+                source = "lookup"
+                records_from_lookup += 1
+            else:
+                # Fall back to extraction
+                resolved_domain = extract_domain_from_email(work_email)
+                if resolved_domain:
+                    source = "extracted"
+                    records_from_extraction += 1
+
+            # Update the domain if we resolved one
+            if resolved_domain:
+                await pool.execute("""
+                    UPDATE hq.clients_normalized_crm_data
+                    SET domain = $1,
+                        updated_at = NOW()
+                    WHERE id = $2
+                """, resolved_domain, record_id)
+                records_processed += 1
+
+        except Exception as e:
+            errors.append({"record_id": str(record["id"]), "work_email": record["work_email"], "error": str(e)})
+
+    return {
+        "success": True,
+        "records_processed": records_processed,
+        "records_from_lookup": records_from_lookup,
+        "records_from_extraction": records_from_extraction,
+        "errors": errors if errors else None
+    }
