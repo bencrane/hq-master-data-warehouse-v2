@@ -196,7 +196,7 @@ async def normalize_records(payload: dict):
         "client_domain": "securitypalhq.com"
     }
 
-    Writes normalized results to hq.clients_normalized.
+    Writes normalized results to hq.clients_normalized_crm_data.
     """
     pool = get_pool()
 
@@ -240,7 +240,7 @@ async def normalize_records(payload: dict):
             normalized = normalize_record(dict(raw_record))
 
             await pool.execute("""
-                INSERT INTO hq.clients_normalized (
+                INSERT INTO hq.clients_normalized_crm_data (
                     raw_data_id, client_domain,
                     first_name, last_name, full_name,
                     person_linkedin_url, person_city, person_state, person_country,
