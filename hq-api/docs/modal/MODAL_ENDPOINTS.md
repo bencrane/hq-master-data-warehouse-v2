@@ -142,6 +142,56 @@ They call external APIs AND write directly to the database.
 
 ---
 
+### infer_g2_url_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-infer-g2-url-db-direct.modal.run`
+
+**Purpose:** Find G2 reviews page URL using Parallel AI Search API.
+
+**Payload:**
+```json
+{
+  "domain": "databricks.com",
+  "company_name": "Databricks",
+  "cleaned_company_name": "Databricks",
+  "workflow_source": "parallel-native/g2-url/infer/db-direct"
+}
+```
+
+**Stores to:**
+- `core.company_g2`
+
+**Notes:** Uses Parallel AI Search API (one-shot mode). Filters results for g2.com URLs.
+
+---
+
+### extract_g2_insights_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-extract-g2-insights-db-direct.modal.run`
+
+**Purpose:** Extract G2 review insights using Gemini.
+
+**Payload:**
+```json
+{
+  "domain": "databricks.com",
+  "g2_url": "https://www.g2.com/products/databricks-data-intelligence-platform/reviews",
+  "workflow_source": "gemini-native/g2-insights/extract/db-direct"
+}
+```
+
+**Stores to:**
+- `core.company_g2_insights`
+
+**Extracts:**
+- Overall rating
+- Total reviews
+- Top complaints/pain points
+- Top praise points
+- Negative quotes
+
+---
+
 ## Company Ingest Endpoints
 
 ### ingest_clay_company_firmo

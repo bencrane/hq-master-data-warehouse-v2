@@ -408,13 +408,110 @@ Push to GitHub → Railway auto-deploys.
 
 ---
 
+## G2 Workflows (Added Later in Session)
+
+### 6. G2 URL Inference (Parallel AI Search)
+
+**Endpoint:** `POST /run/companies/parallel-native/g2-url/infer/db-direct`
+
+**Modal Function:** `infer_g2_url_db_direct.py`
+
+**Modal URL:** `https://bencrane--hq-master-data-ingest-infer-g2-url-db-direct.modal.run`
+
+**Flow:**
+1. Receive domain, company_name, cleaned_company_name
+2. Call Parallel AI Search API (one-shot mode)
+3. Filter results for g2.com URLs
+4. Write to `core.company_g2`
+
+**Search Objective Template:**
+```
+Find the G2 reviews page URL for {search_name} whose domain = {domain}
+```
+
+**Table:** `core.company_g2`
+```sql
+CREATE TABLE core.company_g2 (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    domain TEXT UNIQUE NOT NULL,
+    g2_url TEXT,
+    workflow_source TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+### 7. G2 Insights Extraction (Gemini)
+
+**Endpoint:** `POST /run/companies/gemini-native/g2-insights/extract/db-direct`
+
+**Modal Function:** `extract_g2_insights_db_direct.py`
+
+**Modal URL:** `https://bencrane--hq-master-data-ingest-extract-g2-insights-db-direct.modal.run`
+
+**Flow:**
+1. Receive domain, g2_url
+2. Call Gemini API with extraction prompt
+3. Parse JSON response
+4. Write to `core.company_g2_insights`
+
+**Extracts:**
+- Overall rating (e.g., 4.5/5)
+- Total number of reviews
+- Top 3-5 complaints/pain points
+- Top 3-5 praise points
+- Negative quotes
+
+**Table:** `core.company_g2_insights`
+```sql
+CREATE TABLE core.company_g2_insights (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    domain TEXT UNIQUE NOT NULL,
+    g2_url TEXT,
+    overall_rating TEXT,
+    total_reviews TEXT,
+    top_complaints JSONB,
+    top_praise JSONB,
+    negative_quotes JSONB,
+    raw_response JSONB,
+    workflow_source TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Secrets Status
+
+| Secret Name | Status | Environment Variable |
+|-------------|--------|---------------------|
+| `supabase-db-direct` | **Created** | `DATABASE_URL` |
+| `openai-secret` | Created | `OPENAI_API_KEY` |
+| `parallel-secret` | Created | `PARALLEL_API_KEY` |
+| `gemini-secret` | Created | `GEMINI_API_KEY` |
+
+---
+
+## Deployed Modal Functions
+
+| Function | Status | URL |
+|----------|--------|-----|
+| `extract_g2_insights_db_direct` | **Deployed** | `https://bencrane--hq-master-data-ingest-extract-g2-insights-db-direct.modal.run` |
+| `infer_g2_url_db_direct` | **Deployed** | `https://bencrane--hq-master-data-ingest-infer-g2-url-db-direct.modal.run` |
+| `classify_b2b_b2c_openai_db_direct` | Pending | Needs deploy |
+| `ingest_linkedin_ads_db_direct` | Pending | Needs deploy |
+| `ingest_meta_ads_db_direct` | Pending | Needs deploy |
+| `ingest_google_ads_db_direct` | Pending | Needs deploy |
+| `infer_description_db_direct` | Pending | Needs deploy |
+
+---
+
 ## Next Steps / Pending Work
 
-1. **Create `supabase-db-direct` Modal secret** with DATABASE_URL
-2. **Run SQL migrations** to create tables
-3. **Deploy Modal functions**
-4. **Test each endpoint** end-to-end
-5. **Build discrete enrichment workflows** for Parallel AI:
+1. **Deploy remaining Modal functions** (B2B/B2C, ads, description)
+2. **Add caching logic** to G2 insights endpoint (check DB first)
+3. **Build discrete enrichment workflows** for Parallel AI:
    - Revenue
    - Employee count
    - Funding raised

@@ -1,7 +1,7 @@
 # Handoff: DB-Direct Workflows
 
 **Date:** 2026-02-06
-**Status:** In Progress - Deployment Phase
+**Status:** In Progress - G2 Workflows Deployed, Others Pending
 
 ---
 
@@ -182,3 +182,40 @@ User explicitly stated: "I prefer building discretely first" - meaning one data 
 2. **Existing Modal functions use different secret** - `supabase-credentials` with `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` for REST API. New db-direct functions need different secret.
 3. **Parallel AI is async** - Submit task, poll for results (not instant)
 4. **User has Parallel AI API key** - `LBGQ8CjfxZfPqqA7g1BDQS-_ci0BWtzeznqyDR6m`
+
+---
+
+## Session Progress (Updated)
+
+### Completed
+- Created `supabase-db-direct` Modal secret with DATABASE_URL
+- Created `core.company_g2` table
+- Created `core.company_g2_insights` table
+- Deployed `infer_g2_url_db_direct` (Parallel AI Search)
+- Deployed `extract_g2_insights_db_direct` (Gemini)
+- Tested end-to-end with Databricks - working
+- Inserted Databricks G2 URL manually for testing
+
+### Pending Deployment
+- `classify_b2b_b2c_openai_db_direct`
+- `ingest_linkedin_ads_db_direct`
+- `ingest_meta_ads_db_direct`
+- `ingest_google_ads_db_direct`
+- `infer_description_db_direct`
+
+To deploy remaining functions:
+```bash
+source /Users/benjamincrane/hq-master-data-warehouse-v2/modal-functions/.venv/bin/activate
+cd /Users/benjamincrane/hq-master-data-warehouse-v2/modal
+modal deploy classify_b2b_b2c_openai_db_direct.py
+modal deploy ingest_linkedin_ads_db_direct.py
+modal deploy ingest_meta_ads_db_direct.py
+modal deploy ingest_google_ads_db_direct.py
+modal deploy infer_description_db_direct.py
+```
+
+Note: These functions need the same fixes applied (add image with fastapi/pydantic, use @modal.fastapi_endpoint, use Pydantic BaseModel for request).
+
+### Future Work
+- Add caching/TTL logic to G2 insights endpoint
+- Build more Parallel AI discrete enrichments (revenue, employee count, funding, etc.)
