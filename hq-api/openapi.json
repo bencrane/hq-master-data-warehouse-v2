@@ -3243,6 +3243,426 @@
         }
       }
     },
+    "/api/companies/companyenrich-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Check Companyenrich Status",
+        "description": "Check if a company has been enriched via companyenrich.com.\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns whether the domain exists in extracted.companyenrich_company\nand when it was enriched.",
+        "operationId": "check_companyenrich_status_api_companies_companyenrich_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/firmographics-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Check Firmographics Status",
+        "description": "Check if a company has firmographics data (from Clay/LinkedIn).\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns whether the domain exists in extracted.company_firmographics\nand when it was enriched.",
+        "operationId": "check_firmographics_status_api_companies_firmographics_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/pricing-page-url": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Pricing Page Url",
+        "description": "Get pricing page URL for a domain.\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns whether we have a pricing_page_url and its value.",
+        "operationId": "get_pricing_page_url_api_companies_pricing_page_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/g2-page-url": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get G2 Page Url",
+        "description": "Get G2 page URL for a domain.\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns whether we have a g2_url and its value.",
+        "operationId": "get_g2_page_url_api_companies_g2_page_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/social-urls": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Social Urls",
+        "description": "Get all social URLs for a domain.\n\nPayload: { \"domain\": \"example.com\" }",
+        "operationId": "get_social_urls_api_companies_social_urls_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/linkedin-ads-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Linkedin Ads Status",
+        "description": "Check if we have LinkedIn ads data for a domain.\n\nPayload: { \"domain\": \"example.com\" }",
+        "operationId": "get_linkedin_ads_status_api_companies_linkedin_ads_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/google-ads-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Google Ads Status",
+        "description": "Check if we have Google ads data for a domain.\n\nPayload: { \"domain\": \"example.com\" }",
+        "operationId": "get_google_ads_status_api_companies_google_ads_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/meta-ads-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Meta Ads Status",
+        "description": "Check if we have Meta ads data for a domain.\n\nPayload: { \"domain\": \"example.com\" }",
+        "operationId": "get_meta_ads_status_api_companies_meta_ads_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/customers-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Customers Status",
+        "description": "Check if we have customer data for a domain (as the origin company).\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns count of customers and list of case study URLs.",
+        "operationId": "get_customers_status_api_companies_customers_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/case-studies-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Case Studies Status",
+        "description": "Check if we have extracted case study details for a domain (as the origin company).\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns count and list of case study URLs.",
+        "operationId": "get_case_studies_status_api_companies_case_studies_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/companies/public-company-info": {
       "post": {
         "tags": [
@@ -3312,6 +3732,552 @@
                 "schema": {
                   "$ref": "#/components/schemas/Company"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/discover-pricing-page": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Discover Pricing Page",
+        "description": "Discover the pricing page URL for a company using Gemini.\n\nTakes a domain, fetches the homepage, and uses AI to find the pricing page URL.\n\nPayload: { \"domain\": \"example.com\", \"company_name\": \"Example Inc\" (optional) }\n\nReturns: { \"success\": true, \"pricing_page_url\": \"...\", \"confidence\": \"high|medium|low\" }",
+        "operationId": "discover_pricing_page_api_companies_discover_pricing_page_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/ingest-pricing-page-url": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Ingest Pricing Page Url",
+        "description": "Ingest a pricing page URL from Clay.\n\nPayload: { \"domain\": \"example.com\", \"pricing_page_url\": \"https://example.com/pricing\" }",
+        "operationId": "ingest_pricing_page_url_api_companies_ingest_pricing_page_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/discover-g2-page-openwebninja": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Discover G2 Page Openwebninja",
+        "description": "Discover G2 page URL for a company using OpenWebNinja web search.\n\nPayload: { \"domain\": \"example.com\", \"company_name\": \"Example Inc\" }",
+        "operationId": "discover_g2_page_openwebninja_api_companies_discover_g2_page_openwebninja_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/discover-g2-page-gemini": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Discover G2 Page Gemini",
+        "description": "Discover G2 page URL for a company using Gemini.\n\nPayload: { \"domain\": \"example.com\", \"company_name\": \"Example Inc\" }",
+        "operationId": "discover_g2_page_gemini_api_companies_discover_g2_page_gemini_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/search-social-links-openwebninja": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Search Social Links Openwebninja",
+        "description": "Search for social links using OpenWebNinja.\n\nPayload: {\n    \"query\": \"John Smith Acme Corp\",\n    \"social_networks\": \"facebook,tiktok,instagram,snapchat,twitter,youtube,linkedin,github,pinterest\"\n}\n\nsocial_networks is optional, defaults to all networks.",
+        "operationId": "search_social_links_openwebninja_api_companies_search_social_links_openwebninja_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/discover-competitors-openai": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Discover Competitors Openai",
+        "description": "Discover top 3-5 competitors using OpenAI.\n\nPayload: { \"company_name\": \"Stripe\", \"domain\": \"stripe.com\" }\n\nReturns: { \"competitors\": [{\"name\": \"...\", \"domain\": \"...\", \"linkedin_url\": \"...\"}] }",
+        "operationId": "discover_competitors_openai_api_companies_discover_competitors_openai_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/ingest-competitors": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Ingest Competitors",
+        "description": "Ingest competitors data into raw/extracted/core tables.\n\nPayload: { \"domain\": \"canva.com\", \"company_name\": \"Canva\", \"competitors\": [...] }",
+        "operationId": "ingest_competitors_api_companies_ingest_competitors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/competitors-status": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get Competitors Status",
+        "description": "Check if we have competitors for a domain.\n\nPayload: { \"domain\": \"canva.com\" }",
+        "operationId": "get_competitors_status_api_companies_competitors_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/ingest-g2-page-url": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Ingest G2 Page Url",
+        "description": "Ingest a G2 page URL from Clay.\n\nPayload: { \"domain\": \"example.com\", \"g2_url\": \"https://www.g2.com/products/example\" }",
+        "operationId": "ingest_g2_page_url_api_companies_ingest_g2_page_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/discover-g2-page-gemini-search": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Discover G2 Page Gemini Search",
+        "description": "Discover G2 page URL using Gemini with search grounding.\n\nPayload: { \"domain\": \"...\", \"company_name\": \"...\" }",
+        "operationId": "discover_g2_page_gemini_search_api_companies_discover_g2_page_gemini_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/ingest-g2-page-scrape-clay-zenrows": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Ingest G2 Page Scrape Clay Zenrows",
+        "description": "Ingest G2 page scrape from Clay-Zenrows.\n\nPayload: {\n    \"domain\": \"example.com\",\n    \"g2_url\": \"https://www.g2.com/products/example/competitors/alternatives\",\n    \"scrape_data\": {\n        \"links\": [...],\n        \"title\": \"...\",\n        \"bodyText\": \"...\",\n        \"description\": \"...\",\n        \"socialLinks\": {...}\n    }\n}",
+        "operationId": "ingest_g2_page_scrape_clay_zenrows_api_companies_ingest_g2_page_scrape_clay_zenrows_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/search-parallel-ai": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Search Parallel Ai",
+        "description": "Passthrough to Parallel AI Search API.\n\nPayload: {\n    \"objective\": \"Find information about...\",\n    \"search_queries\": [\"query1\", \"query2\"],  # optional\n    \"mode\": \"one-shot\",  # one-shot, agentic, fast\n    \"max_results\": 10,  # 1-20\n    \"domain\": \"example.com\",  # optional\n    \"company_name\": \"Example Inc\"  # optional\n}",
+        "operationId": "search_parallel_ai_api_companies_search_parallel_ai_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/ingest-staffing-parallel-search": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Ingest Staffing Parallel Search",
+        "description": "Ingest Parallel AI search results for staffing research.\n\nPayload: Full response from search-parallel-ai endpoint",
+        "operationId": "ingest_staffing_parallel_search_api_companies_ingest_staffing_parallel_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -13248,6 +14214,90 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Get Clients",
+        "description": "Get all HQ clients for dropdown selection.\n\nReturns all clients with their details.",
+        "operationId": "get_clients_api_hq_clients_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/upload-csv": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Upload Client Csv",
+        "description": "Upload CSV data for a client.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\",\n    \"csv_data\": \"first_name,last_name,work_email,...\\nJohn,Doe,john@example.com,...\"\n}\n\nParses CSV and inserts into hq.clients_raw_data.\nKnown columns are extracted to their own fields.\nAll data (including title, status, notes, extras) goes into raw_payload JSONB.",
+        "operationId": "upload_client_csv_api_hq_clients_upload_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -29329,6 +30379,18 @@
               }
             ],
             "title": "Is Current"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
           }
         },
         "type": "object",
