@@ -1,21 +1,144 @@
 # Modal Endpoints Reference
 
-**Last Updated:** 2026-01-24  
-**App Name:** `hq-master-data-ingest`  
+**Last Updated:** 2026-02-06
+**App Name:** `hq-master-data-ingest`
 **Dashboard:** https://modal.com/apps/bencrane/main/deployed/hq-master-data-ingest
 
 ---
 
 ## Table of Contents
 
-1. [Company Ingest Endpoints](#company-ingest-endpoints)
-2. [Person Ingest Endpoints](#person-ingest-endpoints)
-3. [Signal Endpoints](#signal-endpoints)
-4. [Lookup Endpoints](#lookup-endpoints)
-5. [Location Lookup Ingest Endpoints](#location-lookup-ingest-endpoints)
-6. [Backfill Endpoints](#backfill-endpoints)
-7. [Other Endpoints](#other-endpoints)
-8. [Utility Endpoints](#utility-endpoints)
+1. [DB-Direct Endpoints (NEW)](#db-direct-endpoints-new)
+2. [Company Ingest Endpoints](#company-ingest-endpoints)
+3. [Person Ingest Endpoints](#person-ingest-endpoints)
+4. [Signal Endpoints](#signal-endpoints)
+5. [Lookup Endpoints](#lookup-endpoints)
+6. [Location Lookup Ingest Endpoints](#location-lookup-ingest-endpoints)
+7. [Backfill Endpoints](#backfill-endpoints)
+8. [Other Endpoints](#other-endpoints)
+9. [Utility Endpoints](#utility-endpoints)
+
+---
+
+## DB-Direct Endpoints (NEW)
+
+These endpoints use direct PostgreSQL connections (psycopg2) instead of Supabase REST client.
+They call external APIs AND write directly to the database.
+
+**Secret Required:** `supabase-db-direct` with `DATABASE_URL` environment variable.
+
+---
+
+### classify_b2b_b2c_openai_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-classify-b2b-b2c-openai-db-direct.modal.run`
+
+**Purpose:** Classify company as B2B/B2C using OpenAI.
+
+**Payload:**
+```json
+{
+  "domain": "stripe.com",
+  "company_name": "Stripe",
+  "description": "Financial infrastructure for the internet",
+  "model": "gpt-4o",
+  "workflow_source": "openai-native/b2b-b2c/classify/db-direct"
+}
+```
+
+**Stores to:**
+- `raw.company_classification_db_direct`
+- `extracted.company_classification_db_direct`
+- `core.company_business_model`
+
+---
+
+### ingest_linkedin_ads_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-linkedin-ads-db-direct.modal.run`
+
+**Purpose:** Ingest LinkedIn ads data from Adyntel.
+
+**Payload:**
+```json
+{
+  "domain": "stripe.com",
+  "linkedin_ads_payload": { "ads": [...] },
+  "workflow_source": "adyntel-native/linkedin-ads/ingest/db-direct"
+}
+```
+
+**Stores to:**
+- `raw.linkedin_ads_payloads`
+- `extracted.company_linkedin_ads`
+- `core.company_linkedin_ads`
+
+---
+
+### ingest_meta_ads_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-meta-ads-db-direct.modal.run`
+
+**Purpose:** Ingest Meta (Facebook/Instagram) ads data from Adyntel.
+
+**Payload:**
+```json
+{
+  "domain": "stripe.com",
+  "meta_ads_payload": { "ads": [...] },
+  "workflow_source": "adyntel-native/meta-ads/ingest/db-direct"
+}
+```
+
+**Stores to:**
+- `raw.meta_ads_payloads`
+- `extracted.company_meta_ads`
+- `core.company_meta_ads`
+
+---
+
+### ingest_google_ads_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-ingest-google-ads-db-direct.modal.run`
+
+**Purpose:** Ingest Google ads data from Adyntel.
+
+**Payload:**
+```json
+{
+  "domain": "stripe.com",
+  "google_ads_payload": { "creatives": [...] },
+  "workflow_source": "adyntel-native/google-ads/ingest/db-direct"
+}
+```
+
+**Stores to:**
+- `raw.google_ads_payloads`
+- `extracted.company_google_ads`
+- `core.company_google_ads`
+
+---
+
+### infer_description_db_direct
+
+**URL:** `https://bencrane--hq-master-data-ingest-infer-description-db-direct.modal.run`
+
+**Purpose:** Infer company description using Parallel AI Task Enrichment API.
+
+**Payload:**
+```json
+{
+  "domain": "stripe.com",
+  "company_name": "Stripe",
+  "company_linkedin_url": "https://linkedin.com/company/stripe",
+  "workflow_source": "parallel-native/description/infer/db-direct"
+}
+```
+
+**Stores to:**
+- `core.company_descriptions`
+
+**Notes:** Uses async Parallel AI API (submit task → poll for completion).
 
 ---
 

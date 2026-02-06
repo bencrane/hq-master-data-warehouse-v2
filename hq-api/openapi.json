@@ -14116,6 +14116,258 @@
         }
       }
     },
+    "/run/companies/openai-native/b2b-b2c/classify/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Classify companies as B2B/B2C using OpenAI and write directly to DB",
+        "description": "Looks up domain in extracted table first. If not found, calls Modal function\n    which uses OpenAI and writes to raw, extracted, and core tables.\n\n    Modal URL: https://bencrane--hq-master-data-ingest-classify-b2b-b2c-openai-db-direct.modal.run",
+        "operationId": "classify_b2b_b2c_openai_db_direct_run_companies_openai_native_b2b_b2c_classify_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/B2bB2cClassifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B2bB2cClassifyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/adyntel-native/linkedin-ads/ingest/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Ingest LinkedIn ads from Adyntel and write directly to DB",
+        "description": "Receives LinkedIn ads payload from UI/Prefect (which called Adyntel),\n    writes to raw, extracted, and core tables.\n\n    TTL logic:\n    - ttl_days=None: skip if domain already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if last_checked_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-ingest-linkedin-ads-db-direct.modal.run",
+        "operationId": "ingest_linkedin_ads_db_direct_run_companies_adyntel_native_linkedin_ads_ingest_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedInAdsDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedInAdsDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/adyntel-native/meta-ads/ingest/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Ingest Meta ads from Adyntel and write directly to DB",
+        "description": "Receives Meta ads payload from UI/Prefect (which called Adyntel),\n    writes to raw, extracted, and core tables.\n\n    TTL logic:\n    - ttl_days=None: skip if domain already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if last_checked_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-ingest-meta-ads-db-direct.modal.run",
+        "operationId": "ingest_meta_ads_db_direct_run_companies_adyntel_native_meta_ads_ingest_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetaAdsDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaAdsDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/adyntel-native/google-ads/ingest/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Ingest Google ads from Adyntel and write directly to DB",
+        "description": "Receives Google ads payload from UI/Prefect (which called Adyntel),\n    writes to raw, extracted, and core tables.\n\n    TTL logic:\n    - ttl_days=None: skip if domain already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if last_checked_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-ingest-google-ads-db-direct.modal.run",
+        "operationId": "ingest_google_ads_db_direct_run_companies_adyntel_native_google_ads_ingest_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleAdsDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleAdsDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-native/description/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company description using Parallel AI and write directly to DB",
+        "description": "Checks core.company_descriptions first. If not found (or TTL expired),\n    calls Parallel AI Task Enrichment API to get description.\n\n    TTL logic:\n    - ttl_days=None: skip if description already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if updated_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-infer-description-db-direct.modal.run",
+        "operationId": "infer_description_db_direct_run_companies_parallel_native_description_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DescriptionDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DescriptionDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-native/description/infer/db-direct/batch": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Batch infer company descriptions using Parallel AI",
+        "description": "Process multiple domains for description inference.",
+        "operationId": "infer_description_db_direct_batch_run_companies_parallel_native_description_infer_db_direct_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DescriptionDbDirectBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DescriptionDbDirectBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/read/companies/db/check-existence": {
       "post": {
         "tags": [
@@ -14268,8 +14520,260 @@
           "hq"
         ],
         "summary": "Upload Client Csv",
-        "description": "Upload CSV data for a client.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\",\n    \"csv_data\": \"first_name,last_name,work_email,...\\nJohn,Doe,john@example.com,...\"\n}\n\nParses CSV and inserts into hq.clients_raw_data.\nKnown columns are extracted to their own fields.\nAll data (including title, status, notes, extras) goes into raw_payload JSONB.",
+        "description": "Upload CSV data for a client.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\",\n    \"csv_data\": \"first_name,last_name,work_email,...\\nJohn,Doe,john@example.com,...\"\n}\n\n1. Parses CSV and inserts into hq.clients_raw_data (raw, as-is)\n2. Normalizes and inserts into hq.clients_normalized_crm_data\n\nKnown columns are extracted to their own fields.\nAll data (including title, status, notes, extras) goes into raw_payload JSONB.",
         "operationId": "upload_client_csv_api_hq_clients_upload_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/raw-leads": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Get Raw Leads",
+        "description": "Get raw leads data from hq.clients_raw_data.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\",\n    \"limit\": 100,\n    \"offset\": 0\n}",
+        "operationId": "get_raw_leads_api_hq_clients_raw_leads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/normalized-leads": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Get Normalized Leads",
+        "description": "Get normalized leads data from hq.clients_normalized_crm_data.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\",\n    \"limit\": 100,\n    \"offset\": 0\n}",
+        "operationId": "get_normalized_leads_api_hq_clients_normalized_leads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/workflow-sequences": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Get Workflow Sequences",
+        "description": "Get workflow sequences for a client.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nReturns workflows in sequence order.",
+        "operationId": "get_workflow_sequences_api_hq_clients_workflow_sequences_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/workflow-sequences/add": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Add Workflow Sequence",
+        "description": "Add a workflow step to a client's sequence.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\",\n    \"workflow_slug\": \"resolve-company-name\",\n    \"endpoint_url\": \"https://api.revenueinfra.com/api/workflows/resolve-company-name\",\n    \"description\": \"Resolve cleaned company names\",\n    \"sequence_order\": 1\n}",
+        "operationId": "add_workflow_sequence_api_hq_clients_workflow_sequences_add_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/workflow-sequences/update": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Update Workflow Sequence",
+        "description": "Update a workflow step.\n\nPayload: {\n    \"id\": \"uuid\",\n    \"workflow_slug\": \"new-slug\",  // optional\n    \"endpoint_url\": \"new-url\",    // optional\n    \"description\": \"new desc\",    // optional\n    \"sequence_order\": 2           // optional\n}",
+        "operationId": "update_workflow_sequence_api_hq_clients_workflow_sequences_update_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hq/clients/workflow-sequences/delete": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Delete Workflow Sequence",
+        "description": "Delete a workflow step.\n\nPayload: {\n    \"id\": \"uuid\"\n}",
+        "operationId": "delete_workflow_sequence_api_hq_clients_workflow_sequences_delete_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -15041,6 +15545,97 @@
           "success"
         ],
         "title": "AnyMailFinderResponse"
+      },
+      "B2bB2cClassifyRequest": {
+        "properties": {
+          "client_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Domain"
+          },
+          "domains": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domains"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "gpt-4o"
+          }
+        },
+        "type": "object",
+        "title": "B2bB2cClassifyRequest",
+        "description": "Request for B2B/B2C classification."
+      },
+      "B2bB2cClassifyResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "records_evaluated": {
+            "type": "integer",
+            "title": "Records Evaluated",
+            "default": 0
+          },
+          "fields_updated": {
+            "type": "integer",
+            "title": "Fields Updated",
+            "default": 0
+          },
+          "records_already_classified": {
+            "type": "integer",
+            "title": "Records Already Classified",
+            "default": 0
+          },
+          "records_classified_by_ai": {
+            "type": "integer",
+            "title": "Records Classified By Ai",
+            "default": 0
+          },
+          "records_missing_description": {
+            "type": "integer",
+            "title": "Records Missing Description",
+            "default": 0
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "B2bB2cClassifyResponse",
+        "description": "Response for B2B/B2C classification."
       },
       "BackfillCleanedCompanyNameRequest": {
         "properties": {
@@ -20839,6 +21434,208 @@
         "type": "object",
         "title": "CustomerItem"
       },
+      "DescriptionDbDirectBatchRequest": {
+        "properties": {
+          "client_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Domain"
+          },
+          "domains": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domains"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "title": "DescriptionDbDirectBatchRequest",
+        "description": "Batch request for company description inference (db-direct)."
+      },
+      "DescriptionDbDirectBatchResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "records_evaluated": {
+            "type": "integer",
+            "title": "Records Evaluated",
+            "default": 0
+          },
+          "fields_updated": {
+            "type": "integer",
+            "title": "Fields Updated",
+            "default": 0
+          },
+          "records_already_had_value": {
+            "type": "integer",
+            "title": "Records Already Had Value",
+            "default": 0
+          },
+          "records_inferred": {
+            "type": "integer",
+            "title": "Records Inferred",
+            "default": 0
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "DescriptionDbDirectBatchResponse",
+        "description": "Batch response for company description inference (db-direct)."
+      },
+      "DescriptionDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "DescriptionDbDirectRequest",
+        "description": "Request for company description inference (db-direct)."
+      },
+      "DescriptionDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "tagline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagline"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "DescriptionDbDirectResponse",
+        "description": "Response for company description inference (db-direct)."
+      },
       "EmployeeRangeInferenceRequest": {
         "properties": {
           "company_name": {
@@ -21362,6 +22159,122 @@
           "limit"
         ],
         "title": "GapSampleResponse"
+      },
+      "GoogleAdsDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "google_ads_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Google Ads Payload"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "google_ads_payload"
+        ],
+        "title": "GoogleAdsDbDirectRequest",
+        "description": "Request for Google ads ingestion (db-direct)."
+      },
+      "GoogleAdsDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "raw_payload_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Payload Id"
+          },
+          "ads_extracted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ads Extracted"
+          },
+          "total_ads": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Ads"
+          },
+          "is_running_ads": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Running Ads"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GoogleAdsDbDirectResponse",
+        "description": "Response for Google ads ingestion (db-direct)."
       },
       "GoogleAdsRequest": {
         "properties": {
@@ -24334,6 +25247,122 @@
         ],
         "title": "LeadsResponse"
       },
+      "LinkedInAdsDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "linkedin_ads_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Linkedin Ads Payload"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "linkedin_ads_payload"
+        ],
+        "title": "LinkedInAdsDbDirectRequest",
+        "description": "Request for LinkedIn ads ingestion (db-direct)."
+      },
+      "LinkedInAdsDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "raw_payload_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Payload Id"
+          },
+          "ads_extracted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ads Extracted"
+          },
+          "total_ads": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Ads"
+          },
+          "is_running_ads": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Running Ads"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "LinkedInAdsDbDirectResponse",
+        "description": "Response for LinkedIn ads ingestion (db-direct)."
+      },
       "LinkedInAdsRequest": {
         "properties": {
           "domain": {
@@ -24983,6 +26012,136 @@
           "success"
         ],
         "title": "ManualCompanyCustomerResponse"
+      },
+      "MetaAdsDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "meta_ads_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta Ads Payload"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "meta_ads_payload"
+        ],
+        "title": "MetaAdsDbDirectRequest",
+        "description": "Request for Meta ads ingestion (db-direct)."
+      },
+      "MetaAdsDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "raw_payload_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Payload Id"
+          },
+          "ads_extracted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ads Extracted"
+          },
+          "total_ads": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Ads"
+          },
+          "is_running_ads": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Running Ads"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "MetaAdsDbDirectResponse",
+        "description": "Response for Meta ads ingestion (db-direct)."
       },
       "MetaAdsRequest": {
         "properties": {
