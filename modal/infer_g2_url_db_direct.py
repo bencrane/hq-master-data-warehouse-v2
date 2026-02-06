@@ -12,8 +12,18 @@ Endpoint URL:
 """
 
 import modal
+from pydantic import BaseModel
+from typing import Optional
 
 app = modal.App("hq-master-data-ingest")
+
+# Image with required dependencies
+image = modal.Image.debian_slim(python_version="3.11").pip_install(
+    "psycopg2-binary",
+    "requests",
+    "fastapi",
+    "pydantic",
+)
 
 # Secrets
 db_secret = modal.Secret.from_name("supabase-db-direct")
@@ -22,17 +32,20 @@ parallel_secret = modal.Secret.from_name("parallel-secret")
 PARALLEL_SEARCH_API_URL = "https://api.parallel.ai/v1beta/search"
 
 
+class G2UrlRequest(BaseModel):
+    domain: str
+    company_name: str
+    cleaned_company_name: Optional[str] = None
+    workflow_source: str = "parallel-native/g2-url/infer/db-direct"
+
+
 @app.function(
+    image=image,
     secrets=[db_secret, parallel_secret],
     timeout=60,
 )
-@modal.web_endpoint(method="POST")
-def infer_g2_url_db_direct(
-    domain: str,
-    company_name: str,
-    cleaned_company_name: str = None,
-    workflow_source: str = "parallel-native/g2-url/infer/db-direct"
-):
+@modal.fastapi_endpoint(method="POST")
+def infer_g2_url_db_direct(request: G2UrlRequest):
     """
     Find G2 reviews page URL using Parallel AI Search API.
 
@@ -43,6 +56,11 @@ def infer_g2_url_db_direct(
     import os
     import requests
     import psycopg2
+
+    domain = request.domain
+    company_name = request.company_name
+    cleaned_company_name = request.cleaned_company_name
+    workflow_source = request.workflow_source
 
     parallel_api_key = os.environ["PARALLEL_API_KEY"]
 
