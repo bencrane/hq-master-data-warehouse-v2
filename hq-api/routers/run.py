@@ -7354,3 +7354,543 @@ async def extract_g2_insights_db_direct(request: G2InsightsDbDirectRequest) -> G
             domain=domain,
             error=str(e)
         )
+
+
+# =============================================================================
+# Parallel Native - Company Revenue (DB Direct)
+# =============================================================================
+
+MODAL_REVENUE_DB_DIRECT_URL = f"{MODAL_BASE_URL}-infer-revenue-db-direct.modal.run"
+WORKFLOW_SOURCE_REVENUE = "parallel-native/revenue/infer/db-direct"
+
+
+class RevenueDbDirectRequest(BaseModel):
+    """Request for company revenue inference (db-direct)."""
+    domain: str
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class RevenueDbDirectResponse(BaseModel):
+    """Response for company revenue inference (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    annual_revenue_usd: Optional[int] = None
+    revenue_range: Optional[str] = None
+    confidence: Optional[str] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/parallel-native/revenue/infer/db-direct",
+    response_model=RevenueDbDirectResponse,
+    summary="Infer company annual revenue using Parallel AI and write directly to DB",
+    description="""
+    Checks core.company_revenue first. If not found (or TTL expired),
+    calls Parallel AI Task Enrichment API to get revenue estimate.
+
+    TTL logic:
+    - ttl_days=None: skip if revenue already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if updated_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-infer-revenue-db-direct.modal.run
+    """
+)
+async def infer_revenue_db_direct(request: RevenueDbDirectRequest) -> RevenueDbDirectResponse:
+    """
+    Infer company annual revenue using Parallel AI, writing directly to database.
+    """
+    pool = get_pool()
+    domain = request.domain.lower().strip()
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists with revenue
+        existing = await pool.fetchrow("""
+            SELECT domain, raw_revenue_amount, raw_revenue_range, updated_at
+            FROM core.company_revenue
+            WHERE domain = $1 AND (raw_revenue_amount IS NOT NULL OR raw_revenue_range IS NOT NULL)
+        """, domain)
+        if existing:
+            return RevenueDbDirectResponse(
+                success=True,
+                domain=domain,
+                annual_revenue_usd=existing["raw_revenue_amount"],
+                revenue_range=existing["raw_revenue_range"],
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, raw_revenue_amount, raw_revenue_range, updated_at
+            FROM core.company_revenue
+            WHERE domain = $1 AND (raw_revenue_amount IS NOT NULL OR raw_revenue_range IS NOT NULL)
+        """, domain)
+        if existing and existing["updated_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["updated_at"] > cutoff:
+                return RevenueDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    annual_revenue_usd=existing["raw_revenue_amount"],
+                    revenue_range=existing["raw_revenue_range"],
+                    skipped_ttl=True
+                )
+
+    # Get company info if not provided
+    company_name = request.company_name
+    company_linkedin_url = request.company_linkedin_url
+
+    if not company_name:
+        company_row = await pool.fetchrow("""
+            SELECT name, linkedin_url FROM core.companies WHERE domain = $1
+        """, domain)
+        if company_row:
+            company_name = company_row["name"]
+            company_linkedin_url = company_linkedin_url or company_row["linkedin_url"]
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                MODAL_REVENUE_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "company_name": company_name or domain,
+                    "company_linkedin_url": company_linkedin_url,
+                    "workflow_source": WORKFLOW_SOURCE_REVENUE
+                }
+            )
+
+            if response.status_code != 200:
+                return RevenueDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return RevenueDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                annual_revenue_usd=result.get("annual_revenue_usd"),
+                revenue_range=result.get("revenue_range"),
+                confidence=result.get("confidence"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return RevenueDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
+
+
+# =============================================================================
+# Parallel Native - Company Funding (DB Direct)
+# =============================================================================
+
+MODAL_FUNDING_DB_DIRECT_URL = f"{MODAL_BASE_URL}-infer-funding-db-direct.modal.run"
+WORKFLOW_SOURCE_FUNDING = "parallel-native/funding/infer/db-direct"
+
+
+class FundingDbDirectRequest(BaseModel):
+    """Request for company funding inference (db-direct)."""
+    domain: str
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class FundingDbDirectResponse(BaseModel):
+    """Response for company funding inference (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    total_funding_usd: Optional[int] = None
+    funding_range: Optional[str] = None
+    confidence: Optional[str] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/parallel-native/funding/infer/db-direct",
+    response_model=FundingDbDirectResponse,
+    summary="Infer company total funding raised using Parallel AI and write directly to DB",
+    description="""
+    Checks core.company_funding first. If not found (or TTL expired),
+    calls Parallel AI Task Enrichment API to get funding estimate.
+
+    TTL logic:
+    - ttl_days=None: skip if funding already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if updated_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-infer-funding-db-direct.modal.run
+    """
+)
+async def infer_funding_db_direct(request: FundingDbDirectRequest) -> FundingDbDirectResponse:
+    """
+    Infer company total funding raised using Parallel AI, writing directly to database.
+    """
+    pool = get_pool()
+    domain = request.domain.lower().strip()
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists with funding
+        existing = await pool.fetchrow("""
+            SELECT domain, raw_funding_amount, raw_funding_range, updated_at
+            FROM core.company_funding
+            WHERE domain = $1 AND (raw_funding_amount IS NOT NULL OR raw_funding_range IS NOT NULL)
+        """, domain)
+        if existing:
+            return FundingDbDirectResponse(
+                success=True,
+                domain=domain,
+                total_funding_usd=existing["raw_funding_amount"],
+                funding_range=existing["raw_funding_range"],
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, raw_funding_amount, raw_funding_range, updated_at
+            FROM core.company_funding
+            WHERE domain = $1 AND (raw_funding_amount IS NOT NULL OR raw_funding_range IS NOT NULL)
+        """, domain)
+        if existing and existing["updated_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["updated_at"] > cutoff:
+                return FundingDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    total_funding_usd=existing["raw_funding_amount"],
+                    funding_range=existing["raw_funding_range"],
+                    skipped_ttl=True
+                )
+
+    # Get company info if not provided
+    company_name = request.company_name
+    company_linkedin_url = request.company_linkedin_url
+
+    if not company_name:
+        company_row = await pool.fetchrow("""
+            SELECT name, linkedin_url FROM core.companies WHERE domain = $1
+        """, domain)
+        if company_row:
+            company_name = company_row["name"]
+            company_linkedin_url = company_linkedin_url or company_row["linkedin_url"]
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                MODAL_FUNDING_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "company_name": company_name or domain,
+                    "company_linkedin_url": company_linkedin_url,
+                    "workflow_source": WORKFLOW_SOURCE_FUNDING
+                }
+            )
+
+            if response.status_code != 200:
+                return FundingDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return FundingDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                total_funding_usd=result.get("total_funding_usd"),
+                funding_range=result.get("funding_range"),
+                confidence=result.get("confidence"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return FundingDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
+
+
+# =============================================================================
+# Parallel Native - Company Employees (DB Direct)
+# =============================================================================
+
+MODAL_EMPLOYEES_DB_DIRECT_URL = f"{MODAL_BASE_URL}-infer-employees-db-direct.modal.run"
+WORKFLOW_SOURCE_EMPLOYEES = "parallel-native/employees/infer/db-direct"
+
+
+class EmployeesDbDirectRequest(BaseModel):
+    """Request for company employee count inference (db-direct)."""
+    domain: str
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class EmployeesDbDirectResponse(BaseModel):
+    """Response for company employee count inference (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    employee_count: Optional[int] = None
+    employee_range: Optional[str] = None
+    confidence: Optional[str] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/parallel-native/employees/infer/db-direct",
+    response_model=EmployeesDbDirectResponse,
+    summary="Infer company employee count using Parallel AI and write directly to DB",
+    description="""
+    Checks core.company_employee_range first. If not found (or TTL expired),
+    calls Parallel AI Task Enrichment API to get employee count estimate.
+
+    TTL logic:
+    - ttl_days=None: skip if employee data already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if updated_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-infer-employees-db-direct.modal.run
+    """
+)
+async def infer_employees_db_direct(request: EmployeesDbDirectRequest) -> EmployeesDbDirectResponse:
+    """
+    Infer company employee count using Parallel AI, writing directly to database.
+    """
+    pool = get_pool()
+    domain = request.domain.lower().strip()
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists with employee_range
+        existing = await pool.fetchrow("""
+            SELECT domain, employee_range, updated_at
+            FROM core.company_employee_range
+            WHERE domain = $1 AND employee_range IS NOT NULL
+        """, domain)
+        if existing:
+            return EmployeesDbDirectResponse(
+                success=True,
+                domain=domain,
+                employee_range=existing["employee_range"],
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, employee_range, updated_at
+            FROM core.company_employee_range
+            WHERE domain = $1 AND employee_range IS NOT NULL
+        """, domain)
+        if existing and existing["updated_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["updated_at"] > cutoff:
+                return EmployeesDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    employee_range=existing["employee_range"],
+                    skipped_ttl=True
+                )
+
+    # Get company info if not provided
+    company_name = request.company_name
+    company_linkedin_url = request.company_linkedin_url
+
+    if not company_name:
+        company_row = await pool.fetchrow("""
+            SELECT name, linkedin_url FROM core.companies WHERE domain = $1
+        """, domain)
+        if company_row:
+            company_name = company_row["name"]
+            company_linkedin_url = company_linkedin_url or company_row["linkedin_url"]
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                MODAL_EMPLOYEES_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "company_name": company_name or domain,
+                    "company_linkedin_url": company_linkedin_url,
+                    "workflow_source": WORKFLOW_SOURCE_EMPLOYEES
+                }
+            )
+
+            if response.status_code != 200:
+                return EmployeesDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return EmployeesDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                employee_count=result.get("employee_count"),
+                employee_range=result.get("employee_range"),
+                confidence=result.get("confidence"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return EmployeesDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )
+
+
+# =============================================================================
+# Parallel Native - Company Last Funding Date (DB Direct)
+# =============================================================================
+
+MODAL_LAST_FUNDING_DATE_DB_DIRECT_URL = f"{MODAL_BASE_URL}-infer-last-funding-date--d7eaa1.modal.run"
+WORKFLOW_SOURCE_LAST_FUNDING_DATE = "parallel-native/last-funding-date/infer/db-direct"
+
+
+class LastFundingDateDbDirectRequest(BaseModel):
+    """Request for company last funding date inference (db-direct)."""
+    domain: str
+    company_name: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    ttl_days: Optional[int] = None  # None=skip if exists, 0=always refresh, N=refresh if older than N days
+
+
+class LastFundingDateDbDirectResponse(BaseModel):
+    """Response for company last funding date inference (db-direct)."""
+    success: bool
+    domain: Optional[str] = None
+    last_funding_date: Optional[str] = None
+    funding_type: Optional[str] = None
+    confidence: Optional[str] = None
+    skipped_ttl: bool = False
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/parallel-native/last-funding-date/infer/db-direct",
+    response_model=LastFundingDateDbDirectResponse,
+    summary="Infer company last funding date using Parallel AI and write directly to DB",
+    description="""
+    Checks core.company_funding_rounds first. If not found (or TTL expired),
+    calls Parallel AI Task Enrichment API to get last funding date.
+
+    TTL logic:
+    - ttl_days=None: skip if funding date already exists (default)
+    - ttl_days=0: always refresh
+    - ttl_days=N: refresh if updated_at older than N days
+
+    Modal URL: https://bencrane--hq-master-data-ingest-infer-last-funding-date-db-direct.modal.run
+    """
+)
+async def infer_last_funding_date_db_direct(request: LastFundingDateDbDirectRequest) -> LastFundingDateDbDirectResponse:
+    """
+    Infer company last funding date using Parallel AI, writing directly to database.
+    """
+    pool = get_pool()
+    domain = request.domain.lower().strip()
+
+    # Check TTL logic
+    if request.ttl_days is None:
+        # Skip if exists with funding_date
+        existing = await pool.fetchrow("""
+            SELECT domain, funding_date, funding_type, updated_at
+            FROM core.company_funding_rounds
+            WHERE domain = $1 AND funding_date IS NOT NULL
+        """, domain)
+        if existing:
+            funding_date_str = None
+            if existing["funding_date"]:
+                funding_date_str = existing["funding_date"].strftime("%Y-%m-%d")
+            return LastFundingDateDbDirectResponse(
+                success=True,
+                domain=domain,
+                last_funding_date=funding_date_str,
+                funding_type=existing["funding_type"],
+                skipped_ttl=True
+            )
+    elif request.ttl_days > 0:
+        # Check if older than TTL
+        from datetime import datetime, timedelta, timezone
+        existing = await pool.fetchrow("""
+            SELECT domain, funding_date, funding_type, updated_at
+            FROM core.company_funding_rounds
+            WHERE domain = $1 AND funding_date IS NOT NULL
+        """, domain)
+        if existing and existing["updated_at"]:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=request.ttl_days)
+            if existing["updated_at"] > cutoff:
+                funding_date_str = None
+                if existing["funding_date"]:
+                    funding_date_str = existing["funding_date"].strftime("%Y-%m-%d")
+                return LastFundingDateDbDirectResponse(
+                    success=True,
+                    domain=domain,
+                    last_funding_date=funding_date_str,
+                    funding_type=existing["funding_type"],
+                    skipped_ttl=True
+                )
+
+    # Get company info if not provided
+    company_name = request.company_name
+    company_linkedin_url = request.company_linkedin_url
+
+    if not company_name:
+        company_row = await pool.fetchrow("""
+            SELECT name, linkedin_url FROM core.companies WHERE domain = $1
+        """, domain)
+        if company_row:
+            company_name = company_row["name"]
+            company_linkedin_url = company_linkedin_url or company_row["linkedin_url"]
+
+    # Call Modal function
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                MODAL_LAST_FUNDING_DATE_DB_DIRECT_URL,
+                json={
+                    "domain": domain,
+                    "company_name": company_name or domain,
+                    "company_linkedin_url": company_linkedin_url,
+                    "workflow_source": WORKFLOW_SOURCE_LAST_FUNDING_DATE
+                }
+            )
+
+            if response.status_code != 200:
+                return LastFundingDateDbDirectResponse(
+                    success=False,
+                    domain=domain,
+                    error=f"Modal returned {response.status_code}: {response.text}"
+                )
+
+            result = response.json()
+            return LastFundingDateDbDirectResponse(
+                success=result.get("success", False),
+                domain=domain,
+                last_funding_date=result.get("last_funding_date"),
+                funding_type=result.get("funding_type"),
+                confidence=result.get("confidence"),
+                error=result.get("error")
+            )
+    except Exception as e:
+        return LastFundingDateDbDirectResponse(
+            success=False,
+            domain=domain,
+            error=str(e)
+        )

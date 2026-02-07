@@ -14494,6 +14494,174 @@
         }
       }
     },
+    "/run/companies/parallel-native/revenue/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company annual revenue using Parallel AI and write directly to DB",
+        "description": "Checks core.company_revenue first. If not found (or TTL expired),\n    calls Parallel AI Task Enrichment API to get revenue estimate.\n\n    TTL logic:\n    - ttl_days=None: skip if revenue already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if updated_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-infer-revenue-db-direct.modal.run",
+        "operationId": "infer_revenue_db_direct_run_companies_parallel_native_revenue_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevenueDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-native/funding/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company total funding raised using Parallel AI and write directly to DB",
+        "description": "Checks core.company_funding first. If not found (or TTL expired),\n    calls Parallel AI Task Enrichment API to get funding estimate.\n\n    TTL logic:\n    - ttl_days=None: skip if funding already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if updated_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-infer-funding-db-direct.modal.run",
+        "operationId": "infer_funding_db_direct_run_companies_parallel_native_funding_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FundingDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundingDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-native/employees/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company employee count using Parallel AI and write directly to DB",
+        "description": "Checks core.company_employee_range first. If not found (or TTL expired),\n    calls Parallel AI Task Enrichment API to get employee count estimate.\n\n    TTL logic:\n    - ttl_days=None: skip if employee data already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if updated_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-infer-employees-db-direct.modal.run",
+        "operationId": "infer_employees_db_direct_run_companies_parallel_native_employees_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeesDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeesDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-native/last-funding-date/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company last funding date using Parallel AI and write directly to DB",
+        "description": "Checks core.company_funding_rounds first. If not found (or TTL expired),\n    calls Parallel AI Task Enrichment API to get last funding date.\n\n    TTL logic:\n    - ttl_days=None: skip if funding date already exists (default)\n    - ttl_days=0: always refresh\n    - ttl_days=N: refresh if updated_at older than N days\n\n    Modal URL: https://bencrane--hq-master-data-ingest-infer-last-funding-date-db-direct.modal.run",
+        "operationId": "infer_last_funding_date_db_direct_run_companies_parallel_native_last_funding_date_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LastFundingDateDbDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LastFundingDateDbDirectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/read/companies/db/check-existence": {
       "post": {
         "tags": [
@@ -21910,6 +22078,127 @@
         ],
         "title": "EmployeeRangeOption"
       },
+      "EmployeesDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "EmployeesDbDirectRequest",
+        "description": "Request for company employee count inference (db-direct)."
+      },
+      "EmployeesDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "employee_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Count"
+          },
+          "employee_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Range"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "EmployeesDbDirectResponse",
+        "description": "Response for company employee count inference (db-direct)."
+      },
       "EnterpriseTierResponse": {
         "properties": {
           "success": {
@@ -22130,6 +22419,127 @@
           "success"
         ],
         "title": "FreeTrialResponse"
+      },
+      "FundingDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "FundingDbDirectRequest",
+        "description": "Request for company funding inference (db-direct)."
+      },
+      "FundingDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "total_funding_usd": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Funding Usd"
+          },
+          "funding_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Funding Range"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "FundingDbDirectResponse",
+        "description": "Response for company funding inference (db-direct)."
       },
       "G2InsightsDbDirectRequest": {
         "properties": {
@@ -24509,6 +24919,127 @@
           "success"
         ],
         "title": "JobTitleUpdateResponse"
+      },
+      "LastFundingDateDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "LastFundingDateDbDirectRequest",
+        "description": "Request for company last funding date inference (db-direct)."
+      },
+      "LastFundingDateDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "last_funding_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Funding Date"
+          },
+          "funding_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Funding Type"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "LastFundingDateDbDirectResponse",
+        "description": "Response for company last funding date inference (db-direct)."
       },
       "Lead": {
         "properties": {
@@ -28754,6 +29285,127 @@
           "success"
         ],
         "title": "ResolveCustomerDomainResponse"
+      },
+      "RevenueDbDirectRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "ttl_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "RevenueDbDirectRequest",
+        "description": "Request for company revenue inference (db-direct)."
+      },
+      "RevenueDbDirectResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "annual_revenue_usd": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Revenue Usd"
+          },
+          "revenue_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenue Range"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "skipped_ttl": {
+            "type": "boolean",
+            "title": "Skipped Ttl",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "RevenueDbDirectResponse",
+        "description": "Response for company revenue inference (db-direct)."
       },
       "SECFilingInfo": {
         "properties": {
