@@ -7894,3 +7894,138 @@ async def infer_last_funding_date_db_direct(request: LastFundingDateDbDirectRequ
             domain=domain,
             error=str(e)
         )
+
+
+# =============================================================================
+# Parallel AI Task Enrichment Endpoints (db-direct)
+# =============================================================================
+
+MODAL_PARALLEL_HQ_LOCATION_URL = f"{MODAL_BASE_URL}-infer-parallel-hq-location.modal.run"
+MODAL_PARALLEL_INDUSTRY_URL = f"{MODAL_BASE_URL}-infer-parallel-industry.modal.run"
+MODAL_PARALLEL_COMPETITORS_URL = f"{MODAL_BASE_URL}-infer-parallel-competitors.modal.run"
+
+
+class ParallelHqLocationRequest(BaseModel):
+    domain: str
+    company_name: str
+    company_linkedin_url: Optional[str] = None
+    workflow_source: str = "parallel-task/hq-location/infer/db-direct"
+
+
+class ParallelHqLocationResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    hq_city: Optional[str] = None
+    hq_state: Optional[str] = None
+    hq_country: Optional[str] = None
+    error: Optional[str] = None
+
+
+class ParallelIndustryRequest(BaseModel):
+    domain: str
+    company_name: str
+    company_linkedin_url: Optional[str] = None
+    workflow_source: str = "parallel-task/industry/infer/db-direct"
+
+
+class ParallelIndustryResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    industry: Optional[str] = None
+    sub_industry: Optional[str] = None
+    error: Optional[str] = None
+
+
+class ParallelCompetitorsRequest(BaseModel):
+    domain: str
+    company_name: str
+    company_linkedin_url: Optional[str] = None
+    workflow_source: str = "parallel-task/competitors/infer/db-direct"
+
+
+class ParallelCompetitorsResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    competitors: Optional[list] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/parallel-task/hq-location/infer/db-direct",
+    response_model=ParallelHqLocationResponse,
+    summary="Infer company HQ location using Parallel AI",
+    description="Wrapper for Modal function: infer_parallel_hq_location"
+)
+async def parallel_hq_location(request: ParallelHqLocationRequest) -> ParallelHqLocationResponse:
+    """
+    Infer company HQ location using Parallel AI Task API.
+    Writes directly to core.company_parallel_locations.
+    """
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        try:
+            response = await client.post(
+                MODAL_PARALLEL_HQ_LOCATION_URL,
+                json=request.model_dump(exclude_none=True)
+            )
+            result = response.json()
+            return ParallelHqLocationResponse(**result)
+        except Exception as e:
+            return ParallelHqLocationResponse(
+                success=False,
+                domain=request.domain,
+                error=str(e)
+            )
+
+
+@router.post(
+    "/companies/parallel-task/industry/infer/db-direct",
+    response_model=ParallelIndustryResponse,
+    summary="Infer company industry using Parallel AI",
+    description="Wrapper for Modal function: infer_parallel_industry"
+)
+async def parallel_industry(request: ParallelIndustryRequest) -> ParallelIndustryResponse:
+    """
+    Infer company industry using Parallel AI Task API.
+    Writes directly to core.company_parallel_industries.
+    """
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        try:
+            response = await client.post(
+                MODAL_PARALLEL_INDUSTRY_URL,
+                json=request.model_dump(exclude_none=True)
+            )
+            result = response.json()
+            return ParallelIndustryResponse(**result)
+        except Exception as e:
+            return ParallelIndustryResponse(
+                success=False,
+                domain=request.domain,
+                error=str(e)
+            )
+
+
+@router.post(
+    "/companies/parallel-task/competitors/infer/db-direct",
+    response_model=ParallelCompetitorsResponse,
+    summary="Infer company competitors using Parallel AI",
+    description="Wrapper for Modal function: infer_parallel_competitors"
+)
+async def parallel_competitors(request: ParallelCompetitorsRequest) -> ParallelCompetitorsResponse:
+    """
+    Infer company competitors using Parallel AI Task API.
+    Writes directly to core.company_parallel_competitors.
+    """
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        try:
+            response = await client.post(
+                MODAL_PARALLEL_COMPETITORS_URL,
+                json=request.model_dump(exclude_none=True)
+            )
+            result = response.json()
+            return ParallelCompetitorsResponse(**result)
+        except Exception as e:
+            return ParallelCompetitorsResponse(
+                success=False,
+                domain=request.domain,
+                error=str(e)
+            )
