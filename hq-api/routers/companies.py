@@ -155,43 +155,6 @@ async def lookup_company_domain(
     }
 
 
-@router.post("/linkedin-url/lookup")
-async def lookup_company_linkedin_url(payload: dict):
-    """
-    Lookup company LinkedIn URL by domain.
-
-    Payload: { "domain": "stripe.com" }
-
-    Returns: { "exists": true, "domain": "stripe.com", "company_name": "Stripe", "linkedin_url": "https://linkedin.com/company/stripe" }
-    """
-    domain = payload.get("domain", "").lower().strip()
-
-    if not domain:
-        return {"exists": False, "error": "domain is required"}
-
-    pool = get_pool()
-    row = await pool.fetchrow("""
-        SELECT domain, name, linkedin_url
-        FROM core.companies
-        WHERE domain = $1
-    """, domain)
-
-    if row:
-        return {
-            "exists": True,
-            "domain": row["domain"],
-            "company_name": row["name"],
-            "linkedin_url": row["linkedin_url"]
-        }
-
-    return {
-        "exists": False,
-        "domain": domain,
-        "company_name": None,
-        "linkedin_url": None
-    }
-
-
 @router.get("/{domain}/customer-insights")
 async def get_company_customer_insights(domain: str):
     """
