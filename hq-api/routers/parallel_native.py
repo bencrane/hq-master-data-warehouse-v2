@@ -128,33 +128,39 @@ async def infer_hq_location(request: HqLocationRequest):
 
     task_spec = {
         "output_schema": {
-            "type": "object",
-            "properties": {
-                "hq_city": {
-                    "type": "string",
-                    "description": "City where company HQ is located"
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "hq_city": {
+                        "type": "string",
+                        "description": "City where company HQ is located"
+                    },
+                    "hq_state": {
+                        "type": "string",
+                        "description": "State/province where company HQ is located"
+                    },
+                    "hq_country": {
+                        "type": "string",
+                        "description": "Country where company HQ is located"
+                    },
+                    "confidence": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"]
+                    }
                 },
-                "hq_state": {
-                    "type": "string",
-                    "description": "State/province where company HQ is located"
-                },
-                "hq_country": {
-                    "type": "string",
-                    "description": "Country where company HQ is located"
-                },
-                "confidence": {
-                    "type": "string",
-                    "enum": ["high", "medium", "low"]
-                }
-            },
-            "required": ["hq_country", "confidence"]
+                "required": ["hq_country", "confidence"]
+            }
         },
         "input_schema": {
-            "type": "object",
-            "properties": {
-                "domain": {"type": "string"},
-                "company_name": {"type": "string"},
-                "company_linkedin_url": {"type": "string"}
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "company_name": {"type": "string"},
+                    "company_linkedin_url": {"type": "string"}
+                }
             }
         }
     }
@@ -206,29 +212,35 @@ async def infer_industry(request: IndustryRequest):
 
     task_spec = {
         "output_schema": {
-            "type": "object",
-            "properties": {
-                "industry": {
-                    "type": "string",
-                    "description": "Primary industry the company operates in"
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "industry": {
+                        "type": "string",
+                        "description": "Primary industry the company operates in"
+                    },
+                    "sub_industry": {
+                        "type": "string",
+                        "description": "More specific sub-industry or vertical"
+                    },
+                    "confidence": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"]
+                    }
                 },
-                "sub_industry": {
-                    "type": "string",
-                    "description": "More specific sub-industry or vertical"
-                },
-                "confidence": {
-                    "type": "string",
-                    "enum": ["high", "medium", "low"]
-                }
-            },
-            "required": ["industry", "confidence"]
+                "required": ["industry", "confidence"]
+            }
         },
         "input_schema": {
-            "type": "object",
-            "properties": {
-                "domain": {"type": "string"},
-                "company_name": {"type": "string"},
-                "company_linkedin_url": {"type": "string"}
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "company_name": {"type": "string"},
+                    "company_linkedin_url": {"type": "string"}
+                }
             }
         }
     }
@@ -277,33 +289,39 @@ async def infer_competitors(request: CompetitorsRequest):
 
     task_spec = {
         "output_schema": {
-            "type": "object",
-            "properties": {
-                "competitors": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "domain": {"type": "string"},
-                            "reason": {"type": "string"}
-                        }
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "competitors": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "domain": {"type": "string"},
+                                "reason": {"type": "string"}
+                            }
+                        },
+                        "description": "List of competitor companies"
                     },
-                    "description": "List of competitor companies"
+                    "confidence": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"]
+                    }
                 },
-                "confidence": {
-                    "type": "string",
-                    "enum": ["high", "medium", "low"]
-                }
-            },
-            "required": ["competitors", "confidence"]
+                "required": ["competitors", "confidence"]
+            }
         },
         "input_schema": {
-            "type": "object",
-            "properties": {
-                "domain": {"type": "string"},
-                "company_name": {"type": "string"},
-                "company_linkedin_url": {"type": "string"}
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "company_name": {"type": "string"},
+                    "company_linkedin_url": {"type": "string"}
+                }
             }
         }
     }
