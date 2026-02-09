@@ -73,7 +73,7 @@ async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: i
             }
         )
 
-        if submit_response.status_code != 200:
+        if submit_response.status_code not in (200, 202):
             raise HTTPException(
                 status_code=502,
                 detail=f"Parallel API submit failed: {submit_response.status_code} - {submit_response.text}"
