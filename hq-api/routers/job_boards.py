@@ -68,15 +68,14 @@ async def get_jobs_for_domain(
             cd.tagline as company_tagline,
             cr.raw_revenue_amount as company_revenue,
             cr.raw_revenue_range as company_revenue_range,
-            cf.total_funding_usd as company_funding,
-            cf.funding_stage as company_funding_stage,
-            ce.employee_count as company_employees,
+            cf.raw_funding_amount as company_funding,
+            cf.raw_funding_range as company_funding_range,
             ce.employee_range as company_employee_range
         FROM core.company_job_postings jp
         LEFT JOIN core.company_descriptions cd ON jp.domain = cd.domain
         LEFT JOIN core.company_revenue cr ON jp.domain = cr.domain
         LEFT JOIN core.company_funding cf ON jp.domain = cf.domain
-        LEFT JOIN core.company_employees ce ON jp.domain = ce.domain
+        LEFT JOIN core.company_employee_range ce ON jp.domain = ce.domain
         WHERE jp.job_function = ANY($1::text[])
     """
 
