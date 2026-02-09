@@ -7,6 +7,7 @@ Each domain maps to specific job function(s) via reference.job_board_domains.
 
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
+import json
 from db import get_pool
 
 router = APIRouter(prefix="/job-boards", tags=["job-boards"])
@@ -40,7 +41,10 @@ async def get_jobs_for_domain(
     if not config['is_active']:
         raise HTTPException(status_code=403, detail=f"Domain '{domain}' is not active")
 
+    # Handle JSONB - asyncpg may return string or parsed object
     job_functions = config['job_functions']
+    if isinstance(job_functions, str):
+        job_functions = json.loads(job_functions)
 
     query = """
         SELECT
@@ -160,6 +164,8 @@ async def get_stats_for_domain(domain: str):
         raise HTTPException(status_code=404, detail=f"Domain '{domain}' not configured")
 
     job_functions = config['job_functions']
+    if isinstance(job_functions, str):
+        job_functions = json.loads(job_functions)
 
     stats = await pool.fetchrow("""
         SELECT
