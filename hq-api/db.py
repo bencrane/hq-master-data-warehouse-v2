@@ -8,9 +8,9 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-DATABASE_URL = os.getenv("DATABASE_URL")
-AUTH_DATABASE_URL = os.getenv("AUTH_DATABASE_URL")
-PIPELINE_DATABASE_URL = os.getenv("PIPELINE_DATABASE_URL")
+DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip() or None
+AUTH_DATABASE_URL = (os.getenv("AUTH_DATABASE_URL") or "").strip() or None
+PIPELINE_DATABASE_URL = (os.getenv("PIPELINE_DATABASE_URL") or "").strip() or None
 
 # Connection pools for direct PostgreSQL access
 _pool: asyncpg.Pool = None
