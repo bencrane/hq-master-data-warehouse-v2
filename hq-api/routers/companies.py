@@ -1504,6 +1504,42 @@ async def get_public_company_info(payload: dict):
     }
 
 
+@router.post("/linkedin-url/lookup")
+async def lookup_linkedin_url(payload: dict):
+    """
+    Lookup a company's LinkedIn URL by domain.
+
+    Payload: { "domain": "stripe.com" }
+    """
+    pool = get_pool()
+    domain = payload.get("domain", "").lower().strip().rstrip("/")
+
+    if not domain:
+        return {"exists": False, "domain": None, "company_name": None, "linkedin_url": None}
+
+    row = await pool.fetchrow("""
+        SELECT domain, name, linkedin_url
+        FROM core.companies
+        WHERE domain = $1
+        LIMIT 1
+    """, domain)
+
+    if row and row["linkedin_url"]:
+        return {
+            "exists": True,
+            "domain": row["domain"],
+            "company_name": row["name"],
+            "linkedin_url": row["linkedin_url"]
+        }
+
+    return {
+        "exists": False,
+        "domain": domain,
+        "company_name": row["name"] if row else None,
+        "linkedin_url": None
+    }
+
+
 @router.get("/{domain}", response_model=Company)
 async def get_company_by_domain(domain: str):
     """Get a single company by domain with full details."""
