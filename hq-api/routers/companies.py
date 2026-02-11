@@ -2013,3 +2013,34 @@ async def ingest_staffing_parallel_search(payload: dict):
             json=payload
         )
         return response.json()
+
+
+MODAL_COMPANY_CUSTOMERS_STATUS_URL = os.getenv(
+    "MODAL_COMPANY_CUSTOMERS_STATUS_URL",
+    "https://bencrane--hq-master-data-ingest-get-company-customers-status.modal.run"
+)
+
+
+@router.post("/has-customers-of")
+async def has_customers_of(payload: dict):
+    """
+    Check if we have customers_of data for a company domain.
+
+    Payload: { "domain": "example.com" }
+
+    Returns:
+    - has_customers: whether we have any customer data
+    - total_customers: count of customers
+    - customers_with_domain: count with domain populated
+    - domain_coverage_pct: percentage with domains
+    """
+    domain = payload.get("domain", "").lower().strip()
+    if not domain:
+        return {"success": False, "error": "domain is required"}
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(
+            MODAL_COMPANY_CUSTOMERS_STATUS_URL,
+            json={"domain": domain}
+        )
+        return response.json()
