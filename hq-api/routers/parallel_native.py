@@ -51,6 +51,11 @@ class PersonContactRequest(BaseModel):
     company_domain: Optional[str] = None
 
 
+class CaseStudyExtractRequest(BaseModel):
+    case_study_url: str
+    origin_company_domain: Optional[str] = None
+
+
 # =============================================================================
 # Helper Function
 # =============================================================================
@@ -429,4 +434,83 @@ async def enrich_person_contact(request: PersonContactRequest):
         "email": output.get("email"),
         "linkedin_url": output.get("linkedin_url"),
         "company_website": output.get("company_website")
+    }
+
+
+@router.post("/case-study/extract")
+async def extract_case_study(request: CaseStudyExtractRequest):
+    """
+    Extract structured details from a case study URL using Parallel AI.
+    Returns featured company name, domain, and quotes/testimonials.
+    """
+    input_data = {
+        "case_study_url": request.case_study_url
+    }
+
+    task_spec = {
+        "input_schema": {
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "case_study_url": {
+                        "type": "string",
+                        "description": "The URL of the case study to extract details from."
+                    }
+                },
+                "required": ["case_study_url"]
+            }
+        },
+        "output_schema": {
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "featured_company_name": {
+                        "type": "string",
+                        "description": "The full name of the company that is featured as a customer in the case study. If the company name is not explicitly stated, return null."
+                    },
+                    "featured_company_domain": {
+                        "type": "string",
+                        "description": "The primary website domain of the company featured as a customer in the case study (e.g., 'example.com'). If the domain is not explicitly stated or cannot be reliably inferred, return null."
+                    },
+                    "quotes_and_testimonials": {
+                        "type": "array",
+                        "description": "A list of all quotes or testimonials from the case study, each including the quote text, the full name of the person quoted, and their job title.",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "quote_text": {
+                                    "type": "string",
+                                    "description": "The full text of the quote or testimonial, highlighting the customer's positive experience or the value received."
+                                },
+                                "person_quoted_full_name": {
+                                    "type": "string",
+                                    "description": "The full name of the individual who provided this quote or testimonial. If no person is identified, return null."
+                                },
+                                "person_quoted_job_title": {
+                                    "type": "string",
+                                    "description": "The job title of the individual who provided this quote or testimonial. If the job title is not available, return null."
+                                }
+                            },
+                            "required": ["quote_text", "person_quoted_full_name", "person_quoted_job_title"]
+                        }
+                    }
+                },
+                "required": ["featured_company_name", "featured_company_domain", "quotes_and_testimonials"]
+            }
+        }
+    }
+
+    output = await call_parallel_ai(input_data, task_spec)
+
+    return {
+        "success": True,
+        "case_study_url": request.case_study_url,
+        "origin_company_domain": request.origin_company_domain,
+        "featured_company_name": output.get("featured_company_name"),
+        "featured_company_domain": output.get("featured_company_domain"),
+        "quotes_and_testimonials": output.get("quotes_and_testimonials", [])
     }
