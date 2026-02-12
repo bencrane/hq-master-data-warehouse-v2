@@ -60,10 +60,12 @@ class CaseStudyExtractRequest(BaseModel):
 # Helper Function
 # =============================================================================
 
-async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: int = 60) -> dict:
+async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: int = 60, processor: str = "base") -> dict:
     """
     Submit task to Parallel AI and poll for completion.
     Returns the output content or raises an exception.
+
+    processor options: "lite", "base", "pro"
     """
     if not PARALLEL_API_KEY:
         raise HTTPException(status_code=500, detail="PARALLEL_API_KEY not configured")
@@ -74,13 +76,13 @@ async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: i
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
-        # Submit task - input must be JSON string, processor must be "base"
+        # Submit task - input must be JSON string
         submit_response = await client.post(
             PARALLEL_TASK_API_URL,
             headers=headers,
             json={
                 "input": json.dumps(input_data),
-                "processor": "base",
+                "processor": processor,
                 "task_spec": task_spec
             }
         )
@@ -504,7 +506,7 @@ async def extract_case_study(request: CaseStudyExtractRequest):
         }
     }
 
-    output = await call_parallel_ai(input_data, task_spec)
+    output = await call_parallel_ai(input_data, task_spec, processor="lite")
 
     return {
         "success": True,
