@@ -45,6 +45,12 @@ class CompetitorsRequest(BaseModel):
     workflow_source: str = "parallel-native/competitors/ingest/db-direct"
 
 
+class PersonContactRequest(BaseModel):
+    full_name: str
+    company: str
+    company_domain: Optional[str] = None
+
+
 # =============================================================================
 # Helper Function
 # =============================================================================
@@ -354,4 +360,73 @@ async def infer_competitors(request: CompetitorsRequest):
         "domain": request.domain,
         "competitors": competitors,
         "confidence": confidence
+    }
+
+
+@router.post("/person-contact/enrich")
+async def enrich_person_contact(request: PersonContactRequest):
+    """
+    Find contact info for a person using Parallel AI.
+    Returns email, LinkedIn URL, and company website.
+    """
+    input_data = {
+        "full_name": request.full_name,
+        "company": request.company,
+    }
+    if request.company_domain:
+        input_data["company_website"] = request.company_domain
+
+    task_spec = {
+        "input_schema": {
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "full_name": {
+                        "type": "string",
+                        "description": "Full name of the person"
+                    },
+                    "company": {
+                        "type": "string",
+                        "description": "Company where the person works"
+                    },
+                    "company_website": {
+                        "type": "string",
+                        "description": "Company website URL"
+                    }
+                }
+            }
+        },
+        "output_schema": {
+            "type": "json",
+            "json_schema": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "description": "Work email address"
+                    },
+                    "linkedin_url": {
+                        "type": "string",
+                        "description": "LinkedIn profile URL"
+                    },
+                    "company_website": {
+                        "type": "string",
+                        "description": "Official website of the company"
+                    }
+                },
+                "required": ["email", "linkedin_url"]
+            }
+        }
+    }
+
+    output = await call_parallel_ai(input_data, task_spec)
+
+    return {
+        "success": True,
+        "full_name": request.full_name,
+        "company": request.company,
+        "email": output.get("email"),
+        "linkedin_url": output.get("linkedin_url"),
+        "company_website": output.get("company_website")
     }
