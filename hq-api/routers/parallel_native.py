@@ -28,21 +28,21 @@ class HqLocationRequest(BaseModel):
     domain: str
     company_name: str
     company_linkedin_url: Optional[str] = None
-    workflow_source: str = "parallel-native/hq-location/infer/fastapi"
+    workflow_source: str = "parallel-native/hq-location/ingest/db-direct"
 
 
 class IndustryRequest(BaseModel):
     domain: str
     company_name: str
     company_linkedin_url: Optional[str] = None
-    workflow_source: str = "parallel-native/industry/infer/fastapi"
+    workflow_source: str = "parallel-native/industry/ingest/db-direct"
 
 
 class CompetitorsRequest(BaseModel):
     domain: str
     company_name: str
     company_linkedin_url: Optional[str] = None
-    workflow_source: str = "parallel-native/competitors/infer/fastapi"
+    workflow_source: str = "parallel-native/competitors/ingest/db-direct"
 
 
 # =============================================================================
@@ -114,7 +114,7 @@ async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: i
 # Endpoints
 # =============================================================================
 
-@router.post("/hq-location")
+@router.post("/hq-location/ingest/db-direct")
 async def infer_hq_location(request: HqLocationRequest):
     """
     Infer company HQ location using Parallel AI.
@@ -198,7 +198,7 @@ async def infer_hq_location(request: HqLocationRequest):
     }
 
 
-@router.post("/industry")
+@router.post("/industry/ingest/db-direct")
 async def infer_industry(request: IndustryRequest):
     """
     Infer company industry using Parallel AI.
@@ -275,7 +275,7 @@ async def infer_industry(request: IndustryRequest):
     }
 
 
-@router.post("/competitors")
+@router.post("/competitors/ingest/db-direct")
 async def infer_competitors(request: CompetitorsRequest):
     """
     Infer company competitors using Parallel AI.
