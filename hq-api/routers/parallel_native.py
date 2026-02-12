@@ -6,6 +6,7 @@ Only includes NEW endpoints not already in Modal.
 """
 
 import os
+import json
 import asyncio
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -57,18 +58,18 @@ async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: i
         raise HTTPException(status_code=500, detail="PARALLEL_API_KEY not configured")
 
     headers = {
-        "Authorization": f"Bearer {PARALLEL_API_KEY}",
+        "x-api-key": PARALLEL_API_KEY,
         "Content-Type": "application/json"
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
-        # Submit task
+        # Submit task - input must be JSON string, processor must be "base"
         submit_response = await client.post(
             PARALLEL_TASK_API_URL,
             headers=headers,
             json={
-                "input": input_data,
-                "processor": "core",
+                "input": json.dumps(input_data),
+                "processor": "base",
                 "task_spec": task_spec
             }
         )
@@ -334,7 +335,6 @@ async def infer_competitors(request: CompetitorsRequest):
     pool = get_pool()
 
     # Store as JSONB
-    import json
     competitors_json = json.dumps(competitors)
 
     await pool.execute("""
