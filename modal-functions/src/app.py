@@ -30,6 +30,7 @@ from read.lookup_company_description import lookup_company_description
 from read.lookup_company_business_model import lookup_company_business_model
 from read.lookup_similar_companies import lookup_similar_companies
 from read.lookup_client_leads import lookup_client_leads
+from read.lookup_company_canonical import lookup_company_canonical
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
 from ingest.case_study import ingest_case_study_extraction
@@ -138,6 +139,8 @@ from ingest.g2_page_scrape import ingest_g2_page_scrape_zenrows
 from ingest.parallel_search import search_parallel_ai
 from ingest.parallel_task_enrichment import infer_parallel_hq_location, infer_parallel_industry, infer_parallel_competitors
 from ingest.staffing_parallel_search import ingest_staffing_parallel_search
+from ingest.attio_job_postings import sync_job_postings_to_attio
+from ingest.company_canonical import ingest_company_canonical
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
