@@ -66,6 +66,10 @@ async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: i
     Returns the output content or raises an exception.
 
     processor options: "lite", "base", "pro"
+
+    Uses two endpoints:
+      - GET /v1/tasks/runs/{run_id}        -> status only
+      - GET /v1/tasks/runs/{run_id}/result  -> actual output
     """
     if not PARALLEL_API_KEY:
         raise HTTPException(status_code=500, detail="PARALLEL_API_KEY not configured")
@@ -99,26 +103,37 @@ async def call_parallel_ai(input_data: dict, task_spec: dict, timeout_seconds: i
         if not run_id:
             raise HTTPException(status_code=502, detail="No run_id returned from Parallel API")
 
-        # Poll for completion
-        result_url = f"{PARALLEL_TASK_API_URL}/{run_id}"
+        # Poll for status (status endpoint does NOT return output)
+        status_url = f"{PARALLEL_TASK_API_URL}/{run_id}"
+        result_url = f"{PARALLEL_TASK_API_URL}/{run_id}/result"
         max_attempts = timeout_seconds // 2
         poll_interval = 2
 
         for _ in range(max_attempts):
             await asyncio.sleep(poll_interval)
 
-            poll_response = await client.get(result_url, headers=headers)
+            poll_response = await client.get(status_url, headers=headers)
 
             if poll_response.status_code != 200:
                 continue
 
             poll_result = poll_response.json()
-            status = poll_result.get("run", {}).get("status") or poll_result.get("status")
+            status = poll_result.get("status")
 
             if status == "completed":
-                return poll_result.get("output", {}).get("content", {})
+                # Fetch actual output from the /result endpoint
+                result_response = await client.get(result_url, headers=headers)
+                if result_response.status_code != 200:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Parallel API result fetch failed: {result_response.status_code} - {result_response.text}"
+                    )
+                result_data = result_response.json()
+                return result_data.get("output", {}).get("content", {})
             elif status == "failed":
-                raise HTTPException(status_code=502, detail="Parallel AI task failed")
+                errors = poll_result.get("errors", [])
+                detail = errors[0].get("message") if errors else "Parallel AI task failed"
+                raise HTTPException(status_code=502, detail=detail)
 
         raise HTTPException(status_code=504, detail="Parallel AI task timed out")
 
@@ -127,6 +142,10 @@ async def call_parallel_ai_v2(input_data, task_spec: dict, timeout_seconds: int 
     """
     Submit task to Parallel AI.
     V2: Input is passed directly (string or dict), not json.dumps().
+
+    Uses two endpoints:
+      - GET /v1/tasks/runs/{run_id}        -> status only
+      - GET /v1/tasks/runs/{run_id}/result  -> actual output
     """
     if not PARALLEL_API_KEY:
         raise HTTPException(status_code=500, detail="PARALLEL_API_KEY not configured")
@@ -159,25 +178,37 @@ async def call_parallel_ai_v2(input_data, task_spec: dict, timeout_seconds: int 
         if not run_id:
             raise HTTPException(status_code=502, detail="No run_id returned from Parallel API")
 
-        result_url = f"{PARALLEL_TASK_API_URL}/{run_id}"
+        # Poll for status (status endpoint does NOT return output)
+        status_url = f"{PARALLEL_TASK_API_URL}/{run_id}"
+        result_url = f"{PARALLEL_TASK_API_URL}/{run_id}/result"
         max_attempts = timeout_seconds // 2
         poll_interval = 2
 
         for _ in range(max_attempts):
             await asyncio.sleep(poll_interval)
 
-            poll_response = await client.get(result_url, headers=headers)
+            poll_response = await client.get(status_url, headers=headers)
 
             if poll_response.status_code != 200:
                 continue
 
             poll_result = poll_response.json()
-            status = poll_result.get("run", {}).get("status") or poll_result.get("status")
+            status = poll_result.get("status")
 
             if status == "completed":
-                return poll_result.get("output", {}).get("content", {})
+                # Fetch actual output from the /result endpoint
+                result_response = await client.get(result_url, headers=headers)
+                if result_response.status_code != 200:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Parallel API result fetch failed: {result_response.status_code} - {result_response.text}"
+                    )
+                result_data = result_response.json()
+                return result_data.get("output", {}).get("content", {})
             elif status == "failed":
-                raise HTTPException(status_code=502, detail="Parallel AI task failed")
+                errors = poll_result.get("errors", [])
+                detail = errors[0].get("message") if errors else "Parallel AI task failed"
+                raise HTTPException(status_code=502, detail=detail)
 
         raise HTTPException(status_code=504, detail="Parallel AI task timed out")
 
