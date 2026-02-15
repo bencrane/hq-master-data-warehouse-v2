@@ -727,7 +727,7 @@ async def extract_case_study_v2(request: CaseStudyExtractRequest):
         }
     }
 
-    output = await call_parallel_ai_v2(input_data, task_spec, processor="lite")
+    output = await call_parallel_ai_v2(input_data, task_spec, timeout_seconds=120, processor="lite")
 
     return {
         "success": True,
