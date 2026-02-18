@@ -52,8 +52,10 @@ def has_raised_vc(request: HasRaisedVCRequest) -> dict:
             founded_date = result.data[0].get("founded_date")
 
             # Look up VC domains from raw.vc_firms
+            # First try exact match, then fuzzy match for unmatched
             vc_domain_map = {}
             if vc_names:
+                # Try exact match first
                 vc_firms_result = (
                     supabase.schema("raw")
                     .from_("vc_firms")
@@ -67,6 +69,27 @@ def has_raised_vc(request: HasRaisedVCRequest) -> dict:
                         for r in vc_firms_result.data
                         if r.get("domain")
                     }
+
+                # For unmatched VCs, try fuzzy matching
+                unmatched = [n for n in vc_names if n not in vc_domain_map]
+                if unmatched:
+                    # Fetch all vc_firms for fuzzy matching
+                    all_firms = (
+                        supabase.schema("raw")
+                        .from_("vc_firms")
+                        .select("name, domain")
+                        .not_.is_("domain", "null")
+                        .execute()
+                    )
+                    if all_firms.data:
+                        for vc_name in unmatched:
+                            vc_lower = vc_name.lower()
+                            for firm in all_firms.data:
+                                firm_lower = firm["name"].lower()
+                                # Match if one contains the other
+                                if vc_lower in firm_lower or firm_lower in vc_lower:
+                                    vc_domain_map[vc_name] = firm["domain"]
+                                    break
 
             # Build VC list with domains
             vcs = [
