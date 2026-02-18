@@ -1327,6 +1327,32 @@ class ChampionsDetailedLookupResponse(BaseModel):
     error: Optional[str] = None
 
 
+class AlumniInfo(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    full_name: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    current_company_name: Optional[str] = None
+    current_company_domain: Optional[str] = None
+    current_company_linkedin_url: Optional[str] = None
+    current_job_title: Optional[str] = None
+    past_company_name: Optional[str] = None
+    past_company_domain: Optional[str] = None
+    past_job_title: Optional[str] = None
+
+
+class AlumniLookupRequest(BaseModel):
+    past_company_domain: str
+
+
+class AlumniLookupResponse(BaseModel):
+    success: bool
+    past_company_domain: Optional[str] = None
+    alumni_count: Optional[int] = None
+    alumni: Optional[list[AlumniInfo]] = None
+    error: Optional[str] = None
+
+
 class CompanyICPLookupRequest(BaseModel):
     domain: str
 
@@ -8190,6 +8216,43 @@ async def lookup_champions_detailed(request: ChampionsDetailedLookupRequest) -> 
             )
             response.raise_for_status()
             return ChampionsDetailedLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/alumni/lookup",
+    response_model=AlumniLookupResponse,
+    summary="Lookup company alumni by domain",
+    description="Wrapper for Modal function: lookup_alumni"
+)
+async def lookup_alumni(request: AlumniLookupRequest) -> AlumniLookupResponse:
+    """
+    Lookup alumni (former employees) of a company by domain.
+
+    Returns people who previously worked at the company with their current job info.
+
+    Modal function: lookup_alumni
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-alumni.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-alumni.modal.run"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return AlumniLookupResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,

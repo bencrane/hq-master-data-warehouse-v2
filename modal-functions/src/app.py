@@ -56,6 +56,7 @@ from ingest.lookup_company_customers import lookup_company_customers
 from ingest.lookup_case_study_details import lookup_case_study_details
 from ingest.lookup_case_study_champions import lookup_case_study_champions
 from ingest.lookup_case_study_champions_detailed import lookup_champions_detailed
+from ingest.lookup_alumni import lookup_alumni
 from ingest.create_target_client_view import create_target_client_view
 from ingest.upsert_icp_criteria import upsert_icp_criteria
 from ingest.vc_portfolio import ingest_vc_portfolio
@@ -140,6 +141,7 @@ from ingest.discover_g2_page_search import discover_g2_page_gemini_search
 from ingest.discover_competitors import discover_competitors_openai
 from ingest.ingest_competitors import ingest_competitors
 from ingest.g2_page_scrape import ingest_g2_page_scrape_zenrows
+from ingest.scrape_g2_reviews import scrape_g2_reviews
 from ingest.parallel_search import search_parallel_ai
 from ingest.parallel_task_enrichment import infer_parallel_hq_location, infer_parallel_industry, infer_parallel_competitors
 from ingest.staffing_parallel_search import ingest_staffing_parallel_search
@@ -335,4 +337,5 @@ __all__ = [
     "lookup_client_leads",
     "send_client_leads_to_clay",
     "ingest_focus_company",
+    "lookup_alumni",
 ]
