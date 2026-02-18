@@ -11,6 +11,38 @@ Populates core.* tables from person profile data:
 
 from typing import Optional
 from datetime import datetime
+from urllib.parse import urlparse
+import re
+
+
+def normalize_domain(domain: Optional[str]) -> Optional[str]:
+    """
+    Normalize domain to bare format (e.g., 'example.com').
+    Strips http://, https://, www., and any paths.
+    """
+    if not domain:
+        return None
+
+    domain = domain.strip()
+    if not domain:
+        return None
+
+    # If it looks like a URL, parse it
+    if domain.startswith(('http://', 'https://')):
+        try:
+            parsed = urlparse(domain)
+            domain = parsed.netloc or parsed.path.split('/')[0]
+        except Exception:
+            pass
+    elif '/' in domain:
+        # Has a path but no scheme - take first part
+        domain = domain.split('/')[0]
+
+    # Remove www. prefix
+    if domain.startswith('www.'):
+        domain = domain[4:]
+
+    return domain.lower().strip() if domain else None
 
 
 def upsert_core_person(supabase, linkedin_url: str, payload: dict) -> Optional[str]:
@@ -54,7 +86,9 @@ def upsert_core_company(supabase, domain: str, name: str = None, linkedin_url: s
     if not domain:
         return None
 
-    domain = domain.lower().strip()
+    domain = normalize_domain(domain)
+    if not domain:
+        return None
 
     # Check if exists
     existing = (
@@ -206,9 +240,8 @@ def insert_core_person_past_employers(supabase, linkedin_url: str, payload: dict
     seen_domains = set()
     records = []
     for exp in past_employers:
-        domain = exp.get("company_domain")
+        domain = normalize_domain(exp.get("company_domain"))
         if domain:
-            domain = domain.lower().strip()
             if domain in seen_domains:
                 continue
             seen_domains.add(domain)
@@ -241,11 +274,10 @@ def extract_companies_from_experience(supabase, payload: dict) -> int:
     count = 0
 
     for exp in experience_array:
-        domain = exp.get("company_domain")
+        domain = normalize_domain(exp.get("company_domain"))
         if not domain:
             continue
 
-        domain = domain.lower().strip()
         if domain in seen_domains:
             continue
         seen_domains.add(domain)
