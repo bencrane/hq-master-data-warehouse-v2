@@ -1282,6 +1282,28 @@ class CompanyCustomersLookupResponse(BaseModel):
     error: Optional[str] = None
 
 
+class ChampionInfo(BaseModel):
+    full_name: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    company_domain: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    case_study_url: Optional[str] = None
+    source: Optional[str] = None
+
+
+class CaseStudyChampionsLookupRequest(BaseModel):
+    domain: str
+
+
+class CaseStudyChampionsLookupResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    champion_count: Optional[int] = None
+    champions: Optional[list[ChampionInfo]] = None
+    error: Optional[str] = None
+
+
 class CompanyICPLookupRequest(BaseModel):
     domain: str
 
@@ -8071,6 +8093,43 @@ async def backfill_parallel_to_core(request: BackfillParallelToCoreRequest) -> B
             )
             response.raise_for_status()
             return BackfillParallelToCoreResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/case-study-champions/lookup",
+    response_model=CaseStudyChampionsLookupResponse,
+    summary="Lookup case study champions by vendor domain",
+    description="Wrapper for Modal function: lookup_case_study_champions"
+)
+async def lookup_case_study_champions(request: CaseStudyChampionsLookupRequest) -> CaseStudyChampionsLookupResponse:
+    """
+    Lookup champions featured in case studies for a given vendor domain.
+
+    Returns champion details including name, title, company, and LinkedIn URL.
+
+    Modal function: lookup_case_study_champions
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-case-study-champions.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-case-study-champions.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return CaseStudyChampionsLookupResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
