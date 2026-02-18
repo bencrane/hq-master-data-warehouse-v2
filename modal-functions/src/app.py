@@ -35,6 +35,7 @@ from read.lookup_client_leads import lookup_client_leads
 from read.lookup_company_canonical import lookup_company_canonical
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
+from ingest.clay_native_person import ingest_clay_native_person, ingest_clay_native_person_batch
 from ingest.case_study import ingest_case_study_extraction
 from ingest.case_study_buyer import extract_case_study_buyer
 from ingest.case_study_champions import ingest_case_study_buyers
@@ -69,6 +70,7 @@ from ingest.backfill_parallel_to_core import backfill_parallel_to_core
 from ingest.salesnav_person import ingest_salesnav_person
 from ingest.salesnav_person_full import ingest_salesnav_person_full
 from ingest.salesnav_clay_ingest import ingest_salesnav_clay
+from ingest.salesnav_clay_basic import ingest_salesnav_clay_basic
 from ingest.nostra_ecom import ingest_nostra_ecom_company
 from ingest.nostra_ecom_people import ingest_nostra_ecom_person
 from ingest.leadmagic_company import ingest_leadmagic_company
@@ -219,6 +221,8 @@ __all__ = [
     "ingest_manual_comp_customer",
     "ingest_clay_person_profile",
     "ingest_clay_find_people",
+    "ingest_clay_native_person",
+    "ingest_clay_native_person_batch",
     "ingest_case_study_extraction",
     "extract_case_study_buyer",
     "ingest_case_study_buyers",
@@ -249,6 +253,7 @@ __all__ = [
     "ingest_salesnav_person",
     "ingest_salesnav_person_full",
     "ingest_salesnav_clay",
+    "ingest_salesnav_clay_basic",
     "ingest_nostra_ecom_company",
     "ingest_nostra_ecom_person",
     "ingest_leadmagic_company",
