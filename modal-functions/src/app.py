@@ -30,6 +30,7 @@ from read.lookup_company_description import lookup_company_description
 from read.lookup_company_firmographics import lookup_company_firmographics
 from read.lookup_company_business_model import lookup_company_business_model
 from read.lookup_similar_companies import lookup_similar_companies
+from read.lookup_similar_companies_list import lookup_similar_companies_list
 from read.lookup_client_leads import lookup_client_leads
 from read.lookup_company_canonical import lookup_company_canonical
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
@@ -326,6 +327,7 @@ __all__ = [
     "lookup_company_description",
     "lookup_company_business_model",
     "lookup_similar_companies",
+    "lookup_similar_companies_list",
     "send_case_study_urls_to_clay",
     "lookup_case_study_details",
     "send_unresolved_customers_to_clay",

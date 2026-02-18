@@ -1210,6 +1210,25 @@ class SimilarCompaniesLookupResponse(BaseModel):
     error: Optional[str] = None
 
 
+class SimilarCompanyInfo(BaseModel):
+    company_name: Optional[str] = None
+    company_domain: Optional[str] = None
+    company_linkedin_url: Optional[str] = None
+    similarity_score: Optional[float] = None
+
+
+class SimilarCompaniesListRequest(BaseModel):
+    domain: str
+
+
+class SimilarCompaniesListResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    similar_count: Optional[int] = None
+    similar_companies: Optional[list[SimilarCompanyInfo]] = None
+    error: Optional[str] = None
+
+
 class CompanyEnrichSimilarPreviewResultsResponse(BaseModel):
     success: bool
     input_domain: Optional[str] = None
@@ -3845,6 +3864,41 @@ async def lookup_similar_companies(request: SimilarCompaniesLookupRequest) -> Si
             )
             response.raise_for_status()
             return SimilarCompaniesLookupResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+@router.post(
+    "/companies/db/similar-companies/list",
+    response_model=SimilarCompaniesListResponse,
+    summary="Get list of similar companies for a domain",
+    description="Wrapper for Modal function: lookup_similar_companies_list"
+)
+async def lookup_similar_companies_list(request: SimilarCompaniesListRequest) -> SimilarCompaniesListResponse:
+    """
+    Get the list of similar companies for a domain with LinkedIn URLs.
+
+    Modal function: lookup_similar_companies_list
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-similar-companies-list.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-similar-companies-list.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return SimilarCompaniesListResponse(**response.json())
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
