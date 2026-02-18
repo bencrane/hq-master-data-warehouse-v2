@@ -27,6 +27,7 @@ from config import app, image
 # Import endpoints
 from read.db_check import read_db_check_existence
 from read.lookup_company_description import lookup_company_description
+from read.lookup_company_firmographics import lookup_company_firmographics
 from read.lookup_company_business_model import lookup_company_business_model
 from read.lookup_similar_companies import lookup_similar_companies
 from read.lookup_client_leads import lookup_client_leads
@@ -60,6 +61,7 @@ from ingest.vc_investors import ingest_company_vc_investors
 from ingest.backfill import backfill_person_location, backfill_person_matched_location
 from ingest.backfill_cleaned_company_name import backfill_cleaned_company_name
 from ingest.backfill_company_descriptions import backfill_company_descriptions
+from ingest.backfill_parallel_to_core import backfill_parallel_to_core
 from ingest.salesnav_person import ingest_salesnav_person
 from ingest.nostra_ecom import ingest_nostra_ecom_company
 from ingest.nostra_ecom_people import ingest_nostra_ecom_person
@@ -141,6 +143,13 @@ from ingest.parallel_task_enrichment import infer_parallel_hq_location, infer_pa
 from ingest.staffing_parallel_search import ingest_staffing_parallel_search
 from ingest.attio_job_postings import sync_job_postings_to_attio
 from ingest.company_canonical import ingest_company_canonical
+from ingest.parallel_case_study import ingest_parallel_case_study
+from ingest.validate_company_name import validate_company_name
+from ingest.infer_customer_domain import infer_customer_domain
+from ingest.ingest_gemini_domain_inference import ingest_gemini_domain_inference
+from ingest.resolve_orphan_customer_domain import resolve_orphan_customer_domain
+from ingest.ingest_company_description import ingest_company_description
+from ingest.ingest_orphan_customer_domain import ingest_orphan_customer_domain
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -317,6 +326,9 @@ __all__ = [
     "lookup_case_study_details",
     "send_unresolved_customers_to_clay",
     "resolve_customer_domain",
+    "resolve_orphan_customer_domain",
+    "ingest_company_description",
+    "ingest_orphan_customer_domain",
     "ingest_companyenrich_similar_preview_results",
     "lookup_client_leads",
     "send_client_leads_to_clay",
