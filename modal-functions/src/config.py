@@ -24,6 +24,7 @@ image = (
         "beautifulsoup4",
         "opencv-python-headless",
         "numpy",
+        "psycopg2-binary",
     )
     .add_local_python_source("config", "ingest", "extraction", "icp", "read")
 )

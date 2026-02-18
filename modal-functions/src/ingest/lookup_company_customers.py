@@ -1,7 +1,8 @@
 """
 Company Customers Lookup Endpoint
 
-Returns customer companies for a given domain.
+Returns customer companies for a given domain, including customer LinkedIn URLs.
+v2 - Uses core.companies_full for LinkedIn URLs.
 """
 
 import os
@@ -23,6 +24,7 @@ class CompanyCustomersLookupRequest(BaseModel):
 def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
     """
     Lookup customer companies by domain.
+    Includes customer LinkedIn URL if available.
     """
     from supabase import create_client
 
@@ -31,6 +33,7 @@ def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
     supabase = create_client(supabase_url, supabase_key)
 
     try:
+        # Get customers
         customers_result = (
             supabase.schema("core")
             .from_("company_customers")
@@ -41,12 +44,34 @@ def lookup_company_customers(request: CompanyCustomersLookupRequest) -> dict:
 
         customers = []
         if customers_result.data:
+            # Get unique customer domains that are not null
+            customer_domains = list(set(
+                c.get("customer_domain") for c in customers_result.data
+                if c.get("customer_domain")
+            ))
+
+            # Fetch LinkedIn URLs from companies_full
+            linkedin_map = {}
+            if customer_domains:
+                linkedin_result = (
+                    supabase.schema("core")
+                    .from_("companies_full")
+                    .select("domain, linkedin_url")
+                    .in_("domain", customer_domains)
+                    .execute()
+                )
+                if linkedin_result.data:
+                    linkedin_map = {r["domain"]: r["linkedin_url"] for r in linkedin_result.data if r.get("linkedin_url")}
+
+            # Build response with LinkedIn URLs
             for c in customers_result.data:
+                customer_domain = c.get("customer_domain")
                 customers.append({
                     "origin_company_name": c.get("origin_company_name"),
                     "origin_company_domain": c.get("origin_company_domain"),
                     "customer_name": c.get("customer_name"),
-                    "customer_domain": c.get("customer_domain"),
+                    "customer_domain": customer_domain,
+                    "customer_linkedin_url": linkedin_map.get(customer_domain) if customer_domain else None,
                 })
 
         return {
