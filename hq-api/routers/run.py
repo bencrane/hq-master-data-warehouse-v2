@@ -1529,6 +1529,19 @@ class BackfillCompanyDescriptionsResponse(BaseModel):
     error: Optional[str] = None
 
 
+class BackfillParallelToCoreRequest(BaseModel):
+    batch_size: int = 5000
+    backfill_customers: bool = True
+    backfill_champions: bool = True
+
+
+class BackfillParallelToCoreResponse(BaseModel):
+    success: bool
+    customers_updated: Optional[int] = None
+    champions_inserted: Optional[int] = None
+    error: Optional[str] = None
+
+
 class BackfillPersonLocationRequest(BaseModel):
     dry_run: bool = True
     limit: Optional[int] = None
@@ -8029,4 +8042,42 @@ async def parallel_competitors(request: ParallelCompetitorsRequest) -> ParallelC
                 success=False,
                 domain=request.domain,
                 error=str(e)
+            )
+
+
+@router.post(
+    "/companies/db/parallel-to-core/backfill",
+    response_model=BackfillParallelToCoreResponse,
+    summary="Backfill parallel extractions to core tables",
+    description="Wrapper for Modal function: backfill_parallel_to_core"
+)
+async def backfill_parallel_to_core(request: BackfillParallelToCoreRequest) -> BackfillParallelToCoreResponse:
+    """
+    Backfill data from parallel extractions to core tables.
+
+    - Backfills customer_domain from extracted.parallel_case_studies to core.company_customers
+    - Backfills champions from extracted.parallel_case_study_champions to core.case_study_champions
+
+    Modal function: backfill_parallel_to_core
+    Modal URL: https://bencrane--hq-master-data-ingest-backfill-parallel-to-core.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-backfill-parallel-to-core.modal.run"
+
+    async with httpx.AsyncClient(timeout=600.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return BackfillParallelToCoreResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
             )
