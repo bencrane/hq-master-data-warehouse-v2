@@ -1271,6 +1271,7 @@ class CustomerInfo(BaseModel):
     origin_company_domain: Optional[str] = None
     customer_name: Optional[str] = None
     customer_domain: Optional[str] = None
+    customer_linkedin_url: Optional[str] = None
 
 
 class CompanyCustomersLookupResponse(BaseModel):
