@@ -67,6 +67,8 @@ from ingest.backfill_cleaned_company_name import backfill_cleaned_company_name
 from ingest.backfill_company_descriptions import backfill_company_descriptions
 from ingest.backfill_parallel_to_core import backfill_parallel_to_core
 from ingest.salesnav_person import ingest_salesnav_person
+from ingest.salesnav_person_full import ingest_salesnav_person_full
+from ingest.salesnav_clay_ingest import ingest_salesnav_clay
 from ingest.nostra_ecom import ingest_nostra_ecom_company
 from ingest.nostra_ecom_people import ingest_nostra_ecom_person
 from ingest.leadmagic_company import ingest_leadmagic_company
@@ -155,6 +157,7 @@ from ingest.ingest_gemini_domain_inference import ingest_gemini_domain_inference
 from ingest.resolve_orphan_customer_domain import resolve_orphan_customer_domain
 from ingest.ingest_company_description import ingest_company_description
 from ingest.ingest_orphan_customer_domain import ingest_orphan_customer_domain
+from ingest.validate_export_title import validate_export_title
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -178,6 +181,7 @@ import extraction.signal_job_change_v2
 import extraction.signal_promotion_v2
 import extraction.company_address
 import extraction.salesnav_person
+import extraction.salesnav_clay
 import extraction.vc_investors
 import extraction.company_mapping
 import extraction.person_mapping
@@ -243,6 +247,8 @@ __all__ = [
     "backfill_person_location",
     "backfill_person_matched_location",
     "ingest_salesnav_person",
+    "ingest_salesnav_person_full",
+    "ingest_salesnav_clay",
     "ingest_nostra_ecom_company",
     "ingest_nostra_ecom_person",
     "ingest_leadmagic_company",
@@ -340,4 +346,5 @@ __all__ = [
     "send_client_leads_to_clay",
     "ingest_focus_company",
     "lookup_alumni",
+    "validate_export_title",
 ]
