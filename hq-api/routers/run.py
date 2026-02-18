@@ -414,12 +414,18 @@ class HasRaisedVCRequest(BaseModel):
     domain: str
 
 
+class VCInfo(BaseModel):
+    vc_name: Optional[str] = None
+    vc_domain: Optional[str] = None
+
+
 class HasRaisedVCResponse(BaseModel):
     success: bool
     domain: Optional[str] = None
     has_raised_vc: Optional[bool] = None
     vc_count: Optional[int] = None
     vc_names: Optional[list] = None
+    vcs: Optional[list[VCInfo]] = None
     founded_date: Optional[str] = None
     error: Optional[str] = None
 

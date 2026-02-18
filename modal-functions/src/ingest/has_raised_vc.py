@@ -51,12 +51,36 @@ def has_raised_vc(request: HasRaisedVCRequest) -> dict:
             vc_names = list(set([r["vc_name"] for r in result.data if r.get("vc_name")]))
             founded_date = result.data[0].get("founded_date")
 
+            # Look up VC domains from raw.vc_firms
+            vc_domain_map = {}
+            if vc_names:
+                vc_firms_result = (
+                    supabase.schema("raw")
+                    .from_("vc_firms")
+                    .select("name, domain")
+                    .in_("name", vc_names)
+                    .execute()
+                )
+                if vc_firms_result.data:
+                    vc_domain_map = {
+                        r["name"]: r["domain"]
+                        for r in vc_firms_result.data
+                        if r.get("domain")
+                    }
+
+            # Build VC list with domains
+            vcs = [
+                {"vc_name": name, "vc_domain": vc_domain_map.get(name)}
+                for name in vc_names
+            ]
+
             return {
                 "success": True,
                 "domain": domain,
                 "has_raised_vc": True,
                 "vc_count": len(vc_names),
                 "vc_names": vc_names,
+                "vcs": vcs,
                 "founded_date": founded_date,
             }
         else:
