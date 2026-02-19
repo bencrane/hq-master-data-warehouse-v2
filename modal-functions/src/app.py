@@ -160,6 +160,7 @@ from ingest.resolve_orphan_customer_domain import resolve_orphan_customer_domain
 from ingest.ingest_company_description import ingest_company_description
 from ingest.ingest_orphan_customer_domain import ingest_orphan_customer_domain
 from ingest.validate_export_title import validate_export_title
+from ingest.brightdata_indeed_jobs import ingest_brightdata_indeed_jobs
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -352,4 +353,5 @@ __all__ = [
     "ingest_focus_company",
     "lookup_alumni",
     "validate_export_title",
+    "ingest_brightdata_indeed_jobs",
 ]
