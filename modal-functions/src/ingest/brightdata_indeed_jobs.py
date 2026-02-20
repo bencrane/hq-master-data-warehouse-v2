@@ -19,7 +19,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 @app.function(
     image=image,
     timeout=300,
-    secrets=[modal.Secret.from_name("supabase-credentials")],
+    secrets=[
+        modal.Secret.from_name("supabase-credentials"),
+        modal.Secret.from_name("brightdata-db-url"),
+    ],
 )
 @modal.fastapi_endpoint(method="POST")
 def ingest_brightdata_indeed_jobs(records: list[dict], metadata: dict | None = None) -> dict:

@@ -29,7 +29,10 @@ def _parse_iso_timestamptz(value: str | None) -> datetime | None:
 @app.function(
     image=image,
     timeout=300,
-    secrets=[modal.Secret.from_name("supabase-credentials")],
+    secrets=[
+        modal.Secret.from_name("supabase-credentials"),
+        modal.Secret.from_name("brightdata-db-url"),
+    ],
 )
 @modal.fastapi_endpoint(method="POST")
 def ingest_brightdata_linkedin_jobs(records: list[dict], metadata: dict | None = None) -> dict:
