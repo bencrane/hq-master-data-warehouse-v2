@@ -21,6 +21,12 @@ class BrightDataIngestRequest(BaseModel):
     metadata: dict | None = None
 
 
+class BrightDataValidateJobRequest(BaseModel):
+    company_domain: str
+    job_title: str
+    company_name: str | None = None
+
+
 def _require_ingest_key(x_api_key: str | None) -> None:
     if not INGEST_API_KEY:
         raise HTTPException(status_code=500, detail="INGEST_API_KEY is not configured")
@@ -64,6 +70,33 @@ async def ingest_brightdata_linkedin(
 
     modal_url = f"{MODAL_BASE_URL}-ingest-brightdata-linkedin-jobs.modal.run"
     payload = {"records": request.records, "metadata": request.metadata}
+
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.post(modal_url, json=payload)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Modal function error: {e.response.text}",
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach Modal function: {str(e)}",
+        )
+
+
+@router.post("/validate-job")
+async def validate_brightdata_job(
+    request: BrightDataValidateJobRequest,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    _require_ingest_key(x_api_key)
+
+    modal_url = f"{MODAL_BASE_URL}-validate-job-posting-active.modal.run"
+    payload = request.model_dump()
 
     try:
         async with httpx.AsyncClient(timeout=120) as client:
