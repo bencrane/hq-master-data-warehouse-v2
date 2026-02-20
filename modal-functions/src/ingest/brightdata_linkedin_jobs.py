@@ -14,10 +14,7 @@ import modal
 
 from config import app, image
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:rVcat1Two1d8LQVE@db.ivcemmeywnlhykbuafwv.supabase.co:5432/postgres",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 def _parse_iso_timestamptz(value: str | None) -> datetime | None:
@@ -38,6 +35,9 @@ def _parse_iso_timestamptz(value: str | None) -> datetime | None:
 def ingest_brightdata_linkedin_jobs(records: list[dict], metadata: dict | None = None) -> dict:
     import psycopg2
     from psycopg2.extras import Json, execute_values
+
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL is not configured")
 
     if not isinstance(records, list):
         raise ValueError("records must be a list")
