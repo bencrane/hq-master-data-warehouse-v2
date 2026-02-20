@@ -67,6 +67,7 @@ from ingest.backfill import backfill_person_location, backfill_person_matched_lo
 from ingest.backfill_cleaned_company_name import backfill_cleaned_company_name
 from ingest.backfill_company_descriptions import backfill_company_descriptions
 from ingest.backfill_parallel_to_core import backfill_parallel_to_core
+from ingest.generate_icp_title_patterns import generate_icp_title_patterns
 from ingest.salesnav_person import ingest_salesnav_person
 from ingest.salesnav_person_full import ingest_salesnav_person_full
 from ingest.salesnav_clay_ingest import ingest_salesnav_clay
@@ -162,6 +163,7 @@ from ingest.ingest_orphan_customer_domain import ingest_orphan_customer_domain
 from ingest.validate_export_title import validate_export_title
 from ingest.brightdata_indeed_jobs import ingest_brightdata_indeed_jobs
 from ingest.brightdata_linkedin_jobs import ingest_brightdata_linkedin_jobs
+from ingest.brightdata_validate_job import validate_job_posting_active
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -356,4 +358,5 @@ __all__ = [
     "validate_export_title",
     "ingest_brightdata_indeed_jobs",
     "ingest_brightdata_linkedin_jobs",
+    "validate_job_posting_active",
 ]
