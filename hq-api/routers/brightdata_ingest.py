@@ -96,11 +96,12 @@ async def validate_brightdata_job(
     _require_ingest_key(x_api_key)
 
     modal_url = f"{MODAL_BASE_URL}-validate-job-posting-active.modal.run"
-    payload = request.model_dump()
+    payload = request.model_dump(exclude_none=True)
 
     try:
         async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(modal_url, json=payload)
+            # Modal function signature uses scalar args, which FastAPI maps to query params.
+            response = await client.post(modal_url, params=payload)
             response.raise_for_status()
             return response.json()
     except httpx.HTTPStatusError as e:
