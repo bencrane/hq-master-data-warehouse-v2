@@ -46,6 +46,10 @@ class ResolvePersonLinkedinFromEmailSingleRequest(BaseModel):
     work_email: str | None = None
 
 
+class ResolveCompanyLocationFromDomainSingleRequest(BaseModel):
+    domain: str | None = None
+
+
 def _require_ingest_key(x_api_key: str | None) -> None:
     if not INGEST_API_KEY:
         raise HTTPException(status_code=500, detail="INGEST_API_KEY is not configured")
@@ -242,6 +246,41 @@ async def resolve_person_linkedin_from_email_single(
         "resolved": True,
         "person_linkedin_url": match_row["person_linkedin_url"],
         "source": "reference.email_to_person",
+    }
+
+
+@router.post("/resolve-company-location-from-domain/single")
+async def resolve_company_location_from_domain_single(
+    request: ResolveCompanyLocationFromDomainSingleRequest,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    _require_ingest_key(x_api_key)
+
+    domain = normalize_domain(request.domain)
+    if not domain:
+        return {"resolved": False, "reason": "missing_input"}
+
+    pool = get_pool()
+    match_row = await pool.fetchrow(
+        """
+        SELECT city, state, country
+        FROM core.company_locations
+        WHERE domain = $1
+          AND (city IS NOT NULL OR state IS NOT NULL OR country IS NOT NULL)
+        LIMIT 1
+        """,
+        domain,
+    )
+
+    if not match_row:
+        return {"resolved": False, "reason": "not_found_in_core_company_locations"}
+
+    return {
+        "resolved": True,
+        "company_city": match_row["city"],
+        "company_state": match_row["state"],
+        "company_country": match_row["country"],
+        "source": "core.company_locations",
     }
 
 
