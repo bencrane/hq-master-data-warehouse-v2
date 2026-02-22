@@ -4,7 +4,11 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
 from db import get_pool
-from routers.workflows import extract_domain_from_email, normalize_email
+from routers.workflows import (
+    extract_domain_from_email,
+    normalize_email,
+    normalize_linkedin_company_url,
+)
 
 router = APIRouter(prefix="/api/workflows", tags=["workflows-single"])
 
@@ -23,6 +27,10 @@ GENERIC_EMAIL_PROVIDERS = {
 
 class ResolveDomainFromEmailSingleRequest(BaseModel):
     work_email: str | None = None
+
+
+class ResolveDomainFromLinkedinSingleRequest(BaseModel):
+    company_linkedin_url: str | None = None
 
 
 def _require_ingest_key(x_api_key: str | None) -> None:
@@ -75,3 +83,36 @@ async def resolve_domain_from_email_single(
         }
 
     return {"resolved": True, "domain": raw_domain, "source": "email_extract"}
+
+
+@router.post("/resolve-domain-from-linkedin/single")
+async def resolve_domain_from_linkedin_single(
+    request: ResolveDomainFromLinkedinSingleRequest,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    _require_ingest_key(x_api_key)
+
+    company_linkedin_url = normalize_linkedin_company_url(request.company_linkedin_url)
+    if not company_linkedin_url:
+        return {"resolved": False, "reason": "missing_input"}
+
+    pool = get_pool()
+    match_row = await pool.fetchrow(
+        """
+        SELECT domain
+        FROM core.companies
+        WHERE linkedin_url = $1
+          AND domain IS NOT NULL
+        LIMIT 1
+        """,
+        company_linkedin_url,
+    )
+
+    if not match_row or not match_row["domain"]:
+        return {"resolved": False, "reason": "not_found_in_core_companies"}
+
+    return {
+        "resolved": True,
+        "domain": match_row["domain"].strip().lower(),
+        "source": "core.companies",
+    }
