@@ -47,6 +47,10 @@ class ResolveLinkedinFromDomainSingleRequest(BaseModel):
     domain: str | None = None
 
 
+class ResolvePersonLinkedinFromEmailSingleRequest(BaseModel):
+    work_email: str | None = None
+
+
 def _require_ingest_key(x_api_key: str | None) -> None:
     if not INGEST_API_KEY:
         raise HTTPException(status_code=500, detail="INGEST_API_KEY is not configured")
@@ -338,4 +342,37 @@ async def resolve_linkedin_from_domain_single(
         "resolved": True,
         "company_linkedin_url": match_row["linkedin_url"],
         "source": "core.companies",
+    }
+
+
+@router.post("/resolve-person-linkedin-from-email/single")
+async def resolve_person_linkedin_from_email_single(
+    request: ResolvePersonLinkedinFromEmailSingleRequest,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    _require_ingest_key(x_api_key)
+
+    work_email = normalize_email(request.work_email)
+    if not work_email:
+        return {"resolved": False, "reason": "missing_input"}
+
+    pool = get_pool()
+    match_row = await pool.fetchrow(
+        """
+        SELECT person_linkedin_url
+        FROM reference.email_to_person
+        WHERE email = $1
+          AND person_linkedin_url IS NOT NULL
+        LIMIT 1
+        """,
+        work_email,
+    )
+
+    if not match_row or not match_row["person_linkedin_url"]:
+        return {"resolved": False, "reason": "not_found_in_reference"}
+
+    return {
+        "resolved": True,
+        "person_linkedin_url": match_row["person_linkedin_url"],
+        "source": "reference.email_to_person",
     }
