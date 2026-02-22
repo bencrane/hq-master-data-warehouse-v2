@@ -43,6 +43,10 @@ class ResolveCompanyNameSingleRequest(BaseModel):
     company_name: str | None = None
 
 
+class ResolveLinkedinFromDomainSingleRequest(BaseModel):
+    domain: str | None = None
+
+
 def _require_ingest_key(x_api_key: str | None) -> None:
     if not INGEST_API_KEY:
         raise HTTPException(status_code=500, detail="INGEST_API_KEY is not configured")
@@ -301,4 +305,37 @@ async def resolve_company_name_single(
         "domain": resolved_domain,
         "cleaned_company_name": resolved_cleaned_name,
         "source": "parallel",
+    }
+
+
+@router.post("/resolve-linkedin-from-domain/single")
+async def resolve_linkedin_from_domain_single(
+    request: ResolveLinkedinFromDomainSingleRequest,
+    x_api_key: str | None = Header(default=None, alias="x-api-key"),
+):
+    _require_ingest_key(x_api_key)
+
+    domain = normalize_domain(request.domain)
+    if not domain:
+        return {"resolved": False, "reason": "missing_input"}
+
+    pool = get_pool()
+    match_row = await pool.fetchrow(
+        """
+        SELECT linkedin_url
+        FROM core.companies
+        WHERE domain = $1
+          AND linkedin_url IS NOT NULL
+        LIMIT 1
+        """,
+        domain,
+    )
+
+    if not match_row or not match_row["linkedin_url"]:
+        return {"resolved": False, "reason": "not_found_in_core_companies"}
+
+    return {
+        "resolved": True,
+        "company_linkedin_url": match_row["linkedin_url"],
+        "source": "core.companies",
     }
