@@ -511,3 +511,45 @@ async def delete_workflow_sequence(payload: dict):
         return {"success": True, "deleted": True}
     else:
         return {"success": False, "error": "Workflow sequence not found"}
+
+
+@router.post("/clients/salesnav-template")
+async def get_salesnav_template(payload: dict):
+    """
+    Get Sales Navigator template config for a client.
+
+    Payload: {
+        "client_domain": "securitypalhq.com"
+    }
+
+    Returns the template URL and customer company details.
+    """
+    client_domain = payload.get("client_domain", "").strip()
+
+    if not client_domain:
+        return {"success": False, "error": "client_domain is required"}
+
+    pool = get_pool()
+
+    row = await pool.fetchrow("""
+        SELECT
+            id,
+            client_domain,
+            template_url,
+            current_customer_linkedin_org_id,
+            customer_company_name,
+            customer_company_domain,
+            created_at
+        FROM hq.client_salesnav_templates
+        WHERE client_domain = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, client_domain)
+
+    if not row:
+        return {"success": False, "error": f"No salesnav template found for '{client_domain}'"}
+
+    return {
+        "success": True,
+        "data": dict(row)
+    }
