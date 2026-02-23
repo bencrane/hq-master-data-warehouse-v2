@@ -1,0 +1,730 @@
+{
+  "links": [
+    {
+      "href": "/",
+      "text": ""
+    },
+    {
+      "href": "/software",
+      "text": "Software"
+    },
+    {
+      "href": "/software/accounting-software",
+      "text": "Accounting Software"
+    },
+    {
+      "href": "/software/ai-chatbot-software",
+      "text": "AI Chatbot Software"
+    },
+    {
+      "href": "/software/application-development-tools",
+      "text": "Application Development Tools"
+    },
+    {
+      "href": "/software/banking-api-software",
+      "text": "Banking API Software"
+    },
+    {
+      "href": "/software/business-intelligence-software",
+      "text": "Business Intelligence Software"
+    },
+    {
+      "href": "/software/call-center-management",
+      "text": "Call Center Management"
+    },
+    {
+      "href": "/software/call-recording-software",
+      "text": "Call Recording Software"
+    },
+    {
+      "href": "/software/collaboration-and-project-management-software",
+      "text": "Collaboration & Project Management Software"
+    },
+    {
+      "href": "/software/conversation-intelligence-software",
+      "text": "Conversation Intelligence Software"
+    },
+    {
+      "href": "/software/customer-success-software",
+      "text": "Customer Success Software"
+    },
+    {
+      "href": "/software/data-science-platforms",
+      "text": "Data Science Platforms"
+    },
+    {
+      "href": "/software/email-marketing-software",
+      "text": "Email Marketing Software"
+    },
+    {
+      "href": "/software/enterprise-resource-planning-software-erp",
+      "text": "Enterprise Resource Planning Software (ERP)"
+    },
+    {
+      "href": "/software/financial-reporting-software",
+      "text": "Financial Reporting Software"
+    },
+    {
+      "href": "/software/help-desk-software",
+      "text": "Help Desk Software"
+    },
+    {
+      "href": "/software/payroll-software-1",
+      "text": "Payroll Software"
+    },
+    {
+      "href": "/software/sales-and-marketing-automation",
+      "text": "Sales and Marketing Automation"
+    },
+    {
+      "href": "/software/sales-enablement-software",
+      "text": "Sales Enablement Software"
+    },
+    {
+      "href": "/software/sales-intelligence-tools",
+      "text": "Sales Intelligence Tools"
+    },
+    {
+      "href": "/software/video-conferencing-software",
+      "text": "Video Conferencing Software"
+    },
+    {
+      "href": "/software",
+      "text": "See all Categories"
+    },
+    {
+      "href": "/services",
+      "text": "Services"
+    },
+    {
+      "href": "/services/advertising-branding-agencies",
+      "text": "Advertising & Branding Agencies"
+    },
+    {
+      "href": "/services/advertising-agencies",
+      "text": "Advertising Agencies"
+    },
+    {
+      "href": "/services/bigcommerce-consulting",
+      "text": "Bigcommerce Consulting"
+    },
+    {
+      "href": "/services/branding-agencies",
+      "text": "Branding Agencies"
+    },
+    {
+      "href": "/services/design-agencies",
+      "text": "Design Agencies"
+    },
+    {
+      "href": "/services/digital-marketing-agencies",
+      "text": "Digital Marketing Agencies"
+    },
+    {
+      "href": "/services/ecommerce-development-firms",
+      "text": "eCommerce Development Firms"
+    },
+    {
+      "href": "/services/event-marketing-agencies",
+      "text": "Event Marketing Agencies"
+    },
+    {
+      "href": "/services/graphic-design-agencies",
+      "text": "Graphic Design Agencies"
+    },
+    {
+      "href": "/services/it-consulting-managed-services",
+      "text": "IT Consulting & Managed Services"
+    },
+    {
+      "href": "/services/magento-consulting",
+      "text": "Magento Consulting"
+    },
+    {
+      "href": "/services/public-relations-firms",
+      "text": "Public Relations Firms"
+    },
+    {
+      "href": "/services/salesforce-consulting",
+      "text": "Salesforce Consulting"
+    },
+    {
+      "href": "/services/search-engine-optimization-firms",
+      "text": "Search Engine Optimization Firms"
+    },
+    {
+      "href": "/services/shopify-consulting",
+      "text": "Shopify Consulting"
+    },
+    {
+      "href": "/services/social-media-marketing-services",
+      "text": "Social Media Marketing "
+    },
+    {
+      "href": "/services/services-translation-services",
+      "text": "Translation Services"
+    },
+    {
+      "href": "/services/ux-design",
+      "text": "UX Design"
+    },
+    {
+      "href": "/services/web-mobile-app-development",
+      "text": "Web & Mobile App Development "
+    },
+    {
+      "href": "/services/web-design-agencies",
+      "text": "Web Design Agencies"
+    },
+    {
+      "href": "/services",
+      "text": "See all Categories"
+    },
+    {
+      "href": "/about-us",
+      "text": "About"
+    },
+    {
+      "href": "/about-us",
+      "text": "About Us"
+    },
+    {
+      "href": "/customer-testimonials",
+      "text": "Our Customers"
+    },
+    {
+      "href": "/press-releases",
+      "text": "Press Releases"
+    },
+    {
+      "href": "/contact-us",
+      "text": "Contact Us"
+    },
+    {
+      "href": "/customers-success-reports",
+      "text": "Resources"
+    },
+    {
+      "href": "/customers-success-reports",
+      "text": "Customer Success Reports"
+    },
+    {
+      "href": "#add_your_company",
+      "text": "Add Your Company"
+    },
+    {
+      "href": "/vendor-solutions",
+      "text": "For Vendors"
+    },
+    {
+      "href": "/get-free-advice",
+      "text": "Get Free Software Advice"
+    },
+    {
+      "href": "/extranet/login",
+      "text": "Log in"
+    },
+    {
+      "href": "/",
+      "text": "Home"
+    },
+    {
+      "href": "/software",
+      "text": "Software Categories"
+    },
+    {
+      "href": "/software/sales-intelligence-tools",
+      "text": "Sales Intelligence Tools"
+    },
+    {
+      "href": "/vendor/uplead",
+      "text": "UpLead"
+    },
+    {
+      "href": "/vendor/uplead",
+      "text": "Back to Profile"
+    },
+    {
+      "href": "#",
+      "text": "15"
+    },
+    {
+      "href": "#",
+      "text": "30"
+    },
+    {
+      "href": "#",
+      "text": "All"
+    },
+    {
+      "href": "#",
+      "text": "Reset"
+    },
+    {
+      "href": "/vendor/uplead/testimonials",
+      "text": ""
+    },
+    {
+      "href": "/vendor/uplead/testimonials",
+      "text": "1"
+    },
+    {
+      "href": "/vendor/uplead/testimonials?p=2",
+      "text": "2"
+    },
+    {
+      "href": "/vendor/uplead/testimonials?p=3",
+      "text": "3"
+    },
+    {
+      "href": "/vendor/uplead/testimonials?p=2",
+      "text": ""
+    },
+    {
+      "href": "/software",
+      "text": "Software Categories"
+    },
+    {
+      "href": "/services",
+      "text": "Services Categories"
+    },
+    {
+      "href": "/vendors",
+      "text": "Vendor Directory"
+    },
+    {
+      "href": "/about-us",
+      "text": "About"
+    },
+    {
+      "href": "/terms",
+      "text": "Terms"
+    },
+    {
+      "href": "/privacy",
+      "text": "Privacy"
+    },
+    {
+      "href": "/contact-us",
+      "text": "Contact"
+    },
+    {
+      "href": "/do-not-sell",
+      "text": "Do Not Sell My Personal Information"
+    },
+    {
+      "href": "/press-releases",
+      "text": "Press Releases"
+    },
+    {
+      "href": "https://www.linkedin.com/company/featuredcustomers-com/",
+      "text": "LinkedIn"
+    },
+    {
+      "href": "https://twitter.com/FeaturedCust",
+      "text": "Twitter"
+    },
+    {
+      "href": "https://www.facebook.com/featuredcustomers",
+      "text": "Facebook"
+    },
+    {
+      "href": "#Upgrade Your Profile",
+      "text": "Upgrade Your Profile"
+    },
+    {
+      "href": "#Verify Your Profile",
+      "text": "Verify Your Profile"
+    },
+    {
+      "href": "#Add Your Company",
+      "text": "Add Your Company"
+    },
+    {
+      "href": "#Enterprise Login",
+      "text": "Enterprise Login"
+    },
+    {
+      "href": "/get-free-advice",
+      "text": "Get free software recommendations"
+    }
+  ],
+  "title": "87 UpLead Customer Reviews & References | FeaturedCustomers",
+  "images": [
+    {
+      "url": "/images/logo_white.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/city-wide-facility-solutions_793879.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/piab-group_793881.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/ppc-periscope_793852.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/holy_793817_QJjAILQ.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/whitewater-consulting_793804.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/pinnacle-solutions-incorporated_793985.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/fastsigns_15861.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/benesmart_793812.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/xk-groupc_793808.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/c5-expedite_793850.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/one-claim-solution_793876.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/schuette-metals_793825.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/technology-advisors_34078.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/poluco_793815.webp"
+    },
+    {
+      "url": "https://cdn.featuredcustomers.com/Company.logo_medium/sell-on-llc_793806.webp"
+    },
+    {
+      "url": "/images/logo_white.webp"
+    }
+  ],
+  "bodyText": "SoftwareAccounting SoftwareAI Chatbot SoftwareApplication Development ToolsBanking API SoftwareBusiness Intelligence SoftwareCall Center ManagementCall Recording SoftwareCollaboration & Project Management SoftwareConversation Intelligence SoftwareCustomer Success SoftwareData Science PlatformsEmail Marketing SoftwareEnterprise Resource Planning Software (ERP)Financial Reporting SoftwareHelp Desk SoftwarePayroll SoftwareSales and Marketing AutomationSales Enablement SoftwareSales Intelligence ToolsVideo Conferencing SoftwareSee all CategoriesServicesAdvertising & Branding AgenciesAdvertising AgenciesBigcommerce ConsultingBranding AgenciesDesign AgenciesDigital Marketing AgencieseCommerce Development FirmsEvent Marketing AgenciesGraphic Design AgenciesIT Consulting & Managed ServicesMagento ConsultingPublic Relations FirmsSalesforce ConsultingSearch Engine Optimization FirmsShopify ConsultingSocial Media Marketing Translation ServicesUX DesignWeb & Mobile App Development Web Design AgenciesSee all CategoriesAboutAbout UsOur CustomersPress ReleasesContact UsResourcesCustomer Success ReportsAdd Your CompanyFor VendorsGet Free Software AdviceLog inHomeSoftware CategoriesSales Intelligence ToolsUpLeadTestimonialsBack to Profile87 UpLead TestimonialsIndustryInternetBankingElectrical/Electronic ManufacturingFinancial ServicesInformation Technology and ServicesInsuranceInvestment BankingManagement ConsultingPrintingPublic SafetyStaffing and RecruitingResearchUtilityWholesaleInformation ServicesRetailFacilities ServicesTelecommunicationsComputer SoftwareMarketing & AdvertisingCompany SizeSMB (1-200)Mid-Market (201-1000)Enterprise (1001+)15 per page1530All15Reset\"UpLead beats Zoominfo.\"Jennifer SlanskyPresident\"Accurate Data – robust filters – reliable uptime. We do not pay forcredits unless the emails and contact data passes verification -other companies charge extra for the verification.\"Nick HajewskiGlobal Director of Marketing\"Outstanding Vendor! Exceptional customer service with an easy-to-navigate system. We have been very pleased with our return on investment.\"Stephen JuthChief Executive Officer\"As a marketer, UpLead helps me to generate leads for our B2B sales team’s email outreach.\"Philipp NassFounder\"We looked at ZoomInfo and ultimately chose UpLead after thorough research. We found that the pricing options with UpLead plus the accuracy of data were perfect for our needs.\"Craig ValentineWhitewater Consulting“Awesome, easy-to-use, accurate prospecting tool.”Elizabeth McGloneDirector Of Marketing\"My reply rate is 80% using emails from UpLead. It drastically opens the prospecting door for our company. Thank you UpLead Team for the amazing platform.\"Raymond YauFastsigns\"Uplead is a great alternative to ZoomInfo. The ability to find all of the relevant stakeholders at one company is by far the best feature for our B2B sales team. In addition to that, having multiple ways to contact each stakeholder helps tremendously.\"Rich WestermayerPrincipal\"The simplicity of UpLead makes finding the correct person a breeze. The user interface is simpler than some of the other lead-generating sites I’ve used in the past. Generating leads is challenging in every industry. UpLead solves that problem by giving you access to thousands of individuals, industries, locations, and job positions.\"Nick HulbertDirector of Operations\"Accurate Leads at a Great Price. Really like the HubSpot Integration – one click, and they are in my CRM.\"Zach RamsdenLogistics Specialist\"UpLead is a great tool that will deliver value at a price point you can afford. And the data quality is excellent. More accurate than other tools I have used in the past – including ZoomInfo.\"Elizabeth McGloneHead of Demand Generation\"Working with UpLead is intuitive, but like most prospecting tools, knowing the search criteria goes a long way for the best results. That said, the amount of accurate information I receive for contacts is extraordinary.\"David ManneyContent Strategist\"My favorite thing about Uplead is the ability to filter by intent data. It’s so helpful when trying to target prospects to know if any of them are already actively engaged with your (or a competitors!) products and services. It’s the most useful feature of the list building capabilities.\"Danine (Pontarelli) MiduraMKT & Content Director\"It has never been so easy to search for prospects – and it has never been so accurate. Just try it – and you will never regret. Choosing UpLead – is my best decision this year.\"Dariyka SharovarovaOperations Manager\"UpLead by far has the best coverage (e.g. number or contacts) as compared to other technologies I’ve used including ZoomInfo, Adapt.io, Hunter, etc. UpLead is best by far!\"Chuck DuldeFounder123FeaturedCustomers has 1,893,001+ validated customer references including reviews, case studies, success stories, customer stories, testimonials and customer videos that will help you make better software purchasing decisions.Browse bySoftware CategoriesServices CategoriesVendor DirectoryFeaturedCustomersAboutTermsPrivacyContactDo Not Sell My Personal InformationConnectPress ReleasesLinkedInTwitterFacebookFor VendorsUpgrade Your ProfileVerify Your ProfileAdd Your CompanyEnterprise LoginGet free software recommendations",
+  "keywords": "Testimonials, Reviews, Customer References",
+  "description": "Discover how other companies use UpLead, get inspired, and find ways to improve your business.",
+  "extractedKeywords": [
+    "SoftwareAccounting",
+    "SoftwareAI",
+    "Chatbot",
+    "SoftwareApplication",
+    "Development",
+    "ToolsBanking",
+    "API",
+    "SoftwareBusiness",
+    "Intelligence",
+    "SoftwareCall",
+    "Center",
+    "ManagementCall",
+    "Recording",
+    "SoftwareCollaboration",
+    "Project",
+    "Management",
+    "SoftwareConversation",
+    "SoftwareCustomer",
+    "Success",
+    "SoftwareData",
+    "Science",
+    "PlatformsEmail",
+    "Marketing",
+    "SoftwareEnterprise",
+    "Resource",
+    "Planning",
+    "Software",
+    "ERPFinancial",
+    "Reporting",
+    "SoftwareHelp",
+    "Desk",
+    "SoftwarePayroll",
+    "SoftwareSales",
+    "AutomationSales",
+    "Enablement",
+    "ToolsVideo",
+    "Conferencing",
+    "SoftwareSee",
+    "CategoriesServicesAdvertising",
+    "Branding",
+    "AgenciesAdvertising",
+    "AgenciesBigcommerce",
+    "ConsultingBranding",
+    "AgenciesDesign",
+    "AgenciesDigital",
+    "AgencieseCommerce",
+    "FirmsEvent",
+    "AgenciesGraphic",
+    "Design",
+    "AgenciesIT",
+    "Consulting",
+    "Managed",
+    "ServicesMagento",
+    "ConsultingPublic",
+    "Relations",
+    "FirmsSalesforce",
+    "ConsultingSearch",
+    "Engine",
+    "Optimization",
+    "FirmsShopify",
+    "ConsultingSocial",
+    "Media",
+    "Translation",
+    "ServicesUX",
+    "DesignWeb",
+    "Mobile",
+    "App",
+    "Web",
+    "AgenciesSee",
+    "CategoriesAboutAbout",
+    "UsOur",
+    "CustomersPress",
+    "ReleasesContact",
+    "UsResourcesCustomer",
+    "ReportsAdd",
+    "CompanyFor",
+    "VendorsGet",
+    "Free",
+    "AdviceLog",
+    "inHomeSoftware",
+    "CategoriesSales",
+    "ToolsUpLeadTestimonialsBack",
+    "Profile87",
+    "UpLead",
+    "TestimonialsIndustryInternetBankingElectrical/Electronic",
+    "ManufacturingFinancial",
+    "ServicesInformation",
+    "Technology",
+    "ServicesInsuranceInvestment",
+    "BankingManagement",
+    "ConsultingPrintingPublic",
+    "SafetyStaffing",
+    "RecruitingResearchUtilityWholesaleInformation",
+    "ServicesRetailFacilities",
+    "ServicesTelecommunicationsComputer",
+    "SoftwareMarketing",
+    "AdvertisingCompany",
+    "SizeSMB",
+    "1-200Mid-Market",
+    "201-1000Enterprise",
+    "1001+15",
+    "page1530All15ResetUpLead",
+    "beats",
+    "ZoominfoJennifer",
+    "SlanskyPresidentAccurate",
+    "Data",
+    "–",
+    "robust",
+    "filters",
+    "reliable",
+    "uptime",
+    "pay",
+    "forcredits",
+    "emails",
+    "contact",
+    "data",
+    "passes",
+    "verification",
+    "-other",
+    "companies",
+    "charge",
+    "extra",
+    "verificationNick",
+    "HajewskiGlobal",
+    "Director",
+    "MarketingOutstanding",
+    "Vendor",
+    "Exceptional",
+    "customer",
+    "service",
+    "easy-to-navigate",
+    "system",
+    "pleased",
+    "return",
+    "investmentStephen",
+    "JuthChief",
+    "Executive",
+    "OfficerAs",
+    "marketer",
+    "helps",
+    "generate",
+    "leads",
+    "B2B",
+    "sales",
+    "teams",
+    "email",
+    "outreachPhilipp",
+    "NassFounderWe",
+    "looked",
+    "ZoomInfo",
+    "ultimately",
+    "chose",
+    "research",
+    "found",
+    "pricing",
+    "options",
+    "accuracy",
+    "perfect",
+    "needsCraig",
+    "ValentineWhitewater",
+    "ConsultingAwesome",
+    "easy-to-use",
+    "accurate",
+    "prospecting",
+    "toolElizabeth",
+    "McGloneDirector",
+    "MarketingMy",
+    "reply",
+    "rate",
+    "80%",
+    "drastically",
+    "opens",
+    "door",
+    "company",
+    "Team",
+    "amazing",
+    "platformRaymond",
+    "YauFastsignsUplead",
+    "great",
+    "alternative",
+    "ability",
+    "find",
+    "relevant",
+    "stakeholders",
+    "feature",
+    "team",
+    "addition",
+    "multiple",
+    "ways",
+    "stakeholder",
+    "tremendouslyRich",
+    "WestermayerPrincipalThe",
+    "simplicity",
+    "makes",
+    "finding",
+    "correct",
+    "person",
+    "breeze",
+    "user",
+    "interface",
+    "simpler",
+    "lead-generating",
+    "sites",
+    "Ive",
+    "past",
+    "Generating",
+    "challenging",
+    "industry",
+    "solves",
+    "problem",
+    "giving",
+    "access",
+    "thousands",
+    "individuals",
+    "industries",
+    "locations",
+    "job",
+    "positionsNick",
+    "HulbertDirector",
+    "OperationsAccurate",
+    "Leads",
+    "Great",
+    "Price",
+    "HubSpot",
+    "Integration",
+    "click",
+    "CRMZach",
+    "RamsdenLogistics",
+    "SpecialistUpLead",
+    "tool",
+    "deliver",
+    "price",
+    "point",
+    "afford",
+    "quality",
+    "excellent",
+    "tools",
+    "including",
+    "ZoomInfoElizabeth",
+    "McGloneHead",
+    "Demand",
+    "GenerationWorking",
+    "intuitive",
+    "knowing",
+    "search",
+    "criteria",
+    "long",
+    "results",
+    "amount",
+    "information",
+    "receive",
+    "contacts",
+    "extraordinaryDavid",
+    "ManneyContent",
+    "StrategistMy",
+    "favorite",
+    "thing",
+    "Uplead",
+    "filter",
+    "intent",
+    "helpful",
+    "target",
+    "prospects",
+    "actively",
+    "engaged",
+    "competitors",
+    "products",
+    "services",
+    "list",
+    "building",
+    "capabilitiesDanine",
+    "Pontarelli",
+    "MiduraMKT",
+    "Content",
+    "DirectorIt",
+    "easy",
+    "regret",
+    "Choosing",
+    "decision",
+    "yearDariyka",
+    "SharovarovaOperations",
+    "ManagerUpLead",
+    "coverage",
+    "number",
+    "compared",
+    "technologies",
+    "Adaptio",
+    "Hunter",
+    "farChuck",
+    "DuldeFounder123FeaturedCustomers",
+    "1893001+",
+    "validated",
+    "references",
+    "reviews",
+    "case",
+    "studies",
+    "success",
+    "stories",
+    "testimonials",
+    "videos",
+    "make",
+    "software",
+    "purchasing",
+    "decisionsBrowse",
+    "bySoftware",
+    "CategoriesServices",
+    "CategoriesVendor",
+    "DirectoryFeaturedCustomersAboutTermsPrivacyContactDo",
+    "Sell",
+    "Personal",
+    "InformationConnectPress",
+    "ReleasesLinkedInTwitterFacebookFor",
+    "VendorsUpgrade",
+    "ProfileVerify",
+    "ProfileAdd",
+    "CompanyEnterprise",
+    "LoginGet",
+    "free",
+    "recommendations"
+  ]
+}

@@ -1,12 +1,13 @@
 """
 SalesNav Clay Extraction Functions
 
-Extract and flatten Clay webhook payload for SalesNav person data.
+Extract and flatten Clay webhook payload for SalesNav person and company data.
 Maps Clay field names to database columns.
 """
 
 from typing import Optional
 from urllib.parse import urlparse
+from datetime import date
 
 
 def extract_domain_from_url(url: Optional[str]) -> Optional[str]:
@@ -55,6 +56,48 @@ def parse_boolean_string(value) -> Optional[bool]:
             return None
         return value.strip().lower() in ("true", "1", "yes")
     return bool(value)
+
+
+def parse_job_start_date(value: Optional[str]) -> Optional[date]:
+    """
+    Parse job start date from MM-YYYY format to date.
+    Returns first of the month.
+    """
+    if not value:
+        return None
+    value = value.strip()
+    if not value or value.lower() in ("null", "none"):
+        return None
+
+    try:
+        # Expected format: MM-YYYY (e.g., "05-2025")
+        parts = value.split("-")
+        if len(parts) == 2:
+            month = int(parts[0])
+            year = int(parts[1])
+            if 1 <= month <= 12 and 1900 <= year <= 2100:
+                return date(year, month, 1)
+    except (ValueError, IndexError):
+        pass
+
+    return None
+
+
+def parse_headcount(value) -> Optional[int]:
+    """Parse headcount from string or int."""
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        value = value.strip().replace(",", "")
+        if not value or value.lower() in ("null", "none"):
+            return None
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
 
 
 def extract_salesnav_clay_person(
@@ -110,6 +153,45 @@ def extract_salesnav_clay_person(
     result = (
         supabase.schema("extracted")
         .from_("salesnav_scrapes_person")
+        .insert(extracted_data)
+        .execute()
+    )
+
+    return result.data[0] if result.data else None
+
+
+def extract_salesnav_clay_company(
+    supabase,
+    payload: dict,
+) -> dict:
+    """
+    Extract SalesNav company data from Clay payload to extracted.salesnav_scrapes_companies.
+
+    Maps Clay field names to database columns.
+    Note: raw_payload_id is not used because the FK constraint references a different raw table.
+
+    Returns the inserted record.
+    """
+    # Extract domain from Company website
+    company_website = normalize_null_string(payload.get("Company website"))
+    domain = extract_domain_from_url(company_website)
+
+    # Build extracted record with Clay field mapping
+    # Note: raw_payload_id omitted due to FK constraint to different raw table
+    extracted_data = {
+        "company_name": normalize_null_string(payload.get("Company")),
+        "linkedin_url": normalize_null_string(payload.get("LinkedIn URL (company)")),
+        "linkedin_urn": normalize_null_string(payload.get("Linkedin company profile URN")),
+        "domain": domain,
+        "description": normalize_null_string(payload.get("Company description")),
+        "headcount": parse_headcount(payload.get("Company headcount")),
+        "industries": normalize_null_string(payload.get("Company industries")),
+        "registered_address_raw": normalize_null_string(payload.get("Company registered address")),
+    }
+
+    result = (
+        supabase.schema("extracted")
+        .from_("salesnav_scrapes_companies")
         .insert(extracted_data)
         .execute()
     )

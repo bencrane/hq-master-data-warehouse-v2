@@ -32,7 +32,7 @@ def call_gemini(prompt: str, content: str) -> str:
         raise ValueError("GEMINI_API_KEY not set")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     full_prompt = f"{prompt}\n\n---\n\nFILING CONTENT:\n\n{content[:100000]}"  # Truncate if huge
 

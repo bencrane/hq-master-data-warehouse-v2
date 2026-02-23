@@ -1,0 +1,114 @@
+[
+    {
+      "company": "fi",
+      "domain": "ryfi.com",
+      "contact_name": "Jonathan Bensamoun",
+      "title": "CEO",
+      "linkedin": "https://www.linkedin.com/in/jonathanbensamoun/"
+    },
+    {
+      "company": "Crunch Fitness",
+      "domain": "crunchcrunch.com",
+      "contact_name": "Chris Calarco",
+      "title": "VP of Digital Experiences",
+      "linkedin": "https://www.linkedin.com/in/christophercalarco/"
+    },
+    {
+      "company": "Saracen Casino Resort",
+      "domain": "sarachencasino.com",
+      "contact_name": "Neil Atkinson",
+      "title": "Senior Director of Tables and Sportbook Operations",
+      "linkedin": "https://www.linkedin.com/in/neal-atkinson-92849231/"
+    },
+    {
+      "company": "PGA Tour",
+      "domain": "pgatour.com",
+      "contact_name": "Matt Mullen",
+      "title": "Director of Product Management",
+      "linkedin": "https://www.linkedin.com/in/matthewaaronmullen/"
+    },
+    {
+      "company": "Dick's",
+      "domain": "dickssportinggoods.com",
+      "contact_name": "Matt Walker",
+      "title": "Director of Product and Design, Mobile Apps",
+      "linkedin": "https://www.linkedin.com/in/matthewdwalker/"
+    },
+    {
+      "company": "Sleeper",
+      "domain": "sleeper.com",
+      "contact_name": "Ken Wang",
+      "title": "Co-Founder",
+      "linkedin": "https://www.linkedin.com/in/k3nny/"
+    },
+    {
+      "company": "Whataburger",
+      "domain": "whataburger.com",
+      "contact_name": "Kristen Addington",
+      "title": "Senior Digital Solutions Manager",
+      "linkedin": "https://www.linkedin.com/in/kristen-a-0220a72/"
+    },
+    {
+      "company": "Bojangles",
+      "domain": "bojangles.com",
+      "contact_name": "Sergio Perez",
+      "title": "Senior Director of Omnichannel",
+      "linkedin": "https://www.linkedin.com/in/sergioprz/"
+    },
+    {
+      "company": "Ibotta",
+      "domain": "ibotta.com",
+      "contact_name": "Casse Fernandez",
+      "title": "Associate Manager, Marketing Automation",
+      "linkedin": "https://www.linkedin.com/in/cara-fischer-2017/"
+    },
+    {
+      "company": "Milk Moovement",
+      "domain": "milkmoovement.com",
+      "contact_name": "Chris O'Malley",
+      "title": "Chief Technology Officer",
+      "linkedin": "https://www.linkedin.com/in/comalley/"
+    },
+    {
+      "company": "Panera Bread",
+      "domain": "panerabread.com",
+      "contact_name": "George Hanson",
+      "title": "Chief Digital Officer",
+      "linkedin": "https://www.linkedin.com/in/georgehanson/"
+    },
+    {
+      "company": "CKE Restaurants",
+      "domain": "ckerestaurants.com",
+      "contact_name": "Phil Crawford",
+      "title": "Chief Technology Officer",
+      "linkedin": "https://www.linkedin.com/in/crawfordphil/"
+    },
+    {
+      "company": "T Mobile",
+      "domain": "t-mobile.com",
+      "contact_name": "Aldo Tedjomoeljono",
+      "title": "Product Manager",
+      "linkedin": "https://www.linkedin.com/in/atedjomoeljono/"
+    },
+    {
+      "company": "Traveloka",
+      "domain": "traveloka.com",
+      "contact_name": "Adi Alimin",
+      "title": "VP of Platform Products",
+      "linkedin": "https://www.linkedin.com/in/adi-alimin-540a9043/?originalSubdomain=sg"
+    },
+    {
+      "company": "Route",
+      "domain": "route.com",
+      "contact_name": "Nick Lloyd",
+      "title": "Senior Director of Software Engineering",
+      "linkedin": "https://www.linkedin.com/in/nicholas-ted-lloyd/"
+    },
+    {
+      "company": "RetailMeNot",
+      "domain": "retailmenot.com",
+      "contact_name": "Kyle Albright",
+      "title": "Senior Group Product Manager",
+      "linkedin": "https://www.linkedin.com/in/kyle-albright-8407b3b2/"
+    }
+  ]

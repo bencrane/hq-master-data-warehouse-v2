@@ -3705,6 +3705,48 @@
         }
       }
     },
+    "/api/companies/linkedin-url/lookup": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Lookup Linkedin Url",
+        "description": "Lookup a company's LinkedIn URL by domain.\n\nPayload: { \"domain\": \"stripe.com\" }",
+        "operationId": "lookup_linkedin_url_api_companies_linkedin_url_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/companies/{domain}": {
       "get": {
         "tags": [
@@ -4260,6 +4302,48 @@
         "summary": "Ingest Staffing Parallel Search",
         "description": "Ingest Parallel AI search results for staffing research.\n\nPayload: Full response from search-parallel-ai endpoint",
         "operationId": "ingest_staffing_parallel_search_api_companies_ingest_staffing_parallel_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/has-customers-of": {
+      "post": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Has Customers Of",
+        "description": "Check if we have customers_of data for a company domain.\n\nPayload: { \"domain\": \"example.com\" }\n\nReturns:\n- has_customers: whether we have any customer data\n- total_customers: count of customers\n- customers_with_domain: count with domain populated\n- domain_coverage_pct: percentage with domains",
+        "operationId": "has_customers_of_api_companies_has_customers_of_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -11972,6 +12056,48 @@
         }
       }
     },
+    "/run/companies/db/similar-companies/list": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Get list of similar companies for a domain",
+        "description": "Wrapper for Modal function: lookup_similar_companies_list",
+        "operationId": "lookup_similar_companies_list_run_companies_db_similar_companies_list_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarCompaniesListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarCompaniesListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/run/companies/companyenrich/similar-companies-preview-results/ingest": {
       "post": {
         "tags": [
@@ -14662,6 +14788,300 @@
         }
       }
     },
+    "/run/companies/parallel-task/hq-location/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company HQ location using Parallel AI",
+        "description": "Wrapper for Modal function: infer_parallel_hq_location",
+        "operationId": "parallel_hq_location_run_companies_parallel_task_hq_location_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParallelHqLocationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParallelHqLocationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-task/industry/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company industry using Parallel AI",
+        "description": "Wrapper for Modal function: infer_parallel_industry",
+        "operationId": "parallel_industry_run_companies_parallel_task_industry_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParallelIndustryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParallelIndustryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/parallel-task/competitors/infer/db-direct": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Infer company competitors using Parallel AI",
+        "description": "Wrapper for Modal function: infer_parallel_competitors",
+        "operationId": "parallel_competitors_run_companies_parallel_task_competitors_infer_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParallelCompetitorsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParallelCompetitorsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/parallel-to-core/backfill": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Backfill parallel extractions to core tables",
+        "description": "Wrapper for Modal function: backfill_parallel_to_core",
+        "operationId": "backfill_parallel_to_core_run_companies_db_parallel_to_core_backfill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackfillParallelToCoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackfillParallelToCoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/case-study-champions/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup case study champions by vendor domain",
+        "description": "Wrapper for Modal function: lookup_case_study_champions",
+        "operationId": "lookup_case_study_champions_run_companies_db_case_study_champions_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseStudyChampionsLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseStudyChampionsLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/case-study-champions-detailed/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup case study champions with testimonials",
+        "description": "Wrapper for Modal function: lookup_champions_detailed",
+        "operationId": "lookup_champions_detailed_run_companies_db_case_study_champions_detailed_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChampionsDetailedLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChampionsDetailedLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/db/alumni/lookup": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup company alumni by domain",
+        "description": "Wrapper for Modal function: lookup_alumni",
+        "operationId": "lookup_alumni_run_companies_db_alumni_lookup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlumniLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlumniLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/read/companies/db/check-existence": {
       "post": {
         "tags": [
@@ -15438,6 +15858,1041 @@
         }
       }
     },
+    "/api/pipeline/webhooks/calcom": {
+      "post": {
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Ingest Calcom Webhook",
+        "description": "Receive Cal.com webhook payload.\n\nSupported events:\n- BOOKING_CREATED\n- BOOKING_CANCELLED\n- BOOKING_RESCHEDULED\n- MEETING_ENDED\n- PING",
+        "operationId": "ingest_calcom_webhook_api_pipeline_webhooks_calcom_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline/view": {
+      "post": {
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Get Pipeline View",
+        "description": "Main pipeline view - returns deals with company, contact, and latest booking info.\n\nFilters (optional):\n- status: 'active', 'won', 'lost', 'cancelled'\n- stage: 'booked', 'met', 'proposal', etc.",
+        "operationId": "get_pipeline_view_api_pipeline_view_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline/deal": {
+      "post": {
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Get Deal",
+        "description": "Get single deal with full context.\n\nRequired: deal_id",
+        "operationId": "get_deal_api_pipeline_deal_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline/meeting-outcome": {
+      "post": {
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Submit Meeting Outcome",
+        "description": "Submit meeting outcome form.\n\nRequired:\n- deal_id: UUID of the deal\n- outcome: 'completed', 'no_show', 'rescheduled', 'cancelled'\n\nOptional:\n- notes: Text notes about the meeting\n- next_step: 'follow_up', 'send_proposal', 'close_won', 'close_lost'\n- follow_up_date: ISO date string for next follow up",
+        "operationId": "submit_meeting_outcome_api_pipeline_meeting_outcome_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline/offer": {
+      "post": {
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Submit Offer",
+        "description": "Submit offer/proposal form.\n\nRequired:\n- deal_id: UUID of the deal\n- value: Numeric value of the offer\n\nOptional:\n- payment_type: 'one_time', 'monthly', 'quarterly', 'annual'\n- scope: Text description of scope\n- terms: Special terms or conditions",
+        "operationId": "submit_offer_api_pipeline_offer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pipeline/stats": {
+      "post": {
+        "tags": [
+          "pipeline"
+        ],
+        "summary": "Get Pipeline Stats",
+        "description": "Get pipeline statistics.",
+        "operationId": "get_pipeline_stats_api_pipeline_stats_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/hq-location/ingest/db-direct": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Infer Hq Location",
+        "description": "Infer company HQ location using Parallel AI.\nWrites to core.company_parallel_locations.",
+        "operationId": "infer_hq_location_parallel_native_hq_location_ingest_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HqLocationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/industry/ingest/db-direct": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Infer Industry",
+        "description": "Infer company industry using Parallel AI.\nWrites to core.company_parallel_industries.",
+        "operationId": "infer_industry_parallel_native_industry_ingest_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndustryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/competitors/ingest/db-direct": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Infer Competitors",
+        "description": "Infer company competitors using Parallel AI.\nWrites to core.company_parallel_competitors.",
+        "operationId": "infer_competitors_parallel_native_competitors_ingest_db_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/person-contact/enrich": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Enrich Person Contact",
+        "description": "Find contact info for a person using Parallel AI.\nReturns email, LinkedIn URL, and company website.",
+        "operationId": "enrich_person_contact_parallel_native_person_contact_enrich_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonContactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/case-study/extract": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Extract Case Study",
+        "description": "Extract structured details from a case study URL using Parallel AI.\nReturns featured company name, domain, and quotes/testimonials.",
+        "operationId": "extract_case_study_parallel_native_case_study_extract_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseStudyExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/case-study/extract-pro": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Extract Case Study Pro",
+        "description": "Extract structured details from a case study URL using Parallel AI (Pro processor).\nReturns featured company name, domain, and quotes/testimonials.",
+        "operationId": "extract_case_study_pro_parallel_native_case_study_extract_pro_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseStudyExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parallel-native/case-study/extract-v2": {
+      "post": {
+        "tags": [
+          "parallel-native"
+        ],
+        "summary": "Extract Case Study V2",
+        "description": "Extract structured details from a case study URL using Parallel AI.\nV2: Matches Parallel UI task spec exactly.",
+        "operationId": "extract_case_study_v2_parallel_native_case_study_extract_v2_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseStudyExtractRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job-boards/jobs/{domain}": {
+      "get": {
+        "tags": [
+          "job-boards"
+        ],
+        "summary": "Get Jobs For Domain",
+        "description": "Get job postings for a job board domain with company enrichment.",
+        "operationId": "get_jobs_for_domain_job_boards_jobs__domain__get",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Domain"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Country"
+            }
+          },
+          {
+            "name": "seniority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seniority"
+            }
+          },
+          {
+            "name": "employment_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Employment Type"
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Salary Min"
+            }
+          },
+          {
+            "name": "salary_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Salary Max"
+            }
+          },
+          {
+            "name": "employee_range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Employee Range"
+            }
+          },
+          {
+            "name": "days_ago",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Days Ago"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job-boards/jobs/{domain}/stats": {
+      "get": {
+        "tags": [
+          "job-boards"
+        ],
+        "summary": "Get Stats For Domain",
+        "description": "Get job posting statistics for a job board domain.",
+        "operationId": "get_stats_for_domain_job_boards_jobs__domain__stats_get",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Domain"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job-boards/domains": {
+      "get": {
+        "tags": [
+          "job-boards"
+        ],
+        "summary": "List Job Board Domains",
+        "description": "List all configured job board domains.",
+        "operationId": "list_job_board_domains_job_boards_domains_get",
+        "parameters": [
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job-boards/jobs/{domain}/filters": {
+      "get": {
+        "tags": [
+          "job-boards"
+        ],
+        "summary": "Get Filters For Domain",
+        "description": "Get available filter options for a job board domain.\nReturns distinct values for each filterable field.",
+        "operationId": "get_filters_for_domain_job_boards_jobs__domain__filters_get",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Domain"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingest/brightdata/indeed": {
+      "post": {
+        "tags": [
+          "brightdata-ingest"
+        ],
+        "summary": "Ingest Brightdata Indeed",
+        "operationId": "ingest_brightdata_indeed_api_ingest_brightdata_indeed_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrightDataIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingest/brightdata/linkedin": {
+      "post": {
+        "tags": [
+          "brightdata-ingest"
+        ],
+        "summary": "Ingest Brightdata Linkedin",
+        "operationId": "ingest_brightdata_linkedin_api_ingest_brightdata_linkedin_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrightDataIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingest/brightdata/validate-job": {
+      "post": {
+        "tags": [
+          "brightdata-ingest"
+        ],
+        "summary": "Validate Brightdata Job",
+        "operationId": "validate_brightdata_job_api_ingest_brightdata_validate_job_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrightDataValidateJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -15596,6 +17051,206 @@
           "business_models"
         ],
         "title": "AllFiltersResponse"
+      },
+      "AlumniInfo": {
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
+          },
+          "current_company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Company Name"
+          },
+          "current_company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Company Domain"
+          },
+          "current_company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Company Linkedin Url"
+          },
+          "current_job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Job Title"
+          },
+          "past_company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Past Company Name"
+          },
+          "past_company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Past Company Domain"
+          },
+          "past_job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Past Job Title"
+          }
+        },
+        "type": "object",
+        "title": "AlumniInfo"
+      },
+      "AlumniLookupRequest": {
+        "properties": {
+          "past_company_domain": {
+            "type": "string",
+            "title": "Past Company Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "past_company_domain"
+        ],
+        "title": "AlumniLookupRequest"
+      },
+      "AlumniLookupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "past_company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Past Company Domain"
+          },
+          "alumni_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alumni Count"
+          },
+          "alumni": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AlumniInfo"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alumni"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "AlumniLookupResponse"
       },
       "AnnualCommitmentResponse": {
         "properties": {
@@ -16072,6 +17727,73 @@
           "success"
         ],
         "title": "BackfillCompanyDescriptionsResponse"
+      },
+      "BackfillParallelToCoreRequest": {
+        "properties": {
+          "batch_size": {
+            "type": "integer",
+            "title": "Batch Size",
+            "default": 5000
+          },
+          "backfill_customers": {
+            "type": "boolean",
+            "title": "Backfill Customers",
+            "default": true
+          },
+          "backfill_champions": {
+            "type": "boolean",
+            "title": "Backfill Champions",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "BackfillParallelToCoreRequest"
+      },
+      "BackfillParallelToCoreResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "customers_updated": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customers Updated"
+          },
+          "champions_inserted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champions Inserted"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "BackfillParallelToCoreResponse"
       },
       "BackfillPersonLocationRequest": {
         "properties": {
@@ -16687,6 +18409,64 @@
         ],
         "title": "Body_salesnav_export_to_clay_run_salesnav_export_to_clay_post"
       },
+      "BrightDataIngestRequest": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Records"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "records"
+        ],
+        "title": "BrightDataIngestRequest"
+      },
+      "BrightDataValidateJobRequest": {
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "title": "Company Domain"
+          },
+          "job_title": {
+            "type": "string",
+            "title": "Job Title"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_domain",
+          "job_title"
+        ],
+        "title": "BrightDataValidateJobRequest"
+      },
       "BuiltWithIngestRequest": {
         "properties": {
           "domain": {
@@ -16976,6 +18756,103 @@
           "success"
         ],
         "title": "CaseStudyBuyersResponse"
+      },
+      "CaseStudyChampionsLookupRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "CaseStudyChampionsLookupRequest"
+      },
+      "CaseStudyChampionsLookupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "champion_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champion Count"
+          },
+          "champions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChampionInfo"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champions"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "CaseStudyChampionsLookupResponse"
+      },
+      "CaseStudyExtractRequest": {
+        "properties": {
+          "case_study_url": {
+            "type": "string",
+            "title": "Case Study Url"
+          },
+          "origin_company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Company Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_study_url"
+        ],
+        "title": "CaseStudyExtractRequest"
       },
       "CaseStudyExtractionRequest": {
         "properties": {
@@ -17588,6 +19465,256 @@
           "success"
         ],
         "title": "CbVcPortfolioResponse"
+      },
+      "ChampionDetailedInfo": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "case_study_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Study Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "testimonial": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Testimonial"
+          }
+        },
+        "type": "object",
+        "title": "ChampionDetailedInfo"
+      },
+      "ChampionInfo": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "case_study_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Study Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "title": "ChampionInfo"
+      },
+      "ChampionsDetailedLookupRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "ChampionsDetailedLookupRequest"
+      },
+      "ChampionsDetailedLookupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "champion_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champion Count"
+          },
+          "champions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChampionDetailedInfo"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champions"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ChampionsDetailedLookupResponse"
       },
       "ClayPersonProfileRequest": {
         "properties": {
@@ -21016,6 +23143,40 @@
         ],
         "title": "ComparisonPageResponse"
       },
+      "CompetitorsRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "workflow_source": {
+            "type": "string",
+            "title": "Workflow Source",
+            "default": "parallel-native/competitors/ingest/db-direct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "CompetitorsRequest"
+      },
       "CoreCompanyFullUpsertRequest": {
         "properties": {
           "company_name": {
@@ -21684,6 +23845,17 @@
               }
             ],
             "title": "Customer Domain"
+          },
+          "customer_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Linkedin Url"
           }
         },
         "type": "object",
@@ -23291,6 +25463,20 @@
             ],
             "title": "Vc Names"
           },
+          "vcs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VCInfo"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vcs"
+          },
           "founded_date": {
             "anyOf": [
               {
@@ -23319,6 +25505,40 @@
           "success"
         ],
         "title": "HasRaisedVCResponse"
+      },
+      "HqLocationRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "workflow_source": {
+            "type": "string",
+            "title": "Workflow Source",
+            "default": "parallel-native/hq-location/ingest/db-direct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "HqLocationRequest"
       },
       "ICPCriteriaUpsertRequest": {
         "properties": {
@@ -24610,6 +26830,40 @@
           "name"
         ],
         "title": "IndustryOption"
+      },
+      "IndustryRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "workflow_source": {
+            "type": "string",
+            "title": "Workflow Source",
+            "default": "parallel-native/industry/ingest/db-direct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "IndustryRequest"
       },
       "JobPostingRequest": {
         "properties": {
@@ -27524,6 +29778,280 @@
         ],
         "title": "PaginationMeta"
       },
+      "ParallelCompetitorsRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "workflow_source": {
+            "type": "string",
+            "title": "Workflow Source",
+            "default": "parallel-task/competitors/infer/db-direct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "ParallelCompetitorsRequest"
+      },
+      "ParallelCompetitorsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "competitors": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Competitors"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ParallelCompetitorsResponse"
+      },
+      "ParallelHqLocationRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "workflow_source": {
+            "type": "string",
+            "title": "Workflow Source",
+            "default": "parallel-task/hq-location/infer/db-direct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "ParallelHqLocationRequest"
+      },
+      "ParallelHqLocationResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "hq_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hq City"
+          },
+          "hq_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hq State"
+          },
+          "hq_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hq Country"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ParallelHqLocationResponse"
+      },
+      "ParallelIndustryRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "workflow_source": {
+            "type": "string",
+            "title": "Workflow Source",
+            "default": "parallel-task/industry/infer/db-direct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "company_name"
+        ],
+        "title": "ParallelIndustryRequest"
+      },
+      "ParallelIndustryResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "sub_industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Industry"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "ParallelIndustryResponse"
+      },
       "ParsedAddress": {
         "properties": {
           "city": {
@@ -27864,6 +30392,35 @@
         },
         "type": "object",
         "title": "Person"
+      },
+      "PersonContactRequest": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "company": {
+            "type": "string",
+            "title": "Company"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_name",
+          "company"
+        ],
+        "title": "PersonContactRequest"
       },
       "PersonDiscoveryRequest": {
         "properties": {
@@ -31024,6 +33581,79 @@
         ],
         "title": "SignalPromotionResponse"
       },
+      "SimilarCompaniesListRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "SimilarCompaniesListRequest"
+      },
+      "SimilarCompaniesListResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "similar_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similar Count"
+          },
+          "similar_companies": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SimilarCompanyInfo"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similar Companies"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "SimilarCompaniesListResponse"
+      },
       "SimilarCompaniesLookupRequest": {
         "properties": {
           "domain": {
@@ -31093,6 +33723,56 @@
           "success"
         ],
         "title": "SimilarCompaniesLookupResponse"
+      },
+      "SimilarCompanyInfo": {
+        "properties": {
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "similarity_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similarity Score"
+          }
+        },
+        "type": "object",
+        "title": "SimilarCompanyInfo"
       },
       "StagingCompanyLinkedInRequest": {
         "properties": {
@@ -32648,6 +35328,34 @@
           "success"
         ],
         "title": "VCDomainUpdateResponse"
+      },
+      "VCInfo": {
+        "properties": {
+          "vc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vc Name"
+          },
+          "vc_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vc Domain"
+          }
+        },
+        "type": "object",
+        "title": "VCInfo"
       },
       "ValidationError": {
         "properties": {

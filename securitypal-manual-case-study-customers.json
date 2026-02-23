@@ -1,0 +1,121 @@
+[
+    {
+      "company": "Orum",
+      "domain": "orum.com",
+      "contact_name": "Rolland Miller",
+      "title": "Vice President of Security and Compliance",
+      "linkedin": "https://www.linkedin.com/in/rollandmiller/"
+    },
+    {
+      "company": "LangChain",
+      "domain": "langchain.com",
+      "contact_name": "Julia Schottenstein",
+      "title": "COO",
+      "linkedin": "https://www.linkedin.com/in/julia-schottenstein-25424318/"
+    },
+    {
+      "company": "Elastic",
+      "domain": "elastic.com",
+      "contact_name": "Slava Zhomir",
+      "title": "Information Security",
+      "linkedin": "https://www.linkedin.com/in/slava-zhomir/?originalSubdomain=es"
+    },
+    {
+      "company": "Grammarly",
+      "domain": "grammarly.com",
+      "contact_name": "David Hwang",
+      "title": "Chief Customer Officer",
+      "linkedin": "https://www.linkedin.com/in/dhwang16/"
+    },
+    {
+      "company": "Airtable",
+      "domain": "airtable.com",
+      "contact_name": "Shailey Kadakia",
+      "title": "Head of GRCP",
+      "linkedin": "https://www.linkedin.com/in/shaileyvora/"
+    },
+    {
+      "company": "WEX",
+      "domain": "wex.com",
+      "contact_name": "Lori Norman",
+      "title": "VP Global Resilience and ERM",
+      "linkedin": "https://www.linkedin.com/in/lori-norman-cbci-mbci-cpp-a1486037/"
+    },
+    {
+      "company": "Plaid",
+      "domain": "plaid.com",
+      "contact_name": "Kenneth Moras",
+      "title": "GRC leader",
+      "linkedin": "https://www.linkedin.com/in/kennethmoras/"
+    },
+    {
+      "company": "Productiv",
+      "domain": "productiv.com",
+      "contact_name": "Josh Mullis",
+      "title": "Head of Information Security",
+      "linkedin": "https://www.linkedin.com/in/josh-mullis-cissp-b80727215/"
+    },
+    {
+      "company": "ContentStack",
+      "domain": "contentstack.com",
+      "contact_name": "Gal Oppenheimer",
+      "title": "Director of Solutions Architect",
+      "linkedin": "https://www.linkedin.com/in/galoppenheimer/"
+    },
+    {
+      "company": "Stack Overflow",
+      "domain": "stackoverflow.com",
+      "contact_name": "Jason Leach",
+      "title": "Sr. Strategic Sales Engineer",
+      "linkedin": "https://www.linkedin.com/in/leachjason/"
+    },
+    {
+      "company": "Figma",
+      "domain": "figma.com",
+      "contact_name": "Dev Akhawe",
+      "title": "Head of Security",
+      "linkedin": "https://www.linkedin.com/in/devdattaakhawe/"
+    },
+    {
+      "company": "Monday",
+      "domain": "monday.com",
+      "contact_name": "Eduardo Ynaty",
+      "title": "Senior Solutions Engineering Manager",
+      "linkedin": "https://www.linkedin.com/in/eynaty/"
+    },
+    {
+      "company": "Elastic",
+      "domain": "elastic.com",
+      "contact_name": "Mandy Andress",
+      "title": "CISO",
+      "linkedin": "https://www.linkedin.com/in/mandyandress/"
+    },
+    {
+      "company": "Airtable",
+      "domain": "airtable.com",
+      "contact_name": "Giovanni Briggs",
+      "title": "Customer Solutions Engineer",
+      "linkedin": "https://www.linkedin.com/in/giovannibriggs/"
+    },
+    {
+      "company": "fm: systems",
+      "domain": "fmsystems.com",
+      "contact_name": "Hanna Graziano",
+      "title": "Sr Director Solutions Consulting, Technical Sales",
+      "linkedin": "https://www.linkedin.com/in/hannagraziano/"
+    },
+    {
+      "company": "Orum",
+      "domain": "orum.com",
+      "contact_name": "Daisy Chung",
+      "title": "Director of Sales",
+      "linkedin": "https://www.linkedin.com/in/daisychung13/"
+    },
+    {
+      "company": "Log Rhythm",
+      "domain": "logrhythm.com",
+      "contact_name": "Tyler Glotz",
+      "title": "Senior Security Analyst",
+      "linkedin": "https://www.linkedin.com/in/tygl1123/"
+    }
+  ]

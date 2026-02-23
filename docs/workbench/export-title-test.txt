@@ -1,0 +1,162 @@
+# Paste _export_title values here (one per line) to test matching against koolkit_title
+
+EX PALANTIR - LEGAL + FINANCE 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Palantir Technologies, Finance, Legal - https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A5118871866%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AC%2Ctext%3A11-50%2CselectionType%3AINCLUDED)%2C(id%3AD%2Ctext%3A51-200%2CselectionType%3AINCLUDED)%2C(id%3AE%2Ctext%3A201-500%2CselectionType%3AINCLUDED)%2C(id%3AF%2Ctext%3A501-1000%2CselectionType%3AINCLUDED)%2C(id%3AH%2Ctext%3A5001-10%252C000%2CselectionType%3AINCLUDED)%2C(id%3AI%2Ctext%3A10%252C000%252B%2CselectionType%3AINCLUDED)%2C(id%3AG%2Ctext%3A1001-5000%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A110%2Ctext%3AEntry%2520Level%2CselectionType%3AEXCLUDED)))%2C(type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A20708%2Ctext%3APalantir%2520Technologies%2CselectionType%3AEXCLUDED%2Cparent%3A(id%3A0))))%2C(type%3APAST_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A20708%2Ctext%3APalantir%2520Technologies%2CselectionType%3AINCLUDED%2Cparent%3A(id%3A0))))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A14%2Ctext%3ALegal%2CselectionType%3AINCLUDED)%2C(id%3A10%2Ctext%3AFinance%2CselectionType%3AINCLUDED)))))&sessionId=oZSZTk4DQsKQ5n4VhYbLbA%3D%3D&viewAllFilters=true.csv
+
+CURRENTLY AT Harvey, Sales, Marketing, Business Development, Finance, Engineering, Human Resources, Legal, Operations, Product Management, Customer Success and Support - https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A5225685658%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A89566597%2Ctext%3AHarvey%2CselectionType%3AINCLUDED%2Cparent%3A(id%3A0))))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A25%2Ctext%3ASales%2CselectionType%3AINCLUDED)%2C(id%3A15%2Ctext%3AMarketing%2CselectionType%3AINCLUDED)%2C(id%3A4%2Ctext%3ABusiness%2520Development%2CselectionType%3AINCLUDED)%2C(id%3A10%2Ctext%3AFinance%2CselectionType%3AINCLUDED)%2C(id%3A8%2Ctext%3AEngineering%2CselectionType%3AINCLUDED)%2C(id%3A12%2Ctext%3AHuman%2520Resources%2CselectionType%3AINCLUDED)%2C(id%3A14%2Ctext%3ALegal%2CselectionType%3AINCLUDED)%2C(id%3A18%2Ctext%3AOperations%2CselectionType%3AINCLUDED)%2C(id%3A19%2Ctext%3AProduct%2520Management%2CselectionType%3AINCLUDED)%2C(id%3A26%2Ctext%3ACustomer%2520Success%2520and%2520Support%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A110%2Ctext%3AEntry%2520Level%2CselectionType%3AEXCLUDED)))))&sessionId=8BexKYETTTq24NPTYQmk1w%3D%3D&viewAllFilters=true.csv
+
+EX - HUMAN RESOURCES - TOP TIER SAAS - (companies likely in case studies), 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Human Resources, Software Development, Technology, Information and Internet, Technology, Information and Media - 
+
+
+EX TOP TIER SAAS - CUSTOMER SUCCESS + SUPPORT LEADERSHIP - 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Top Tier SaaS for Sales Leadership (companies likely in case studies), Customer Success and Support, VP Customer Support, VP Customer Experie, Customer, Customer Support, Customer Success, Customer Success and Support, Customer Care , North America - 
+
+EX - TOP TIER SAAS - LEGAL + FINANCE ROLES TO ENRICH. - Top Tier SaaS for Sales Leadership (companies likely in case studies), 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Legal, Finance - 
+
+EX CLICKUP - 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, ClickUp, Sales, Engineering, Business Development, Customer Success and Support, Operations, Marketing, Product Management, Finance, Legal - 
+
+
+
+EX MIRO - Miro, Miro, Engineering, Legal, Finance, Business Development, Customer Success and Support, Product Management - 
+
+
+
+{
+  "Email": "",
+  "_notes": "CURRENTLY AT Harvey, Sales, Marketing, Business Development, Finance, Engineering, Human Resources, Legal, Operations, Product Management, Customer Success and Support - https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A5225685658%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A89566597%2Ctext%3AHarvey%2CselectionType%3AINCLUDED%2Cparent%3A(id%3A0))))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A25%2Ctext%3ASales%2CselectionType%3AINCLUDED)%2C(id%3A15%2Ctext%3AMarketing%2CselectionType%3AINCLUDED)%2C(id%3A4%2Ctext%3ABusiness%2520Development%2CselectionType%3AINCLUDED)%2C(id%3A10%2Ctext%3AFinance%2CselectionType%3AINCLUDED)%2C(id%3A8%2Ctext%3AEngineering%2CselectionType%3AINCLUDED)%2C(id%3A12%2Ctext%3AHuman%2520Resources%2CselectionType%3AINCLUDED)%2C(id%3A14%2Ctext%3ALegal%2CselectionType%3AINCLUDED)%2C(id%3A18%2Ctext%3AOperations%2CselectionType%3AINCLUDED)%2C(id%3A19%2Ctext%3AProduct%2520Management%2CselectionType%3AINCLUDED)%2C(id%3A26%2Ctext%3ACustomer%2520Success%2520and%2520Support%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A110%2Ctext%3AEntry%2520Level%2CselectionType%3AEXCLUDED)))))&sessionId=8BexKYETTTq24NPTYQmk1w%3D%3D&viewAllFilters=true.csv\r\n",
+  "Company": "Harvey",
+  "Location": "New York City Metropolitan Area",
+  "Job title": "Enterprise Sales Manager",
+  "Last name": "Silvestri",
+  "First name": "Eric",
+  "_row_index": 36,
+  "Phone number": "",
+  "_export_title": "CURRENTLY AT Harvey, Sales, Marketing, Business Development, Finance, Engineering, Human Resources, Legal, Operations, Product Management, Customer Success and Support - https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A5225685658%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A89566597%2Ctext%3AHarvey%2CselectionType%3AINCLUDED%2Cparent%3A(id%3A0))))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A25%2Ctext%3ASales%2CselectionType%3AINCLUDED)%2C(id%3A15%2Ctext%3AMarketing%2CselectionType%3AINCLUDED)%2C(id%3A4%2Ctext%3ABusiness%2520Development%2CselectionType%3AINCLUDED)%2C(id%3A10%2Ctext%3AFinance%2CselectionType%3AINCLUDED)%2C(id%3A8%2Ctext%3AEngineering%2CselectionType%3AINCLUDED)%2C(id%3A12%2Ctext%3AHuman%2520Resources%2CselectionType%3AINCLUDED)%2C(id%3A14%2Ctext%3ALegal%2CselectionType%3AINCLUDED)%2C(id%3A18%2Ctext%3AOperations%2CselectionType%3AINCLUDED)%2C(id%3A19%2Ctext%3AProduct%2520Management%2CselectionType%3AINCLUDED)%2C(id%3A26%2Ctext%3ACustomer%2520Success%2520and%2520Support%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A110%2Ctext%3AEntry%2520Level%2CselectionType%3AEXCLUDED)))))&sessionId=8BexKYETTTq24NPTYQmk1w%3D%3D&viewAllFilters=true.csv",
+  "Job started on": "05-2025",
+  "Company website": "http://harvey.ai",
+  "Job description": "",
+  "Profile summary": "Eric is a seasoned leader in the payments and fintech space with 15+ years of experience working across finance, business development, partnerships, and sales functions at industry leading organizations. Eric has significant experience driving growth / GTM and product strategies with fast growing B2B and B2C tech companies. He has had ample success leading multi-year, multi-product enterprise deals from prospecting / ideation through contract signature and is a tenured people leader with a proven track record of building and leading high performing teams.",
+  "Matching filters": "true",
+  "Profile headline": "",
+  "Company headcount": "1044",
+  "_export_timestamp": "2/3/2026, 7:44 PM",
+  "Company industries": "Software Development",
+  "Company description": "Harvey is domain-specific AI for legal and professional services. Adopted by Fortune 500 companies like AT&T, Verizon, Cox, Koch, KKR, Bridgewater, more than 100,000 lawyers across 1,000+ customers in 60 countries and over 50% of AmLaw 100 law firms rely on Harvey to advance legal expertise faster across contract analysis, due diligence, compliance, and litigation. Backed by Sequoia Capital, OpenAI, GV, Kleiner Perkins, Coatue and EQT, Harvey is the trusted partner in modernizing the legal industry.",
+  "LinkedIn URL (company)": "https://www.linkedin.com/company/harvey-ai/",
+  "LinkedIn user profile URN": "urn:li:fs_salesProfile:(ACwAAALyk0oBcE1iL4hCOps_HwnBb9MxQ_lNWSo)",
+  "Company registered address": "San Francisco, California, United States",
+  "LinkedIn URL (user profile)": "https://www.linkedin.com/in/ACwAAALyk0oBcE1iL4hCOps_HwnBb9MxQ_lNWSo",
+  "Linkedin company profile URN": "urn:li:fs_salesCompany:89566597"
+}
+
+
+{
+  "Email": "",
+  "_notes": "EX PALANTIR - LEGAL + FINANCE 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Palantir Technologies, Finance, Legal - https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A5118871866%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AC%2Ctext%3A11-50%2CselectionType%3AINCLUDED)%2C(id%3AD%2Ctext%3A51-200%2CselectionType%3AINCLUDED)%2C(id%3AE%2Ctext%3A201-500%2CselectionType%3AINCLUDED)%2C(id%3AF%2Ctext%3A501-1000%2CselectionType%3AINCLUDED)%2C(id%3AH%2Ctext%3A5001-10%252C000%2CselectionType%3AINCLUDED)%2C(id%3AI%2Ctext%3A10%252C000%252B%2CselectionType%3AINCLUDED)%2C(id%3AG%2Ctext%3A1001-5000%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A110%2Ctext%3AEntry%2520Level%2CselectionType%3AEXCLUDED)))%2C(type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A20708%2Ctext%3APalantir%2520Technologies%2CselectionType%3AEXCLUDED%2Cparent%3A(id%3A0))))%2C(type%3APAST_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A20708%2Ctext%3APalantir%2520Technologies%2CselectionType%3AINCLUDED%2Cparent%3A(id%3A0))))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A14%2Ctext%3ALegal%2CselectionType%3AINCLUDED)%2C(id%3A10%2Ctext%3AFinance%2CselectionType%3AINCLUDED)))))&sessionId=oZSZTk4DQsKQ5n4VhYbLbA%3D%3D&viewAllFilters=true.csv\r\n",
+  "Company": "Instacart",
+  "Location": "United States",
+  "Job title": "Senior Privacy Counsel",
+  "Last name": "U. Vrabec",
+  "First name": "Dr. Helena",
+  "_row_index": 6,
+  "Phone number": "",
+  "_export_title": "EX PALANTIR - LEGAL + FINANCE 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Palantir Technologies, Finance, Legal - https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A5118871866%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AC%2Ctext%3A11-50%2CselectionType%3AINCLUDED)%2C(id%3AD%2Ctext%3A51-200%2CselectionType%3AINCLUDED)%2C(id%3AE%2Ctext%3A201-500%2CselectionType%3AINCLUDED)%2C(id%3AF%2Ctext%3A501-1000%2CselectionType%3AINCLUDED)%2C(id%3AH%2Ctext%3A5001-10%252C000%2CselectionType%3AINCLUDED)%2C(id%3AI%2Ctext%3A10%252C000%252B%2CselectionType%3AINCLUDED)%2C(id%3AG%2Ctext%3A1001-5000%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A110%2Ctext%3AEntry%2520Level%2CselectionType%3AEXCLUDED)))%2C(type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A20708%2Ctext%3APalantir%2520Technologies%2CselectionType%3AEXCLUDED%2Cparent%3A(id%3A0))))%2C(type%3APAST_COMPANY%2Cvalues%3AList((id%3Aurn%253Ali%253Aorganization%253A20708%2Ctext%3APalantir%2520Technologies%2CselectionType%3AINCLUDED%2Cparent%3A(id%3A0))))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A14%2Ctext%3ALegal%2CselectionType%3AINCLUDED)%2C(id%3A10%2Ctext%3AFinance%2CselectionType%3AINCLUDED)))))&sessionId=oZSZTk4DQsKQ5n4VhYbLbA%3D%3D&viewAllFilters=true.csv",
+  "Job started on": "06-2023",
+  "Company website": "https://www.instacart.com",
+  "Job description": "",
+  "Profile summary": "I am a Senior Counsel for Instacart, focusing on privacy, cybersecurity and AI. In addition to my in-house job, I am also a guest faculty member at the Center for Law and Digital Technologies at Leiden University. Prior to joining Instacart, I held a similar legal position at Palantir Technologies in New York, after working several years for the European Commission and Ernst & Young in various privacy advisory roles.",
+  "Matching filters": "true",
+  "Profile headline": "",
+  "Company headcount": "24086",
+  "_export_timestamp": "2/2/2026, 7:42 PM",
+  "Company industries": "Software Development",
+  "Company description": "Instacart, the leading grocery technology company in North America, works with grocers and retailers to transform how people shop. The company partners with more than 1,500 national, regional, and local retail banners to facilitate online shopping, delivery and pickup services from more than 85,000 stores across North America on the Instacart Marketplace. Instacart makes it possible for millions of people to get the groceries they need from the retailers they love, and for approximately 600,000 Instacart shoppers to earn by picking, packing and delivering orders on their own flexible schedule. The Instacart Platform offers retailers a suite of enterprise-grade technology products and services to power their e-commerce experiences, fulfill orders, digitize brick-and-mortar stores, provide advertising services, and glean insights. With Instacart Ads, thousands of CPG brands – from category leaders to emerging brands – partner with the company to connect directly with consumers online, right at the point of purchase. With Instacart Health, the company is providing tools to increase nutrition security, make healthy choices easier for consumers, and expand the role that food can play in improving health outcomes. For more information, visit www.instacart.com/company. ",
+  "LinkedIn URL (company)": "https://www.linkedin.com/company/instacart/",
+  "LinkedIn user profile URN": "urn:li:fs_salesProfile:(ACwAAA4iOAoBw-LXlVbzq5ZWt2y3Wdwrv0VI9JE)",
+  "Company registered address": "San Francisco, California, United States",
+  "LinkedIn URL (user profile)": "https://www.linkedin.com/in/ACwAAA4iOAoBw-LXlVbzq5ZWt2y3Wdwrv0VI9JE",
+  "Linkedin company profile URN": "urn:li:fs_salesCompany:2732417"
+}
+
+
+{
+  "Email": "",
+  "_notes": "EX - HUMAN RESOURCES - TOP TIER SAAS - (companies likely in case studies), 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Human Resources, Software Development, Technology, Information and Internet, Technology, Information and Media - ",
+  "Company": "Postman",
+  "Location": "San Francisco Bay Area",
+  "Job title": "Head of Talent Acquisition",
+  "Last name": "Chaudhary",
+  "First name": "Sunil",
+  "_row_index": 7,
+  "Phone number": "",
+  "_export_title": "EX - HUMAN RESOURCES - TOP TIER SAAS - (companies likely in case studies), 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Human Resources, Software Development, Technology, Information and Internet, Technology, Information and Media - ",
+  "Job started on": "08-2025",
+  "Company website": "https://www.postman.com/",
+  "Job description": "",
+  "Profile summary": "",
+  "Matching filters": "true",
+  "Profile headline": "Director, Executive Search at Riviera Partners. Product & Engineering",
+  "Company headcount": "3356",
+  "_export_timestamp": "2/2/2026, 5:22 PM",
+  "Company industries": "Software Development",
+  "Company description": "Postman is the world’s leading API platform. Postman's features simplify each step of building an API and streamline collaboration to help create better APIs—faster. More than 40 million developers and 500,000 organizations across the globe use Postman today.Our customers are doing more and more astounding things with the Postman product every day, and as a result, we are growing rapidly.  Check out our open positions if you’d like to learn more: https://www.postman.com/careers/",
+  "LinkedIn URL (company)": "https://www.linkedin.com/company/postman-platform/",
+  "LinkedIn user profile URN": "urn:li:fs_salesProfile:(ACwAAAABb7kB8_CX7OKol2XWhpK6jArhhMUlJHE)",
+  "Company registered address": "San Francisco, California, United States",
+  "LinkedIn URL (user profile)": "https://www.linkedin.com/in/ACwAAAABb7kB8_CX7OKol2XWhpK6jArhhMUlJHE",
+  "Linkedin company profile URN": "urn:li:fs_salesCompany:3795851"
+}
+
+{
+  "Email": "",
+  "_notes": "EX TOP TIER SAAS - CUSTOMER SUCCESS + SUPPORT LEADERSHIP - 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Top Tier SaaS for Sales Leadership (companies likely in case studies), Customer Success and Support, VP Customer Support, VP Customer Experie, Customer, Customer Support, Customer Success, Customer Success and Support, Customer Care , North America - ",
+  "Company": "Workday",
+  "Location": "New York, New York, United States",
+  "Job title": "Healthcare Customer Base Account Executive, Majors",
+  "Last name": "Hedrick",
+  "First name": "Taylor",
+  "_row_index": 8,
+  "Phone number": "",
+  "_export_title": "EX TOP TIER SAAS - CUSTOMER SUCCESS + SUPPORT LEADERSHIP - 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Top Tier SaaS for Sales Leadership (companies likely in case studies), Customer Success and Support, VP Customer Support, VP Customer Experie, Customer, Customer Support, Customer Success, Customer Success and Support, Customer Care , North America - ",
+  "Job started on": "02-2024",
+  "Company website": "http://www.workday.com",
+  "Job description": "I manage Workday's largest Healthcare customers in the Northeast.",
+  "Profile summary": "I am passionate about empowering my customers to run their health systems as efficiently as possible. Through the best in Klas Cloud ERP solutions, the Workday Healthcare team helps people who are helping people. \\n\\nAfter 11 years in the Enterprise Software space, lots of exciting digital transformation deals across HCM, Database/Data Management & ERP, to CXM/CRM, specializing in industries such as Aerospace&Defense, Financial Services and now Healthcare, I am so excited to be back to my ERP roots here at Workday! \\n\\nLet's Connect:\\nE: taylor.hedrick@workday.com",
+  "Matching filters": "true",
+  "Profile headline": "",
+  "Company headcount": "22798",
+  "_export_timestamp": "2/1/2026, 9:25 PM",
+  "Company industries": "Software Development",
+  "Company description": "Workday is a leading provider of enterprise cloud applications for finance and human resources, helping customers adapt and thrive in a changing world. Workday applications for financial management, human resources, planning, spend management, and analytics are built with artificial intelligence and machine learning at the core to help organizations around the world embrace the future of work. Workday is used by more than 10,000 organizations around the world and across industries – from medium-sized businesses to more than 50% of the Fortune 500.",
+  "LinkedIn URL (company)": "https://www.linkedin.com/company/workday/",
+  "LinkedIn user profile URN": "urn:li:fs_salesProfile:(ACwAABD2k_8Bdz-t9jRKzEyghQ7hFshXSBSDNbk)",
+  "Company registered address": "Pleasanton, California, United States",
+  "LinkedIn URL (user profile)": "https://www.linkedin.com/in/ACwAABD2k_8Bdz-t9jRKzEyghQ7hFshXSBSDNbk",
+  "Linkedin company profile URN": "urn:li:fs_salesCompany:17719"
+}
+
+{
+  "Email": "",
+  "_notes": "EX - TOP TIER SAAS - LEGAL + FINANCE ROLES TO ENRICH. - Top Tier SaaS for Sales Leadership (companies likely in case studies), 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Legal, Finance - ",
+  "Company": "Stripe",
+  "Location": "Singapore",
+  "Job title": "Treasurer - APAC and Head of Global Treasury Operations ",
+  "Last name": "Keshote",
+  "First name": "Laxmi",
+  "_row_index": 7,
+  "Phone number": "",
+  "_export_title": "EX - TOP TIER SAAS - LEGAL + FINANCE ROLES TO ENRICH. - Top Tier SaaS for Sales Leadership (companies likely in case studies), 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10,000, 10,000+, Legal, Finance - ",
+  "Job started on": "08-2024",
+  "Company website": "https://stripe.com",
+  "Job description": "",
+  "Profile summary": "At the heart of Stripe's APAC region, I lead our treasury finance team and financial risk management initiatives, leveraging an intricate understanding of emerging trends and liquidity risk. My role as regional Treasurer over the years reflects forward looking treasury, money movement capability while safeguarding the company's financial health and strategic liquidity frameworks.\\n\\nCollaborating across departments, we've crafted robust funding and regulatory risk management solutions that resonate with our global mission. With a keen focus on treasury and a background in computer engineering, I bring a unique perspective to navigating the complexities of today's financial landscape, ensuring that Stripe thrives amidst the dynamic challenges of the digital economy.",
+  "Matching filters": "true",
+  "Profile headline": "",
+  "Company headcount": "14103",
+  "_export_timestamp": "2/1/2026, 9:20 PM",
+  "Company industries": "Technology, Information and Internet",
+  "Company description": "Stripe builds programmable financial services. Millions of companies—from the world’s largest enterprises to the most ambitious startups—use Stripe to accept payments, grow their revenue, and accelerate new business opportunities. Headquartered in San Francisco and Dublin, the company aims to increase the GDP of the internet.",
+  "LinkedIn URL (company)": "https://www.linkedin.com/company/stripe/",
+  "LinkedIn user profile URN": "urn:li:fs_salesProfile:(ACwAAAH2QqoBlc4Hi38unvRGQMBq8b-a3cbo9S4)",
+  "Company registered address": "South San Francisco, California, United States",
+  "LinkedIn URL (user profile)": "https://www.linkedin.com/in/ACwAAAH2QqoBlc4Hi38unvRGQMBq8b-a3cbo9S4",
+  "Linkedin company profile URN": "urn:li:fs_salesCompany:2135371"
+}
