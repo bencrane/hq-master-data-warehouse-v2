@@ -164,6 +164,7 @@ from ingest.validate_export_title import validate_export_title
 from ingest.brightdata_indeed_jobs import ingest_brightdata_indeed_jobs
 from ingest.brightdata_linkedin_jobs import ingest_brightdata_linkedin_jobs
 from ingest.brightdata_validate_job import validate_job_posting_active
+from ingest.salesnav_job_title_normalized import ingest_salesnav_job_title_normalized
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 

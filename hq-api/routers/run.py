@@ -8323,3 +8323,54 @@ async def lookup_alumni(request: AlumniLookupRequest) -> AlumniLookupResponse:
                 status_code=503,
                 detail=f"Failed to reach Modal function: {str(e)}"
             )
+
+
+# =============================================================================
+# SalesNav Job Title Normalization
+# =============================================================================
+
+class SalesnavJobTitleNormalizedRequest(BaseModel):
+    job_title_raw: str
+    normalized_job_title: str
+
+
+class SalesnavJobTitleNormalizedResponse(BaseModel):
+    success: bool
+    job_title_raw: str
+    normalized_job_title: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/reference/salesnav-job-title/normalized/ingest",
+    response_model=SalesnavJobTitleNormalizedResponse,
+    summary="Store SalesNav job title normalization mapping",
+    description="Wrapper for Modal function: ingest_salesnav_job_title_normalized"
+)
+async def ingest_salesnav_job_title_normalized(request: SalesnavJobTitleNormalizedRequest) -> SalesnavJobTitleNormalizedResponse:
+    """
+    Store a job title -> normalized SalesNav-friendly title mapping.
+
+    Modal function: ingest_salesnav_job_title_normalized
+    Modal URL: https://bencrane--hq-master-data-ingest-ingest-salesnav-job-titl-4664ce.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-ingest-salesnav-job-titl-4664ce.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return SalesnavJobTitleNormalizedResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
