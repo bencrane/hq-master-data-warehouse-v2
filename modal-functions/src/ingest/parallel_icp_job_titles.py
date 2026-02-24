@@ -265,6 +265,96 @@ def _insert_failed_raw(supabase: Any, request: ParallelICPJobTitlesRequest, erro
     ).execute()
 
 
+def _persist_completed_result(
+    supabase: Any,
+    run_id: str,
+    run_result: dict[str, Any],
+    raw_payload_id: Optional[str],
+    company_name: Optional[str],
+    domain: Optional[str],
+    company_description: Optional[str],
+) -> dict[str, Any]:
+    output = _extract_output_content(run_result or {})
+    titles_raw = output.get("titles", []) if isinstance(output, dict) else []
+    titles = titles_raw if isinstance(titles_raw, list) else []
+    champion_titles = _extract_titles_by_role(titles, "champion")
+    evaluator_titles = _extract_titles_by_role(titles, "evaluator")
+    decision_maker_titles = _extract_titles_by_role(titles, "decision_maker")
+    all_titles = _extract_all_title_strings(titles)
+
+    final_raw_payload = {
+        "success": True,
+        "status": "completed",
+        "runId": run_id,
+        "companyName": company_name,
+        "domain": domain,
+        "taskResult": run_result,
+        "output": output,
+    }
+
+    if raw_payload_id:
+        supabase.schema("raw").from_("parallel_icp_job_titles").update(
+            {
+                "raw_payload": final_raw_payload,
+                "success": True,
+                "error_message": None,
+                "cost_usd": PRO_COST_PER_RUN,
+            }
+        ).eq("id", raw_payload_id).execute()
+    else:
+        raw_insert = (
+            supabase.schema("raw")
+            .from_("parallel_icp_job_titles")
+            .insert(
+                {
+                    "company_name": company_name or "",
+                    "domain": domain or "",
+                    "company_description": company_description,
+                    "run_id": run_id,
+                    "raw_payload": final_raw_payload,
+                    "success": True,
+                    "cost_usd": PRO_COST_PER_RUN,
+                }
+            )
+            .execute()
+        )
+        raw_payload_id = raw_insert.data[0]["id"]
+
+    extracted_upserted = False
+    if domain and company_name:
+        supabase.schema("extracted").from_("parallel_icp_job_titles").upsert(
+            {
+                "raw_payload_id": raw_payload_id,
+                "company_name": company_name,
+                "domain": domain,
+                "run_id": run_id,
+                "inferred_product": output.get("inferredProduct") if isinstance(output, dict) else None,
+                "buyer_persona": output.get("buyerPersona") if isinstance(output, dict) else None,
+                "champion_titles": champion_titles,
+                "evaluator_titles": evaluator_titles,
+                "decision_maker_titles": decision_maker_titles,
+                "all_titles": all_titles,
+                "total_title_count": len(titles),
+                "champion_count": len(champion_titles),
+                "evaluator_count": len(evaluator_titles),
+                "decision_maker_count": len(decision_maker_titles),
+                "cost_usd": PRO_COST_PER_RUN,
+            },
+            on_conflict="domain",
+        ).execute()
+        extracted_upserted = True
+
+    return {
+        "output": output,
+        "titles": titles,
+        "champion_titles": champion_titles,
+        "evaluator_titles": evaluator_titles,
+        "decision_maker_titles": decision_maker_titles,
+        "raw_payload_id": raw_payload_id,
+        "extracted_upserted": extracted_upserted,
+    }
+
+
 def _load_raw_context(supabase: Any, run_id: str, raw_payload_id: Optional[str]) -> Optional[dict[str, Any]]:
     if raw_payload_id:
         result = (
@@ -340,6 +430,67 @@ def _submit_run_and_insert_raw(
         "raw_payload_id": raw_payload_id,
         "task_run": task_run,
     }
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("parallel-ai"),
+        modal.Secret.from_name("supabase-credentials"),
+    ],
+    timeout=3600,
+)
+def _parallel_icp_job_titles_background(request_payload: dict) -> dict:
+    from supabase import create_client
+
+    request = ParallelICPJobTitlesRequest(**request_payload)
+    supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
+    api_key = os.environ.get("PARALLEL_API_KEY")
+    if not api_key:
+        raise ValueError("PARALLEL_API_KEY not found in environment")
+
+    run_id: Optional[str] = None
+    raw_payload_id: Optional[str] = None
+    try:
+        run_data = _submit_run_and_insert_raw(request=request, supabase=supabase, api_key=api_key)
+        run_id = run_data["run_id"]
+        raw_payload_id = run_data["raw_payload_id"]
+
+        run_result = _retrieve_parallel_task_result(run_id=run_id, api_key=api_key)
+        persisted = _persist_completed_result(
+            supabase=supabase,
+            run_id=run_id,
+            run_result=run_result,
+            raw_payload_id=raw_payload_id,
+            company_name=request.company_name,
+            domain=request.domain,
+            company_description=request.company_description,
+        )
+        return {
+            "success": True,
+            "runId": run_id,
+            "rawPayloadId": persisted["raw_payload_id"],
+            "extractedUpserted": persisted["extracted_upserted"],
+        }
+    except Exception as exc:
+        error_message = str(exc)
+        if raw_payload_id:
+            try:
+                supabase.schema("raw").from_("parallel_icp_job_titles").update(
+                    {
+                        "success": False,
+                        "error_message": error_message,
+                        "raw_payload": {"success": False, "status": "failed", "runId": run_id, "error": error_message},
+                    }
+                ).eq("id", raw_payload_id).execute()
+            except Exception:
+                pass
+        else:
+            try:
+                _insert_failed_raw(supabase, request, error_message, run_id)
+            except Exception:
+                pass
+        raise
 
 
 @app.function(
@@ -427,73 +578,21 @@ def parallel_icp_job_titles_finalize(request: ParallelICPJobTitlesFinalizeReques
                 "message": status_message or "Run still active. Retry finalize in a few seconds.",
             }
 
-        output = _extract_output_content(run_result or {})
-        titles_raw = output.get("titles", []) if isinstance(output, dict) else []
-        titles = titles_raw if isinstance(titles_raw, list) else []
-        champion_titles = _extract_titles_by_role(titles, "champion")
-        evaluator_titles = _extract_titles_by_role(titles, "evaluator")
-        decision_maker_titles = _extract_titles_by_role(titles, "decision_maker")
-        all_titles = _extract_all_title_strings(titles)
-
-        final_raw_payload = {
-            "success": True,
-            "status": "completed",
-            "runId": request.run_id,
-            "companyName": company_name,
-            "domain": domain,
-            "taskResult": run_result,
-            "output": output,
-        }
-
-        if raw_payload_id:
-            supabase.schema("raw").from_("parallel_icp_job_titles").update(
-                {
-                    "raw_payload": final_raw_payload,
-                    "success": True,
-                    "error_message": None,
-                    "cost_usd": PRO_COST_PER_RUN,
-                }
-            ).eq("id", raw_payload_id).execute()
-        else:
-            raw_insert = (
-                supabase.schema("raw")
-                .from_("parallel_icp_job_titles")
-                .insert(
-                    {
-                        "company_name": company_name or "",
-                        "domain": domain or "",
-                        "company_description": company_description,
-                        "run_id": request.run_id,
-                        "raw_payload": final_raw_payload,
-                        "success": True,
-                        "cost_usd": PRO_COST_PER_RUN,
-                    }
-                )
-                .execute()
-            )
-            raw_payload_id = raw_insert.data[0]["id"]
-
-        if domain and company_name:
-            supabase.schema("extracted").from_("parallel_icp_job_titles").upsert(
-                {
-                    "raw_payload_id": raw_payload_id,
-                    "company_name": company_name,
-                    "domain": domain,
-                    "run_id": request.run_id,
-                    "inferred_product": output.get("inferredProduct") if isinstance(output, dict) else None,
-                    "buyer_persona": output.get("buyerPersona") if isinstance(output, dict) else None,
-                    "champion_titles": champion_titles,
-                    "evaluator_titles": evaluator_titles,
-                    "decision_maker_titles": decision_maker_titles,
-                    "all_titles": all_titles,
-                    "total_title_count": len(titles),
-                    "champion_count": len(champion_titles),
-                    "evaluator_count": len(evaluator_titles),
-                    "decision_maker_count": len(decision_maker_titles),
-                    "cost_usd": PRO_COST_PER_RUN,
-                },
-                on_conflict="domain",
-            ).execute()
+        persisted = _persist_completed_result(
+            supabase=supabase,
+            run_id=request.run_id,
+            run_result=run_result or {},
+            raw_payload_id=raw_payload_id,
+            company_name=company_name,
+            domain=domain,
+            company_description=company_description,
+        )
+        output = persisted["output"]
+        titles = persisted["titles"]
+        champion_titles = persisted["champion_titles"]
+        evaluator_titles = persisted["evaluator_titles"]
+        decision_maker_titles = persisted["decision_maker_titles"]
+        raw_payload_id = persisted["raw_payload_id"]
 
         return {
             "success": True,
@@ -508,7 +607,7 @@ def parallel_icp_job_titles_finalize(request: ParallelICPJobTitlesFinalizeReques
             "championCount": len(champion_titles),
             "evaluatorCount": len(evaluator_titles),
             "decisionMakerCount": len(decision_maker_titles),
-            "stored": {"rawPayloadId": raw_payload_id, "extractedUpserted": bool(domain and company_name)},
+            "stored": {"rawPayloadId": raw_payload_id, "extractedUpserted": persisted["extracted_upserted"]},
         }
     except Exception as exc:
         error_message = str(exc)
@@ -544,37 +643,13 @@ def parallel_icp_job_titles_finalize(request: ParallelICPJobTitlesFinalizeReques
 )
 @modal.fastapi_endpoint(method="POST", label="icp-titles")
 def parallel_icp_job_titles(request: ParallelICPJobTitlesRequest) -> dict:
-    # Backward-compatible alias: keep current endpoint fast/non-blocking.
-    from supabase import create_client
-
-    supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
-    api_key = os.environ.get("PARALLEL_API_KEY")
-    if not api_key:
-        raise ValueError("PARALLEL_API_KEY not found in environment")
-
-    try:
-        run_data = _submit_run_and_insert_raw(request=request, supabase=supabase, api_key=api_key)
-        return {
-            "success": True,
-            "done": False,
-            "status": "submitted",
-            "runId": run_data["run_id"],
-            "companyName": request.company_name,
-            "domain": request.domain,
-            "stored": {"rawPayloadId": run_data["raw_payload_id"]},
-            "nextStep": "Call /icp-titles-finalize with runId (and rawPayloadId) until done=true.",
-        }
-    except Exception as exc:
-        error_message = str(exc)
-        try:
-            _insert_failed_raw(supabase, request, error_message, None)
-        except Exception:
-            pass
-        return {
-            "success": False,
-            "done": False,
-            "error": error_message,
-            "companyName": request.company_name,
-            "domain": request.domain,
-            "runId": None,
-        }
+    # Fire-and-forget entrypoint for n8n/Pipedream/Trigger.dev.
+    call = _parallel_icp_job_titles_background.spawn(request.model_dump())
+    return {
+        "success": True,
+        "accepted": True,
+        "message": "Background job started. Data will be written to raw/extracted tables when complete.",
+        "companyName": request.company_name,
+        "domain": request.domain,
+        "callId": call.object_id,
+    }
