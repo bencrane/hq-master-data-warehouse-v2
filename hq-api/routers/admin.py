@@ -2516,6 +2516,41 @@ async def get_top_vcs():
 
 
 # ============================================================
+# Temp Tables for Parallel ICP
+# ============================================================
+
+@router.post("/temp/companies-for-parallel-icp")
+async def get_companies_for_parallel_icp(payload: dict = {}):
+    """
+    Get records from temp.companies_for_parallel_icp.
+
+    Payload: { "limit": 100 }  // optional, returns all if not provided
+    """
+    pool = get_pool()
+
+    limit = payload.get("limit")
+
+    if limit:
+        rows = await pool.fetch("""
+            SELECT id, company_name, domain, description, created_at
+            FROM temp.companies_for_parallel_icp
+            ORDER BY id
+            LIMIT $1
+        """, int(limit))
+    else:
+        rows = await pool.fetch("""
+            SELECT id, company_name, domain, description, created_at
+            FROM temp.companies_for_parallel_icp
+            ORDER BY id
+        """)
+
+    return {
+        "count": len(rows),
+        "data": [dict(row) for row in rows]
+    }
+
+
+# ============================================================
 # Generic endpoint for any schema/table (must be LAST to not override specific routes)
 # ============================================================
 
