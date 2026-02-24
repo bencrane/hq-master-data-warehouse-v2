@@ -198,7 +198,7 @@ def _insert_failed_raw(supabase: Any, request: ParallelICPJobTitlesRequest, erro
 @app.function(
     image=image,
     secrets=[
-        modal.Secret.from_name("parallel.ai"),
+        modal.Secret.from_name("parallel-ai"),
         modal.Secret.from_name("supabase-credentials"),
     ],
     timeout=3600,
