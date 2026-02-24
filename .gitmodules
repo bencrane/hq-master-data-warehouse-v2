@@ -1,0 +1,3 @@
+[submodule "api-reference-docs"]
+	path = api-reference-docs
+	url = https://github.com/bencrane/api-reference-docs.git
