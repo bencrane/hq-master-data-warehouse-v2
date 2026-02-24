@@ -20,6 +20,8 @@ PARALLEL_RESULT_TIMEOUT_SECONDS = 3300
 PARALLEL_HTTP_TIMEOUT_SECONDS = 60
 FINALIZE_WAIT_SECONDS_DEFAULT = 5
 FINALIZE_WAIT_SECONDS_MAX = 30
+TRIGGER_WAIT_SECONDS_DEFAULT = 3600
+TRIGGER_WAIT_SECONDS_MAX = 4200
 
 
 class ParallelICPJobTitlesRequest(BaseModel):
@@ -80,6 +82,17 @@ class ParallelICPJobTitlesFinalizeRequest(BaseModel):
         if value is None:
             return FINALIZE_WAIT_SECONDS_DEFAULT
         return max(1, min(FINALIZE_WAIT_SECONDS_MAX, value))
+
+
+class ParallelICPJobTitlesTriggerRequest(ParallelICPJobTitlesRequest):
+    wait_seconds: Optional[int] = TRIGGER_WAIT_SECONDS_DEFAULT
+
+    @field_validator("wait_seconds")
+    @classmethod
+    def _validate_wait_seconds(cls, value: Optional[int]) -> int:
+        if value is None:
+            return TRIGGER_WAIT_SECONDS_DEFAULT
+        return max(60, min(TRIGGER_WAIT_SECONDS_MAX, value))
 
 
 PROMPT_TEMPLATE = """CONTEXT
@@ -186,13 +199,17 @@ def _create_parallel_task_run(input_data: str, api_key: str) -> dict[str, Any]:
     )
 
 
-def _retrieve_parallel_task_result(run_id: str, api_key: str) -> dict[str, Any]:
+def _retrieve_parallel_task_result(
+    run_id: str,
+    api_key: str,
+    wait_seconds: int = PARALLEL_RESULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
     return _request_or_raise(
         "GET",
         f"{PARALLEL_BASE_URL}/tasks/runs/{run_id}/result",
         headers={"x-api-key": api_key},
-        params={"timeout": PARALLEL_RESULT_TIMEOUT_SECONDS},
-        timeout=PARALLEL_RESULT_TIMEOUT_SECONDS + 60,
+        params={"timeout": wait_seconds},
+        timeout=wait_seconds + 60,
     )
 
 
@@ -653,3 +670,98 @@ def parallel_icp_job_titles(request: ParallelICPJobTitlesRequest) -> dict:
         "domain": request.domain,
         "callId": call.object_id,
     }
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("parallel-ai"),
+        modal.Secret.from_name("supabase-credentials"),
+    ],
+    timeout=5400,
+)
+@modal.fastapi_endpoint(method="POST", label="icp-titles-trigger")
+def parallel_icp_job_titles_trigger(request: ParallelICPJobTitlesTriggerRequest) -> dict:
+    """
+    Trigger.dev-oriented blocking endpoint.
+    Submits to Parallel, waits for completion, and persists raw + extracted rows.
+    """
+    from supabase import create_client
+
+    supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
+    api_key = os.environ.get("PARALLEL_API_KEY")
+    if not api_key:
+        raise ValueError("PARALLEL_API_KEY not found in environment")
+
+    run_id: Optional[str] = None
+    raw_payload_id: Optional[str] = None
+    try:
+        run_data = _submit_run_and_insert_raw(request=request, supabase=supabase, api_key=api_key)
+        run_id = run_data["run_id"]
+        raw_payload_id = run_data["raw_payload_id"]
+
+        run_result = _retrieve_parallel_task_result(
+            run_id=run_id,
+            api_key=api_key,
+            wait_seconds=request.wait_seconds or TRIGGER_WAIT_SECONDS_DEFAULT,
+        )
+        persisted = _persist_completed_result(
+            supabase=supabase,
+            run_id=run_id,
+            run_result=run_result,
+            raw_payload_id=raw_payload_id,
+            company_name=request.company_name,
+            domain=request.domain,
+            company_description=request.company_description,
+        )
+        output = persisted["output"]
+        titles = persisted["titles"]
+        champion_titles = persisted["champion_titles"]
+        evaluator_titles = persisted["evaluator_titles"]
+        decision_maker_titles = persisted["decision_maker_titles"]
+
+        return {
+            "success": True,
+            "done": True,
+            "runId": run_id,
+            "companyName": request.company_name,
+            "domain": request.domain,
+            "output": output,
+            "costUsd": PRO_COST_PER_RUN,
+            "titleCount": len(titles),
+            "championCount": len(champion_titles),
+            "evaluatorCount": len(evaluator_titles),
+            "decisionMakerCount": len(decision_maker_titles),
+            "stored": {
+                "rawPayloadId": persisted["raw_payload_id"],
+                "extractedUpserted": persisted["extracted_upserted"],
+            },
+        }
+    except Exception as exc:
+        error_message = str(exc)
+        if raw_payload_id:
+            try:
+                supabase.schema("raw").from_("parallel_icp_job_titles").update(
+                    {
+                        "success": False,
+                        "error_message": error_message,
+                        "raw_payload": {"success": False, "status": "failed", "runId": run_id, "error": error_message},
+                    }
+                ).eq("id", raw_payload_id).execute()
+            except Exception:
+                pass
+        else:
+            try:
+                _insert_failed_raw(supabase, request, error_message, run_id)
+            except Exception:
+                pass
+
+        return {
+            "success": False,
+            "done": False,
+            "error": error_message,
+            "runId": run_id,
+            "companyName": request.company_name,
+            "domain": request.domain,
+            "rawPayloadId": raw_payload_id,
+        }
