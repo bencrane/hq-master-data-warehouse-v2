@@ -165,6 +165,9 @@ from ingest.brightdata_indeed_jobs import ingest_brightdata_indeed_jobs
 from ingest.brightdata_linkedin_jobs import ingest_brightdata_linkedin_jobs
 from ingest.brightdata_validate_job import validate_job_posting_active
 from ingest.salesnav_job_title_normalized import ingest_salesnav_job_title_normalized
+from ingest.parallel_icp_job_titles import parallel_icp_job_titles
+from ingest.extract_icp_titles import extract_icp_titles
+from ingest.match_job_titles import match_job_titles
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -360,4 +363,7 @@ __all__ = [
     "ingest_brightdata_indeed_jobs",
     "ingest_brightdata_linkedin_jobs",
     "validate_job_posting_active",
+    "parallel_icp_job_titles",
+    "extract_icp_titles",
+    "match_job_titles",
 ]

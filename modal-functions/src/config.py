@@ -25,6 +25,8 @@ image = (
         "opencv-python-headless",
         "numpy",
         "psycopg2-binary",
+        "parallel-web",
+        "anthropic",
     )
     .add_local_python_source("config", "ingest", "extraction", "icp", "read")
 )
