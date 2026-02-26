@@ -90,7 +90,7 @@ def lookup_past_customer_employment(request: PastCustomerEmploymentRequest) -> d
         work_history_result = (
             supabase.schema("core")
             .from_("person_work_history")
-            .select("raw_job_title, company_name, company_domain, start_date")
+            .select("title, matched_cleaned_job_title, company_name, company_domain, start_date")
             .eq("person_linkedin_url", linkedin_url)
             .eq("is_current", False)
             .order("start_date", desc=True)
@@ -115,12 +115,17 @@ def lookup_past_customer_employment(request: PastCustomerEmploymentRequest) -> d
         for job in work_history_result.data:
             job_domain = job.get("company_domain")
             if job_domain and job_domain in customer_domains_set:
+                # Prefer matched_cleaned_job_title, fall back to raw title
+                cleaned_title = job.get("matched_cleaned_job_title")
+                raw_title = job.get("title")
                 return {
                     "success": True,
                     "found": True,
                     "linkedin_url": linkedin_url,
                     "seller_domain": seller_domain,
-                    "past_job_title": job.get("raw_job_title"),
+                    "past_job_title": cleaned_title or raw_title,
+                    "past_job_title_raw": raw_title,
+                    "past_job_title_cleaned": cleaned_title,
                     "past_company_name": job.get("company_name"),
                     "past_company_domain": job_domain,
                 }
@@ -132,6 +137,8 @@ def lookup_past_customer_employment(request: PastCustomerEmploymentRequest) -> d
             "linkedin_url": linkedin_url,
             "seller_domain": seller_domain,
             "past_job_title": None,
+            "past_job_title_raw": None,
+            "past_job_title_cleaned": None,
             "past_company_name": None,
             "past_company_domain": None,
         }
