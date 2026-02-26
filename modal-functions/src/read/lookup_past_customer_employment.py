@@ -53,7 +53,7 @@ def lookup_past_customer_employment(request: PastCustomerEmploymentRequest) -> d
             supabase.schema("core")
             .from_("company_customers")
             .select("customer_domain")
-            .eq("domain", seller_domain)
+            .eq("origin_company_domain", seller_domain)
             .execute()
         )
 
@@ -91,7 +91,7 @@ def lookup_past_customer_employment(request: PastCustomerEmploymentRequest) -> d
             supabase.schema("core")
             .from_("person_work_history")
             .select("title, matched_cleaned_job_title, company_name, company_domain, start_date")
-            .eq("person_linkedin_url", linkedin_url)
+            .eq("linkedin_url", linkedin_url)
             .eq("is_current", False)
             .order("start_date", desc=True)
             .execute()
