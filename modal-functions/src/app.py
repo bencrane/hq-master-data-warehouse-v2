@@ -168,6 +168,8 @@ from ingest.salesnav_job_title_normalized import ingest_salesnav_job_title_norma
 from ingest.parallel_icp_job_titles import parallel_icp_job_titles
 from ingest.extract_icp_titles import extract_icp_titles
 from ingest.match_job_titles import match_job_titles
+from ingest.prospect_fit import evaluate_prospect_fit
+from ingest.company_competitors_research import ingest_company_competitors_research
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -366,4 +368,6 @@ __all__ = [
     "parallel_icp_job_titles",
     "extract_icp_titles",
     "match_job_titles",
+    "evaluate_prospect_fit",
+    "ingest_company_competitors_research",
 ]
