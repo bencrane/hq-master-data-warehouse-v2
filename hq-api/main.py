@@ -62,6 +62,14 @@ ALLOWED_ORIGINS = [
     "https://www.opsinternal.com",
     "https://app.opsinternal.com",
     "https://admin.opsinternal.com",
+    # outboundsolutions.com
+    "https://outboundsolutions.com",
+    "https://www.outboundsolutions.com",
+    "https://app.outboundsolutions.com",
+    # alumnigtm.com
+    "https://alumnigtm.com",
+    "https://www.alumnigtm.com",
+    "https://app.alumnigtm.com",
 ]
 
 app.add_middleware(
