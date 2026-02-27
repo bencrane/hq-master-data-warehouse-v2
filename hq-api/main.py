@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import leads, filters, views, auth, companies, enrichment, people, admin, run, read, hq, workflows, workflows_single, pipeline, parallel_native, job_boards, brightdata_ingest
+from routers import leads, filters, views, auth, companies, enrichment, people, admin, run, read, hq, workflows, workflows_single, pipeline, parallel_native, job_boards, brightdata_ingest, lunos
 from db import init_pool, close_pool
 
 
@@ -98,6 +98,7 @@ app.include_router(pipeline.router)
 app.include_router(parallel_native.router)
 app.include_router(job_boards.router)
 app.include_router(brightdata_ingest.router)
+app.include_router(lunos.router)
 
 
 @app.get("/")
