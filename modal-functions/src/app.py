@@ -33,6 +33,7 @@ from read.lookup_similar_companies import lookup_similar_companies
 from read.lookup_similar_companies_list import lookup_similar_companies_list
 from read.lookup_client_leads import lookup_client_leads
 from read.lookup_company_canonical import lookup_company_canonical
+from read.lookup_company_by_name import lookup_company_by_name
 from read.lookup_past_customer_employment import lookup_past_customer_employment
 from read.lookup_gtm_dashboard import lookup_gtm_dashboard
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
@@ -177,6 +178,8 @@ from ingest.gemini_icp_job_titles import gemini_icp_job_titles
 from ingest.parallel_gtm_research import parallel_gtm_research
 from ingest.gemini_icp_criterion import generate_icp_criterion, evaluate_icp_fit
 from ingest.build_salesnav_url import build_salesnav_url
+from ingest.parallel_case_studies import parallel_case_studies
+from ingest.rapidapi_linkedin_people import rapidapi_linkedin_people
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -385,4 +388,7 @@ __all__ = [
     "generate_icp_criterion",
     "evaluate_icp_fit",
     "build_salesnav_url",
+    "parallel_case_studies",
+    "rapidapi_linkedin_people",
+    "lookup_company_by_name",
 ]
