@@ -9775,6 +9775,48 @@
         }
       }
     },
+    "/api/admin/temp/companies-for-parallel-icp": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Companies For Parallel Icp",
+        "description": "Get records from temp.companies_for_parallel_icp.\n\nPayload: { \"limit\": 100 }  // optional, returns all if not provided",
+        "operationId": "get_companies_for_parallel_icp_api_admin_temp_companies_for_parallel_icp_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/{schema_name}/{table_name}/count": {
       "get": {
         "tags": [
@@ -15082,6 +15124,300 @@
         }
       }
     },
+    "/run/reference/salesnav-job-title/normalized/ingest": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Store SalesNav job title normalization mapping",
+        "description": "Wrapper for Modal function: ingest_salesnav_job_title_normalized",
+        "operationId": "ingest_salesnav_job_title_normalized_run_reference_salesnav_job_title_normalized_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalesnavJobTitleNormalizedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesnavJobTitleNormalizedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/gemini/customers-of/discover": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Discover customers of a company using Gemini",
+        "description": "Wrapper for Modal function: get_customers_of",
+        "operationId": "get_customers_of_run_companies_gemini_customers_of_discover_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetCustomersOfRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCustomersOfResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/gemini/icp-job-titles/research": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Research ICP job titles using Gemini",
+        "description": "Wrapper for Modal function: gemini_icp_job_titles",
+        "operationId": "gemini_icp_job_titles_run_companies_gemini_icp_job_titles_research_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeminiICPJobTitlesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeminiICPJobTitlesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/gemini/icp-criterion/generate": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Generate ICP criterion from customers and titles",
+        "description": "Wrapper for Modal function: generate_icp_criterion",
+        "operationId": "generate_icp_criterion_run_companies_gemini_icp_criterion_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateICPCriterionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateICPCriterionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/companies/gemini/icp-fit/evaluate": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Evaluate if a company fits an ICP criterion",
+        "description": "Wrapper for Modal function: evaluate_icp_fit",
+        "operationId": "evaluate_icp_fit_run_companies_gemini_icp_fit_evaluate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateICPFitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluateICPFitResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/tools/claude/salesnav-url/build": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Build a LinkedIn Sales Navigator search URL",
+        "description": "Wrapper for Modal function: build_salesnav_url",
+        "operationId": "build_salesnav_url_run_tools_claude_salesnav_url_build_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildSalesNavURLRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildSalesNavURLResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/focus-companies/send": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Send selected focus companies to Data Engine X",
+        "description": "Sends selected focus company domains to a Data Engine X webhook to trigger a blueprint.",
+        "operationId": "send_focus_companies_run_focus_companies_send_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FocusCompanySendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusCompanySendResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/read/companies/db/check-existence": {
       "post": {
         "tags": [
@@ -15174,6 +15510,66 @@
         "summary": "Get data coverage for focus companies across all core tables",
         "description": "Returns boolean flags for each core company table indicating whether data exists for each focus company.",
         "operationId": "get_company_coverage_read_companies_coverage_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read/gtm/dashboard": {
+      "post": {
+        "tags": [
+          "read"
+        ],
+        "summary": "Get GTM dashboard data for a seller domain",
+        "description": "Returns customers, alumni leads with firmographics and GTM briefs",
+        "operationId": "get_gtm_dashboard_read_gtm_dashboard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GTMDashboardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read/focus-companies": {
+      "get": {
+        "tags": [
+          "read"
+        ],
+        "summary": "List all focus companies",
+        "description": "Returns all companies in public.focus_companies for frontend display and selection.",
+        "operationId": "list_focus_companies_read_focus_companies_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -15522,6 +15918,48 @@
         }
       }
     },
+    "/api/hq/clients/salesnav-template": {
+      "post": {
+        "tags": [
+          "hq"
+        ],
+        "summary": "Get Salesnav Template",
+        "description": "Get Sales Navigator template config for a client.\n\nPayload: {\n    \"client_domain\": \"securitypalhq.com\"\n}\n\nReturns the template URL and customer company details.",
+        "operationId": "get_salesnav_template_api_hq_clients_salesnav_template_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/workflows/normalize": {
       "post": {
         "tags": [
@@ -15835,6 +16273,348 @@
             }
           },
           "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-domain-from-email/single": {
+      "post": {
+        "tags": [
+          "workflows-single"
+        ],
+        "summary": "Resolve Domain From Email Single",
+        "operationId": "resolve_domain_from_email_single_api_workflows_resolve_domain_from_email_single_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveDomainFromEmailSingleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-domain-from-linkedin/single": {
+      "post": {
+        "tags": [
+          "workflows-single"
+        ],
+        "summary": "Resolve Domain From Linkedin Single",
+        "operationId": "resolve_domain_from_linkedin_single_api_workflows_resolve_domain_from_linkedin_single_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveDomainFromLinkedinSingleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-company-name/single": {
+      "post": {
+        "tags": [
+          "workflows-single"
+        ],
+        "summary": "Resolve Company Name Single",
+        "operationId": "resolve_company_name_single_api_workflows_resolve_company_name_single_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCompanyNameSingleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-linkedin-from-domain/single": {
+      "post": {
+        "tags": [
+          "workflows-single"
+        ],
+        "summary": "Resolve Linkedin From Domain Single",
+        "operationId": "resolve_linkedin_from_domain_single_api_workflows_resolve_linkedin_from_domain_single_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveLinkedinFromDomainSingleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-person-linkedin-from-email/single": {
+      "post": {
+        "tags": [
+          "workflows-single"
+        ],
+        "summary": "Resolve Person Linkedin From Email Single",
+        "operationId": "resolve_person_linkedin_from_email_single_api_workflows_resolve_person_linkedin_from_email_single_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolvePersonLinkedinFromEmailSingleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/resolve-company-location-from-domain/single": {
+      "post": {
+        "tags": [
+          "workflows-single"
+        ],
+        "summary": "Resolve Company Location From Domain Single",
+        "operationId": "resolve_company_location_from_domain_single_api_workflows_resolve_company_location_from_domain_single_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCompanyLocationFromDomainSingleRequest"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
@@ -16887,6 +17667,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read/lunos/targets": {
+      "get": {
+        "tags": [
+          "lunos"
+        ],
+        "summary": "Get all Lunos target companies with their contacts",
+        "description": "Returns companies joined with contacts on domain. Only companies with contacts are included.",
+        "operationId": "get_lunos_targets_read_lunos_targets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -18466,6 +19266,157 @@
           "job_title"
         ],
         "title": "BrightDataValidateJobRequest"
+      },
+      "BuildSalesNavURLRequest": {
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "title": "Orgid"
+          },
+          "companyName": {
+            "type": "string",
+            "title": "Companyname"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Titles"
+          },
+          "excludedSeniority": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excludedseniority"
+          },
+          "regions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regions"
+          },
+          "companyHQRegions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Companyhqregions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "orgId",
+          "companyName",
+          "titles"
+        ],
+        "title": "BuildSalesNavURLRequest"
+      },
+      "BuildSalesNavURLResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "orgId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orgid"
+          },
+          "companyName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Companyname"
+          },
+          "titles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titles"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "BuildSalesNavURLResponse"
       },
       "BuiltWithIngestRequest": {
         "properties": {
@@ -24439,6 +25390,157 @@
         ],
         "title": "EnterpriseTierResponse"
       },
+      "EvaluateICPFitRequest": {
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "title": "Criterion"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "criterion",
+          "company_name",
+          "domain",
+          "description"
+        ],
+        "title": "EvaluateICPFitRequest"
+      },
+      "EvaluateICPFitResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "criterion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criterion"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning"
+          },
+          "raw_response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Response"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "EvaluateICPFitResponse"
+      },
       "ExistenceCheckRequest": {
         "properties": {
           "domain": {
@@ -24523,6 +25625,87 @@
           "name"
         ],
         "title": "FilterOption"
+      },
+      "FocusCompanySendRequest": {
+        "properties": {
+          "webhook_url": {
+            "type": "string",
+            "title": "Webhook Url"
+          },
+          "domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Domains"
+          },
+          "blueprint_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blueprint Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "webhook_url",
+          "domains"
+        ],
+        "title": "FocusCompanySendRequest"
+      },
+      "FocusCompanySendResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "sent_count": {
+            "type": "integer",
+            "title": "Sent Count",
+            "default": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "title": "Failed Count",
+            "default": 0
+          },
+          "results": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "FocusCompanySendResponse"
       },
       "FreeTrialResponse": {
         "properties": {
@@ -25006,6 +26189,19 @@
         "title": "G2UrlDbDirectResponse",
         "description": "Response for G2 URL inference (db-direct)."
       },
+      "GTMDashboardRequest": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "GTMDashboardRequest"
+      },
       "GapCountResponse": {
         "properties": {
           "recipe_id": {
@@ -25160,6 +26356,440 @@
           "limit"
         ],
         "title": "GapSampleResponse"
+      },
+      "GeminiICPJobTitlesRequest": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "company_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "domain"
+        ],
+        "title": "GeminiICPJobTitlesRequest"
+      },
+      "GeminiICPJobTitlesResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "inferred_product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inferred Product"
+          },
+          "buyer_persona": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buyer Persona"
+          },
+          "titles": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titles"
+          },
+          "champion_titles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Champion Titles"
+          },
+          "evaluator_titles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluator Titles"
+          },
+          "decision_maker_titles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Maker Titles"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GeminiICPJobTitlesResponse"
+      },
+      "GenerateICPCriterionRequest": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "customers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Customers"
+          },
+          "icp_titles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Icp Titles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "domain",
+          "customers",
+          "icp_titles"
+        ],
+        "title": "GenerateICPCriterionRequest"
+      },
+      "GenerateICPCriterionResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "criterion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criterion"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GenerateICPCriterionResponse"
+      },
+      "GetCustomersOfRequest": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "domain"
+        ],
+        "title": "GetCustomersOfRequest"
+      },
+      "GetCustomersOfResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "customers": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customers"
+          },
+          "customer_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Count"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "GetCustomersOfResponse"
       },
       "GoogleAdsDbDirectRequest": {
         "properties": {
@@ -31686,6 +33316,40 @@
         ],
         "title": "PublicCompanyResponse"
       },
+      "ResolveCompanyLocationFromDomainSingleRequest": {
+        "properties": {
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "title": "ResolveCompanyLocationFromDomainSingleRequest"
+      },
+      "ResolveCompanyNameSingleRequest": {
+        "properties": {
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          }
+        },
+        "type": "object",
+        "title": "ResolveCompanyNameSingleRequest"
+      },
       "ResolveCustomerDomainRequest": {
         "properties": {
           "customer_name": {
@@ -31842,6 +33506,74 @@
           "success"
         ],
         "title": "ResolveCustomerDomainResponse"
+      },
+      "ResolveDomainFromEmailSingleRequest": {
+        "properties": {
+          "work_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Email"
+          }
+        },
+        "type": "object",
+        "title": "ResolveDomainFromEmailSingleRequest"
+      },
+      "ResolveDomainFromLinkedinSingleRequest": {
+        "properties": {
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          }
+        },
+        "type": "object",
+        "title": "ResolveDomainFromLinkedinSingleRequest"
+      },
+      "ResolveLinkedinFromDomainSingleRequest": {
+        "properties": {
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          }
+        },
+        "type": "object",
+        "title": "ResolveLinkedinFromDomainSingleRequest"
+      },
+      "ResolvePersonLinkedinFromEmailSingleRequest": {
+        "properties": {
+          "work_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Email"
+          }
+        },
+        "type": "object",
+        "title": "ResolvePersonLinkedinFromEmailSingleRequest"
       },
       "RevenueDbDirectRequest": {
         "properties": {
@@ -33013,6 +34745,64 @@
           "success"
         ],
         "title": "SalesNavToClayResponse"
+      },
+      "SalesnavJobTitleNormalizedRequest": {
+        "properties": {
+          "job_title_raw": {
+            "type": "string",
+            "title": "Job Title Raw"
+          },
+          "normalized_job_title": {
+            "type": "string",
+            "title": "Normalized Job Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_title_raw",
+          "normalized_job_title"
+        ],
+        "title": "SalesnavJobTitleNormalizedRequest"
+      },
+      "SalesnavJobTitleNormalizedResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "job_title_raw": {
+            "type": "string",
+            "title": "Job Title Raw"
+          },
+          "normalized_job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Job Title"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "job_title_raw"
+        ],
+        "title": "SalesnavJobTitleNormalizedResponse"
       },
       "SalesnavLocationLookupRequest": {
         "properties": {
