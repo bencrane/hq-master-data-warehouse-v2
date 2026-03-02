@@ -2,23 +2,33 @@
 Extract ICP Titles — Claude Haiku Normalization
 
 Takes raw Parallel.ai output (inconsistent schemas) and normalizes it into
-a consistent structure via Claude Haiku, then persists to
-extracted.parallel_icp_job_titles_normalized.
+a consistent structure via Claude Haiku.
+
+Expects:
+{
+  "company_domain": "withcoverage.com",
+  "raw_parallel_output": "{\"domain\": \"withcoverage.com\", ...}"  // JSON string
+}
+
+Returns:
+{
+  "success": true,
+  "company_domain": "withcoverage.com",
+  "company_name": "WithCoverage",
+  "titles": [
+    {"title": "Chief Financial Officer (CFO)", "buyer_role": "decision_maker", "reasoning": "..."},
+    ...
+  ],
+  "title_count": 42,
+  "usage": {"input_tokens": 1234, "output_tokens": 567, "cost_usd": 0.00123}
+}
 """
 
-import json
 import os
-from typing import Any, Optional
-
+import json
 import modal
-from pydantic import BaseModel, Field, field_validator
-
 from config import app, image
 
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
-INPUT_COST_PER_MTOK = 0.80
-OUTPUT_COST_PER_MTOK = 4.00
-MAX_TOKENS = 8192
 
 SYSTEM_PROMPT = """You are a JSON normalizer. You will receive a raw JSON object containing ICP (Ideal Customer Profile) buyer persona data for a company. The schema varies across inputs — sometimes titles are in a flat "titles" array, sometimes in "buyer_personas", sometimes split across "champion_personas", "evaluator_personas", and "decision_maker_personas" arrays.
 
@@ -47,186 +57,100 @@ RULES:
 - Preserve the exact title string — do not normalize, lowercase, or modify it"""
 
 
-class ExtractICPTitlesRequest(BaseModel):
-    company_domain: str = Field(min_length=1)
-    raw_parallel_output: str = Field(min_length=1)
-    raw_parallel_icp_id: Optional[str] = None
-
-    @field_validator("company_domain", mode="before")
-    @classmethod
-    def _strip_domain(cls, value: Any) -> str:
-        if value is None:
-            raise ValueError("company_domain is required")
-        text = str(value).strip()
-        if not text:
-            raise ValueError("company_domain cannot be empty")
-        return text.lower().replace("https://", "").replace("http://", "").strip("/")
-
-    @field_validator("raw_parallel_output", mode="before")
-    @classmethod
-    def _strip_raw(cls, value: Any) -> str:
-        if value is None:
-            raise ValueError("raw_parallel_output is required")
-        text = str(value).strip()
-        if not text:
-            raise ValueError("raw_parallel_output cannot be empty")
-        return text
-
-    @field_validator("raw_parallel_icp_id", mode="before")
-    @classmethod
-    def _strip_id(cls, value: Any) -> Optional[str]:
-        if value is None:
-            return None
-        text = str(value).strip()
-        return text or None
-
-
-def _parse_raw_output(raw: str) -> dict:
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"raw_parallel_output is not valid JSON: {exc}") from exc
-    if not isinstance(parsed, dict):
-        raise ValueError(f"raw_parallel_output must be a JSON object, got {type(parsed).__name__}")
-    return parsed
-
-
-def _compute_cost(input_tokens: int, output_tokens: int) -> float:
-    return round(
-        (input_tokens / 1_000_000 * INPUT_COST_PER_MTOK)
-        + (output_tokens / 1_000_000 * OUTPUT_COST_PER_MTOK),
-        6,
-    )
-
-
-def _parse_claude_response(text: str) -> dict:
-    """Parse Claude's JSON response, handling possible markdown fencing."""
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.split("\n")
-        lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    return json.loads(text)
-
-
-def _count_by_role(titles: list[dict], role: str) -> int:
-    return sum(1 for t in titles if isinstance(t, dict) and t.get("buyer_role") == role)
-
-
-def _persist_normalized(
-    supabase: Any,
-    company_domain: str,
-    company_name: Optional[str],
-    titles: list[dict],
-    title_count: int,
-    input_tokens: int,
-    output_tokens: int,
-    total_tokens: int,
-    cost_usd: float,
-    raw_parallel_icp_id: Optional[str],
-) -> str:
-    record = {
-        "company_domain": company_domain,
-        "company_name": company_name,
-        "titles": titles,
-        "title_count": title_count,
-        "champion_count": _count_by_role(titles, "champion"),
-        "evaluator_count": _count_by_role(titles, "evaluator"),
-        "decision_maker_count": _count_by_role(titles, "decision_maker"),
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "total_tokens": total_tokens,
-        "cost_usd": cost_usd,
-        "updated_at": "now()",
-    }
-    if raw_parallel_icp_id:
-        record["raw_parallel_icp_id"] = raw_parallel_icp_id
-
-    result = (
-        supabase.schema("extracted")
-        .from_("parallel_icp_job_titles_normalized")
-        .upsert(record, on_conflict="company_domain")
-        .execute()
-    )
-    return result.data[0]["id"]
-
-
 @app.function(
     image=image,
+    timeout=60,
     secrets=[
         modal.Secret.from_name("anthropic-api"),
-        modal.Secret.from_name("supabase-credentials"),
     ],
-    timeout=120,
 )
-@modal.fastapi_endpoint(method="POST", label="extract-icp-titles")
-def extract_icp_titles(request: ExtractICPTitlesRequest) -> dict:
+@modal.fastapi_endpoint(method="POST")
+def extract_icp_titles(request: dict) -> dict:
     import anthropic
-    from supabase import create_client
-
-    parsed_input = _parse_raw_output(request.raw_parallel_output)
-    parsed_input["company_domain"] = request.company_domain
 
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    message = client.messages.create(
-        model=HAIKU_MODEL,
-        max_tokens=MAX_TOKENS,
-        temperature=0,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {"role": "user", "content": json.dumps(parsed_input, ensure_ascii=False)},
-        ],
-    )
-
-    raw_text = message.content[0].text
-    input_tokens = message.usage.input_tokens
-    output_tokens = message.usage.output_tokens
-    cost_usd = _compute_cost(input_tokens, output_tokens)
-
-    usage = {
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "total_tokens": input_tokens + output_tokens,
-        "cost_usd": cost_usd,
-    }
 
     try:
-        result = _parse_claude_response(raw_text)
-    except (json.JSONDecodeError, IndexError) as exc:
+        company_domain = request.get("company_domain", "").strip()
+        raw_parallel_output = request.get("raw_parallel_output", "").strip()
+
+        if not company_domain:
+            return {"success": False, "error": "company_domain is required"}
+        if not raw_parallel_output:
+            return {"success": False, "error": "raw_parallel_output is required"}
+
+        # Parse the raw output to validate it's JSON
+        try:
+            parsed_input = json.loads(raw_parallel_output)
+        except json.JSONDecodeError as e:
+            return {"success": False, "error": f"raw_parallel_output is not valid JSON: {e}"}
+
+        # Ensure company_domain is in the input for Claude
+        parsed_input["company_domain"] = company_domain
+
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=8192,
+            temperature=0,
+            system=SYSTEM_PROMPT,
+            messages=[
+                {"role": "user", "content": json.dumps(parsed_input, ensure_ascii=False)},
+            ],
+        )
+
+        response_text = message.content[0].text.strip()
+        input_tokens = message.usage.input_tokens
+        output_tokens = message.usage.output_tokens
+
+        # Cost: Haiku 4.5 = $0.80/MTok input, $4.00/MTok output
+        cost_usd = round(
+            (input_tokens / 1_000_000 * 0.80) + (output_tokens / 1_000_000 * 4.00),
+            6,
+        )
+
+        # Clean up markdown code blocks if present
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            response_text = "\n".join(lines).strip()
+
+        try:
+            result = json.loads(response_text)
+        except json.JSONDecodeError:
+            return {
+                "success": False,
+                "error": "Claude returned unparseable JSON",
+                "raw_response": response_text[:2000],
+                "usage": {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                    "cost_usd": cost_usd,
+                },
+            }
+
+        titles = result.get("titles", [])
+        title_count = result.get("title_count", len(titles))
+
         return {
-            "success": False,
-            "error": f"Claude returned unparseable JSON: {exc}",
-            "raw_response": raw_text[:2000],
-            "usage": usage,
+            "success": True,
+            "company_domain": result.get("company_domain", company_domain),
+            "company_name": result.get("company_name"),
+            "titles": titles,
+            "title_count": title_count,
+            "usage": {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens,
+                "cost_usd": cost_usd,
+            },
         }
 
-    titles = result.get("titles", [])
-    title_count = result.get("title_count", len(titles))
-    company_domain = result.get("company_domain", request.company_domain)
-    company_name = result.get("company_name")
-
-    supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
-    normalized_id = _persist_normalized(
-        supabase=supabase,
-        company_domain=company_domain,
-        company_name=company_name,
-        titles=titles,
-        title_count=title_count,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        total_tokens=input_tokens + output_tokens,
-        cost_usd=cost_usd,
-        raw_parallel_icp_id=request.raw_parallel_icp_id,
-    )
-
-    return {
-        "success": True,
-        "normalized_id": normalized_id,
-        "company_domain": company_domain,
-        "company_name": company_name,
-        "titles": titles,
-        "title_count": title_count,
-        "usage": usage,
-    }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "company_domain": request.get("company_domain", "unknown"),
+        }
