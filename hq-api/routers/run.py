@@ -8779,3 +8779,76 @@ async def send_focus_companies(request: FocusCompanySendRequest) -> FocusCompany
         failed_count=failed_count,
         results=results
     )
+
+
+# =============================================================================
+# RapidAPI LinkedIn People Extraction
+# =============================================================================
+
+class RapidAPILinkedInPeopleRequest(BaseModel):
+    company_domain: str
+    rapidapi_response: dict
+
+
+@router.post(
+    "/rapidapi-linkedin-people",
+    summary="Extract LinkedIn people from RapidAPI response",
+    description="Takes a RapidAPI LinkedIn people search response and extracts/normalizes via Claude Haiku 3.5."
+)
+async def rapidapi_linkedin_people(request: RapidAPILinkedInPeopleRequest) -> dict:
+    """
+    Extract LinkedIn people data from RapidAPI response.
+
+    Modal function: rapidapi_linkedin_people
+    Modal URL: https://bencrane--hq-master-data-ingest-rapidapi-linkedin-people.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-rapidapi-linkedin-people.modal.run"
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Lookup Company by Name
+# =============================================================================
+
+class LookupCompanyByNameRequest(BaseModel):
+    company_name: str
+
+
+@router.post(
+    "/lookup-company-by-name",
+    summary="Lookup company by name",
+    description="Returns domain and linkedin_url for a given company name. Only returns if exactly 1 close/exact match found."
+)
+async def lookup_company_by_name(request: LookupCompanyByNameRequest) -> dict:
+    """
+    Lookup company by name - returns domain and linkedin_url.
+
+    Modal function: lookup_company_by_name
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-company-by-name.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-lookup-company-by-name.modal.run"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
