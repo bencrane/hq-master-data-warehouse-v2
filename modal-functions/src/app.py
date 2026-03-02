@@ -172,6 +172,11 @@ from ingest.extract_icp_titles import extract_icp_titles
 from ingest.match_job_titles import match_job_titles
 from ingest.prospect_fit import evaluate_prospect_fit
 from ingest.company_competitors_research import ingest_company_competitors_research
+from ingest.get_customers_of import get_customers_of
+from ingest.gemini_icp_job_titles import gemini_icp_job_titles
+from ingest.parallel_gtm_research import parallel_gtm_research
+from ingest.gemini_icp_criterion import generate_icp_criterion, evaluate_icp_fit
+from ingest.build_salesnav_url import build_salesnav_url
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -374,4 +379,10 @@ __all__ = [
     "ingest_company_competitors_research",
     "lookup_past_customer_employment",
     "lookup_gtm_dashboard",
+    "get_customers_of",
+    "gemini_icp_job_titles",
+    "parallel_gtm_research",
+    "generate_icp_criterion",
+    "evaluate_icp_fit",
+    "build_salesnav_url",
 ]

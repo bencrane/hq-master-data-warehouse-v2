@@ -8374,3 +8374,408 @@ async def ingest_salesnav_job_title_normalized(request: SalesnavJobTitleNormaliz
                 status_code=503,
                 detail=f"Failed to reach Modal function: {str(e)}"
             )
+
+
+# =============================================================================
+# Get Customers Of (Gemini)
+# =============================================================================
+
+class GetCustomersOfRequest(BaseModel):
+    company_name: str
+    domain: str
+
+
+class GetCustomersOfResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    company_name: Optional[str] = None
+    customers: Optional[List[dict]] = None
+    customer_count: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/gemini/customers-of/discover",
+    response_model=GetCustomersOfResponse,
+    summary="Discover customers of a company using Gemini",
+    description="Wrapper for Modal function: get_customers_of"
+)
+async def get_customers_of(request: GetCustomersOfRequest) -> GetCustomersOfResponse:
+    """
+    Use Gemini 3 Flash to discover customers of a company.
+
+    Searches the company website and web for case studies, testimonials,
+    and other evidence of customer relationships.
+
+    Modal function: get_customers_of
+    Modal URL: https://bencrane--hq-master-data-ingest-get-customers-of.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-get-customers-of.modal.run"
+
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return GetCustomersOfResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+# =============================================================================
+# Gemini ICP Job Titles
+# =============================================================================
+
+class GeminiICPJobTitlesRequest(BaseModel):
+    company_name: str
+    domain: str
+    company_description: Optional[str] = None
+
+
+class GeminiICPJobTitlesResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    company_name: Optional[str] = None
+    inferred_product: Optional[str] = None
+    buyer_persona: Optional[str] = None
+    titles: Optional[List[dict]] = None
+    champion_titles: Optional[List[str]] = None
+    evaluator_titles: Optional[List[str]] = None
+    decision_maker_titles: Optional[List[str]] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/gemini/icp-job-titles/research",
+    response_model=GeminiICPJobTitlesResponse,
+    summary="Research ICP job titles using Gemini",
+    description="Wrapper for Modal function: gemini_icp_job_titles"
+)
+async def gemini_icp_job_titles(request: GeminiICPJobTitlesRequest) -> GeminiICPJobTitlesResponse:
+    """
+    Use Gemini 3 Flash to research ICP job titles for a company.
+
+    Returns inferred product, buyer persona, and categorized job titles
+    (champion, evaluator, decision maker).
+
+    Modal function: gemini_icp_job_titles
+    Modal URL: https://bencrane--hq-master-data-ingest-gemini-icp-job-titles.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-gemini-icp-job-titles.modal.run"
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return GeminiICPJobTitlesResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+# =============================================================================
+# Generate ICP Criterion (Gemini)
+# =============================================================================
+
+class GenerateICPCriterionRequest(BaseModel):
+    company_name: str
+    domain: str
+    customers: List[str]
+    icp_titles: List[str]
+
+
+class GenerateICPCriterionResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    company_name: Optional[str] = None
+    criterion: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/gemini/icp-criterion/generate",
+    response_model=GenerateICPCriterionResponse,
+    summary="Generate ICP criterion from customers and titles",
+    description="Wrapper for Modal function: generate_icp_criterion"
+)
+async def generate_icp_criterion(request: GenerateICPCriterionRequest) -> GenerateICPCriterionResponse:
+    """
+    Use Gemini 3 Flash to generate an ICP criterion.
+
+    Takes a company's known customers and ICP job titles, and generates
+    a single sentence describing the core problem the product solves.
+
+    Modal function: generate_icp_criterion
+    Modal URL: https://bencrane--hq-master-data-ingest-generate-icp-criterion.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-generate-icp-criterion.modal.run"
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return GenerateICPCriterionResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+# =============================================================================
+# Evaluate ICP Fit (Gemini)
+# =============================================================================
+
+class EvaluateICPFitRequest(BaseModel):
+    criterion: str
+    company_name: str
+    domain: str
+    description: str
+
+
+class EvaluateICPFitResponse(BaseModel):
+    success: bool
+    domain: Optional[str] = None
+    company_name: Optional[str] = None
+    criterion: Optional[str] = None
+    verdict: Optional[str] = None
+    reasoning: Optional[str] = None
+    raw_response: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/companies/gemini/icp-fit/evaluate",
+    response_model=EvaluateICPFitResponse,
+    summary="Evaluate if a company fits an ICP criterion",
+    description="Wrapper for Modal function: evaluate_icp_fit"
+)
+async def evaluate_icp_fit(request: EvaluateICPFitRequest) -> EvaluateICPFitResponse:
+    """
+    Use Gemini 3 Flash to evaluate ICP fit.
+
+    Takes a criterion and a target company's description, returns
+    YES/NO verdict with reasoning.
+
+    Modal function: evaluate_icp_fit
+    Modal URL: https://bencrane--hq-master-data-ingest-evaluate-icp-fit.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-evaluate-icp-fit.modal.run"
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return EvaluateICPFitResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+# =============================================================================
+# Build SalesNav URL (Claude Haiku)
+# =============================================================================
+
+class BuildSalesNavURLRequest(BaseModel):
+    orgId: str
+    companyName: str
+    titles: List[str]
+    excludedSeniority: Optional[List[str]] = None
+    regions: Optional[List[str]] = None
+    companyHQRegions: Optional[List[str]] = None
+
+
+class BuildSalesNavURLResponse(BaseModel):
+    success: bool
+    url: Optional[str] = None
+    orgId: Optional[str] = None
+    companyName: Optional[str] = None
+    titles: Optional[List[str]] = None
+    usage: Optional[dict] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/tools/claude/salesnav-url/build",
+    response_model=BuildSalesNavURLResponse,
+    summary="Build a LinkedIn Sales Navigator search URL",
+    description="Wrapper for Modal function: build_salesnav_url"
+)
+async def build_salesnav_url(request: BuildSalesNavURLRequest) -> BuildSalesNavURLResponse:
+    """
+    Use Claude 3 Haiku to construct a Sales Navigator search URL.
+
+    Takes org ID, company name, titles, and filter options. Returns a
+    fully double-encoded URL ready for the RapidAPI scraper.
+
+    Modal function: build_salesnav_url
+    Modal URL: https://bencrane--hq-master-data-ingest-build-salesnav-url.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-build-salesnav-url.modal.run"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return BuildSalesNavURLResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Modal function error: {e.response.text}"
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to reach Modal function: {str(e)}"
+            )
+
+
+# =============================================================================
+# Focus Companies - Send to Data Engine X
+# =============================================================================
+
+class FocusCompanySendRequest(BaseModel):
+    webhook_url: str
+    domains: List[str]
+    blueprint_id: Optional[str] = None
+
+
+class FocusCompanySendResponse(BaseModel):
+    success: bool
+    sent_count: int = 0
+    failed_count: int = 0
+    results: Optional[List[dict]] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/focus-companies/send",
+    response_model=FocusCompanySendResponse,
+    summary="Send selected focus companies to Data Engine X",
+    description="Sends selected focus company domains to a Data Engine X webhook to trigger a blueprint."
+)
+async def send_focus_companies(request: FocusCompanySendRequest) -> FocusCompanySendResponse:
+    """
+    Send selected focus companies to Data Engine X webhook.
+
+    Fetches company details from public.focus_companies and POSTs each
+    record to the provided webhook URL.
+    """
+    pool = get_pool()
+
+    if not request.domains:
+        return FocusCompanySendResponse(
+            success=False,
+            error="No domains provided"
+        )
+
+    # Fetch company details for selected domains
+    rows = await pool.fetch("""
+        SELECT domain, company_name
+        FROM public.focus_companies
+        WHERE domain = ANY($1)
+    """, request.domains)
+
+    if not rows:
+        return FocusCompanySendResponse(
+            success=False,
+            error="No matching companies found"
+        )
+
+    results = []
+    sent_count = 0
+    failed_count = 0
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for row in rows:
+            payload = {
+                "domain": row["domain"],
+                "company_name": row["company_name"],
+            }
+            if request.blueprint_id:
+                payload["blueprint_id"] = request.blueprint_id
+
+            try:
+                response = await client.post(request.webhook_url, json=payload)
+                if response.status_code < 400:
+                    sent_count += 1
+                    results.append({
+                        "domain": row["domain"],
+                        "status": "sent",
+                        "status_code": response.status_code
+                    })
+                else:
+                    failed_count += 1
+                    results.append({
+                        "domain": row["domain"],
+                        "status": "failed",
+                        "status_code": response.status_code,
+                        "error": response.text[:200]
+                    })
+            except Exception as e:
+                failed_count += 1
+                results.append({
+                    "domain": row["domain"],
+                    "status": "error",
+                    "error": str(e)
+                })
+
+    return FocusCompanySendResponse(
+        success=failed_count == 0,
+        sent_count=sent_count,
+        failed_count=failed_count,
+        results=results
+    )

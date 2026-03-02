@@ -382,3 +382,35 @@ async def get_gtm_dashboard(request: GTMDashboardRequest):
             "error": str(e),
             "traceback": traceback.format_exc(),
         }
+
+
+# =============================================================================
+# Focus Companies - List
+# =============================================================================
+
+@router.get(
+    "/focus-companies",
+    summary="List all focus companies",
+    description="Returns all companies in public.focus_companies for frontend display and selection.",
+)
+async def list_focus_companies():
+    """
+    List all focus companies from public.focus_companies.
+
+    Returns domain, company_name, and created_at for each company.
+    """
+    pool = get_pool()
+
+    rows = await pool.fetch("""
+        SELECT domain, company_name, created_at
+        FROM public.focus_companies
+        ORDER BY company_name ASC, domain ASC
+    """)
+
+    companies = [dict(r) for r in rows]
+
+    return {
+        "success": True,
+        "total": len(companies),
+        "companies": companies,
+    }
