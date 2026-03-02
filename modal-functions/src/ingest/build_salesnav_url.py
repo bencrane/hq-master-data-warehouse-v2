@@ -23,6 +23,8 @@ class BuildSalesNavURLRequest(BaseModel):
     excludedSeniority: Optional[List[str]] = Field(default=["Entry Level"], description="Seniority levels to exclude")
     regions: Optional[List[str]] = Field(default=["North America"], description="Person location filter")
     companyHQRegions: Optional[List[str]] = Field(default=["North America"], description="Company HQ location filter")
+    companyHeadcount: Optional[List[str]] = Field(default=None, description="Company headcount ranges (e.g. '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5001-10,000', '10,000+')")
+    function: Optional[List[str]] = Field(default=None, description="Job functions (e.g. 'Sales', 'Engineering')")
 
 
 PROMPT_TEMPLATE = """Here is an exact working LinkedIn Sales Navigator search URL:
@@ -38,16 +40,20 @@ Inputs:
 - excludedSeniority: {excludedSeniority}
 - regions: {regions}
 - companyHQRegions: {companyHQRegions}
+- companyHeadcount: {companyHeadcount}
+- function: {function}
 
-Build the URL with ONLY these filters:
+Build the URL with these filters:
 - PAST_COMPANY: orgId + companyName, selectionType INCLUDED
 - CURRENT_COMPANY: same orgId + companyName, selectionType EXCLUDED
 - CURRENT_TITLE: one entry per title, all selectionType INCLUDED
 - SENIORITY_LEVEL: one entry per excludedSeniority value, all selectionType EXCLUDED
 - REGION: one entry per region, all selectionType INCLUDED
 - COMPANY_HEADQUARTERS: one entry per companyHQRegion, all selectionType INCLUDED
+- COMPANY_HEADCOUNT: if companyHeadcount provided, one entry per range. Map ranges to IDs: B=1-10, C=11-50, D=51-200, E=201-500, F=501-1000, G=1001-5000, H=5001-10,000, I=10,000+. All selectionType INCLUDED.
+- FUNCTION: if function provided, one entry per function. Common IDs: 1=Accounting, 2=Administrative, 3=Arts and Design, 4=Business Development, 5=Community & Social Services, 6=Consulting, 7=Education, 8=Engineering, 9=Entrepreneurship, 10=Finance, 11=Healthcare Services, 12=Human Resources, 13=Information Technology, 14=Legal, 15=Marketing, 16=Media & Communications, 17=Military & Protective Services, 18=Operations, 19=Product Management, 20=Program & Project Management, 21=Purchasing, 22=Quality Assurance, 23=Real Estate, 24=Research, 25=Sales, 26=Support. All selectionType INCLUDED.
 
-Do NOT include any filters not listed above (no FUNCTION, COMPANY_HEADCOUNT, INDUSTRY, etc).
+Do NOT include INDUSTRY filter.
 
 Return only the URL. Nothing else."""
 
@@ -78,6 +84,8 @@ def build_salesnav_url(request: BuildSalesNavURLRequest) -> dict:
             excludedSeniority=", ".join(request.excludedSeniority or ["Entry Level"]),
             regions=", ".join(request.regions or ["North America"]),
             companyHQRegions=", ".join(request.companyHQRegions or ["North America"]),
+            companyHeadcount=", ".join(request.companyHeadcount) if request.companyHeadcount else "None",
+            function=", ".join(request.function) if request.function else "None",
         )
 
         message = client.messages.create(
@@ -118,6 +126,8 @@ def build_salesnav_url(request: BuildSalesNavURLRequest) -> dict:
             "orgId": request.orgId,
             "companyName": request.companyName,
             "titles": request.titles,
+            "companyHeadcount": request.companyHeadcount,
+            "function": request.function,
             "usage": {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,

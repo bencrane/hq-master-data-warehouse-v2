@@ -7,6 +7,7 @@ the person data via Claude Haiku 3.5.
 Expects:
 {
   "company_domain": "hyundai.com",
+  "company_headcount": ["51-200", "201-500", "501-1000"],  // optional - Sales Nav headcount ranges
   "rapidapi_response": { ... }  // Full RapidAPI response object
 }
 
@@ -97,6 +98,7 @@ def rapidapi_linkedin_people(request: dict) -> dict:
 
     try:
         company_domain = request.get("company_domain", "").strip()
+        company_headcount = request.get("company_headcount")  # Optional list of ranges
         rapidapi_response = request.get("rapidapi_response")
 
         if not company_domain:
