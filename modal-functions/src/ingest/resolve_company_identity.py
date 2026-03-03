@@ -67,7 +67,7 @@ Rules:
 
 @app.function(
     image=image,
-    timeout=60,
+    timeout=300,
     secrets=[
         modal.Secret.from_name("gemini-secret"),
     ],

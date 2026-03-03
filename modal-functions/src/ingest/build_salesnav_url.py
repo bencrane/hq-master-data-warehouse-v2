@@ -60,7 +60,7 @@ Return only the URL. Nothing else."""
 
 @app.function(
     image=image,
-    timeout=60,
+    timeout=300,
     secrets=[
         modal.Secret.from_name("anthropic-api"),
     ],
