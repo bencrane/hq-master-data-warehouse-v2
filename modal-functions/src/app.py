@@ -180,6 +180,7 @@ from ingest.gemini_icp_criterion import generate_icp_criterion, evaluate_icp_fit
 from ingest.build_salesnav_url import build_salesnav_url
 from ingest.parallel_case_studies import parallel_case_studies
 from ingest.rapidapi_linkedin_people import rapidapi_linkedin_people
+from ingest.resolve_company_identity import resolve_company_identity
 from icp.generation import generate_target_client_icp
 from cleanup.delete_companies_no_location import delete_companies_no_location
 
@@ -391,4 +392,5 @@ __all__ = [
     "parallel_case_studies",
     "rapidapi_linkedin_people",
     "lookup_company_by_name",
+    "resolve_company_identity",
 ]

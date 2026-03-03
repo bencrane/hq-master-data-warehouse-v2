@@ -8852,3 +8852,41 @@ async def lookup_company_by_name(request: LookupCompanyByNameRequest) -> dict:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Resolve Company Identity (Gemini)
+# =============================================================================
+
+class ResolveCompanyIdentityRequest(BaseModel):
+    company_name: str
+    location: Optional[str] = None
+    industry: Optional[str] = None
+
+
+@router.post(
+    "/resolve-company-identity",
+    summary="Resolve company domain and LinkedIn URL",
+    description="Uses Gemini 3 Flash to find company domain and LinkedIn URL from name, location, and industry."
+)
+async def resolve_company_identity(request: ResolveCompanyIdentityRequest) -> dict:
+    """
+    Resolve company identity - returns domain and linkedin_url.
+
+    Modal function: resolve_company_identity
+    Modal URL: https://bencrane--hq-master-data-ingest-resolve-company-identity.modal.run
+    """
+    modal_url = f"{MODAL_BASE_URL}-resolve-company-identity.modal.run"
+
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        try:
+            response = await client.post(
+                modal_url,
+                json=request.model_dump(exclude_none=True)
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
