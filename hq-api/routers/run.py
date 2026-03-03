@@ -3818,9 +3818,10 @@ async def lookup_company_customers_resolved(request: CompanyCustomersLookupReque
     Only returns customers where we have both customer_name AND customer_domain.
 
     Modal function: lookup_company_customers_resolved
-    Modal URL: https://bencrane--hq-master-data-ingest-lookup-company-customers-resolved.modal.run
+    Modal URL: https://bencrane--hq-master-data-ingest-lookup-company-customers-a45fcc.modal.run
     """
-    modal_url = f"{MODAL_BASE_URL}-lookup-company-customers-resolved.modal.run"
+    # Function name too long - Modal truncated with hash
+    modal_url = "https://bencrane--hq-master-data-ingest-lookup-company-customers-a45fcc.modal.run"
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
