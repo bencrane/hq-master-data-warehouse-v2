@@ -17868,26 +17868,23 @@
       }
     },
     "/v1/alumni-gtm/leads": {
-      "get": {
+      "post": {
         "tags": [
           "alumni-gtm"
         ],
         "summary": "Get Alumni Gtm Leads",
         "description": "Get AlumniGTM leads for an origin company.\nReturns people who previously worked at the client's customers\nand now hold positions at new companies.",
-        "operationId": "get_alumni_gtm_leads_v1_alumni_gtm_leads_get",
-        "parameters": [
-          {
-            "name": "origin_company_domain",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The client's domain (e.g. nostra.ai)",
-              "title": "Origin Company Domain"
-            },
-            "description": "The client's domain (e.g. nostra.ai)"
-          }
-        ],
+        "operationId": "get_alumni_gtm_leads_v1_alumni_gtm_leads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlumniGTMLeadsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -18099,6 +18096,19 @@
         ],
         "title": "AllFiltersResponse"
       },
+      "AlumniGTMLeadsRequest": {
+        "properties": {
+          "origin_company_domain": {
+            "type": "string",
+            "title": "Origin Company Domain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "origin_company_domain"
+        ],
+        "title": "AlumniGTMLeadsRequest"
+      },
       "AlumniGTMLeadsResponse": {
         "properties": {
           "success": {
@@ -18119,7 +18129,7 @@
           },
           "leads": {
             "items": {
-              "$ref": "#/components/schemas/Lead"
+              "$ref": "#/components/schemas/routers__alumni_gtm__Lead"
             },
             "type": "array",
             "title": "Leads"
@@ -29414,22 +29424,251 @@
       },
       "Lead": {
         "properties": {
-          "person": {
-            "$ref": "#/components/schemas/PersonData"
+          "person_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
           },
-          "current_company": {
-            "$ref": "#/components/schemas/CurrentCompany"
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
           },
-          "prior_company": {
-            "$ref": "#/components/schemas/PriorCompany"
+          "linkedin_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Slug"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "linkedin_url_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url Type"
+          },
+          "linkedin_user_profile_urn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin User Profile Urn"
+          },
+          "person_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person City"
+          },
+          "person_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person State"
+          },
+          "person_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Country"
+          },
+          "matched_cleaned_job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Cleaned Job Title"
+          },
+          "matched_job_function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Job Function"
+          },
+          "matched_seniority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Seniority"
+          },
+          "job_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Start Date"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "company_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company City"
+          },
+          "company_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company State"
+          },
+          "company_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Country"
+          },
+          "matched_industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Industry"
+          },
+          "employee_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Range"
           }
         },
         "type": "object",
-        "required": [
-          "person",
-          "current_company",
-          "prior_company"
-        ],
         "title": "Lead"
       },
       "LeadAtVCPortfolio": {
@@ -30287,7 +30526,7 @@
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/models__Lead"
+              "$ref": "#/components/schemas/Lead"
             },
             "type": "array",
             "title": "Data"
@@ -30323,7 +30562,7 @@
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/models__Lead"
+              "$ref": "#/components/schemas/Lead"
             },
             "type": "array",
             "title": "Data"
@@ -38077,253 +38316,24 @@
         "type": "object",
         "title": "WorkHistoryEntry"
       },
-      "models__Lead": {
+      "routers__alumni_gtm__Lead": {
         "properties": {
-          "person_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person Id"
+          "person": {
+            "$ref": "#/components/schemas/PersonData"
           },
-          "linkedin_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin Url"
+          "current_company": {
+            "$ref": "#/components/schemas/CurrentCompany"
           },
-          "linkedin_slug": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin Slug"
-          },
-          "full_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Full Name"
-          },
-          "linkedin_url_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin Url Type"
-          },
-          "linkedin_user_profile_urn": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin User Profile Urn"
-          },
-          "person_city": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person City"
-          },
-          "person_state": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person State"
-          },
-          "person_country": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person Country"
-          },
-          "matched_cleaned_job_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Cleaned Job Title"
-          },
-          "matched_job_function": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Job Function"
-          },
-          "matched_seniority": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Seniority"
-          },
-          "job_start_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Job Start Date"
-          },
-          "company_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Id"
-          },
-          "company_domain": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Domain"
-          },
-          "company_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Name"
-          },
-          "company_linkedin_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Linkedin Url"
-          },
-          "company_city": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company City"
-          },
-          "company_state": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company State"
-          },
-          "company_country": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Country"
-          },
-          "matched_industry": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Industry"
-          },
-          "employee_range": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Employee Range"
+          "prior_company": {
+            "$ref": "#/components/schemas/PriorCompany"
           }
         },
         "type": "object",
+        "required": [
+          "person",
+          "current_company",
+          "prior_company"
+        ],
         "title": "Lead"
       }
     }

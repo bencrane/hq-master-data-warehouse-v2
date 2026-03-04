@@ -5,7 +5,7 @@ Returns qualified leads for AlumniGTM - people who previously worked at a client
 customers and now hold buying authority at new companies.
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, HTTPException
 from typing import Optional, List
 from pydantic import BaseModel
 from db import core, extracted, get_pool
@@ -105,16 +105,20 @@ class AlumniGTMLeadsResponse(BaseModel):
     error: Optional[str] = None
 
 
-@router.get("/leads", response_model=AlumniGTMLeadsResponse)
+class AlumniGTMLeadsRequest(BaseModel):
+    origin_company_domain: str
+
+
+@router.post("/leads", response_model=AlumniGTMLeadsResponse)
 async def get_alumni_gtm_leads(
-    origin_company_domain: str = Query(..., description="The client's domain (e.g. nostra.ai)")
+    request: AlumniGTMLeadsRequest
 ):
     """
     Get AlumniGTM leads for an origin company.
     Returns people who previously worked at the client's customers
     and now hold positions at new companies.
     """
-    origin_domain = origin_company_domain.lower().strip()
+    origin_domain = request.origin_company_domain.lower().strip()
 
     try:
         # Get people_targets
