@@ -158,14 +158,7 @@ def ingest_storeleads(request: StoreleadsRequest) -> dict:
             }).execute()
             technologies_extracted += 1
 
-        # 6. Upsert to core.companies
-        supabase.schema("core").from_("companies").upsert({
-            "domain": domain,
-            "name": merchant_name,
-            "linkedin_url": linkedin_url,
-        }, on_conflict="domain").execute()
-
-        # 7. Upsert to core.company_linkedin_urls (if we have one)
+        # 6. Upsert to core.company_linkedin_urls (if we have one)
         if linkedin_url:
             supabase.schema("core").from_("company_linkedin_urls").upsert({
                 "domain": domain,
