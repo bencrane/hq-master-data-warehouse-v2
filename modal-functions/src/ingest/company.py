@@ -28,6 +28,7 @@ from extraction.company_mapping import map_company_discovery
 
 
 class CompanyIngestRequest(BaseModel):
+    company_name: Optional[str] = None
     company_domain: str
     workflow_slug: str
     raw_payload: dict
@@ -128,6 +129,13 @@ def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
             extracted_id = extract_company_firmographics(
                 supabase, raw_id, request.company_domain, request.raw_payload
             )
+
+        # Upsert to core.companies (only fill name if currently NULL)
+        if request.company_name:
+            supabase.schema("core").rpc(
+                "upsert_company_coalesce",
+                {"p_domain": request.company_domain, "p_name": request.company_name}
+            ).execute()
 
         return {
             "success": True,
