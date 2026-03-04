@@ -135,6 +135,7 @@ def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
             supabase.schema("core").from_("companies").upsert({
                 "domain": request.company_domain,
                 "name": request.company_name,
+                "updated_at": "now()",
             }, on_conflict="domain").execute()
 
         return {
