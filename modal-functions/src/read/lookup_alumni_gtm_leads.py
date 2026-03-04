@@ -18,8 +18,6 @@ class AlumniGTMLeadsRequest(BaseModel):
     origin_company_domain: str
     gtm_fit: Optional[bool] = None
     prior_company_domain: Optional[str] = None
-    limit: Optional[int] = 100
-    offset: Optional[int] = 0
 
 
 class PersonData(BaseModel):
@@ -121,8 +119,6 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
 
     try:
         origin_domain = request.origin_company_domain.lower().strip()
-        limit = min(request.limit or 100, 500)
-        offset = request.offset or 0
 
         # Build the main query
         # Join people_targets -> company_targets -> work_history -> enrichments
@@ -200,9 +196,7 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
             query += " AND ct.target_company_domain = :prior_company_domain"
             params["prior_company_domain"] = request.prior_company_domain.lower().strip()
 
-        query += " ORDER BY pt.full_name LIMIT :limit OFFSET :offset"
-        params["limit"] = limit
-        params["offset"] = offset
+        query += " ORDER BY pt.full_name"
 
         # Execute main query
         result = supabase.rpc("exec_sql", {"query": query, "params": params}).execute()
@@ -259,13 +253,11 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
             if pt.get("domain") in company_targets_by_domain:
                 matching_people.append(pt)
 
-        # Apply pagination
         total_leads = len(matching_people)
-        paginated_people = matching_people[offset:offset + limit]
 
         # Get unique domains for batch lookups
-        current_domains = list(set(p.get("domain") for p in paginated_people if p.get("domain")))
-        linkedin_urls = list(set(p.get("person_linkedin_url") for p in paginated_people if p.get("person_linkedin_url")))
+        current_domains = list(set(p.get("domain") for p in matching_people if p.get("domain")))
+        linkedin_urls = list(set(p.get("person_linkedin_url") for p in matching_people if p.get("person_linkedin_url")))
 
         # Batch fetch person profiles
         person_profiles = {}
@@ -369,7 +361,7 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
         leads = []
         prior_companies_count = {}
 
-        for pt in paginated_people:
+        for pt in matching_people:
             domain = pt.get("domain")
             linkedin_url = pt.get("person_linkedin_url")
             ct = company_targets_by_domain.get(domain, {})
