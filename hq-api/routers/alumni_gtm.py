@@ -101,7 +101,7 @@ class AlumniGTMLeadsRequest(BaseModel):
     origin_company_domain: str
     gtm_fit: Optional[bool] = None
     prior_company_domain: Optional[str] = None
-    limit: Optional[int] = 100
+    limit: Optional[int] = 500
     offset: Optional[int] = 0
 
 
