@@ -39,6 +39,7 @@ from read.lookup_gtm_dashboard import lookup_gtm_dashboard
 from read.lookup_company_customers_resolved import lookup_company_customers_resolved
 from read.lookup_company_by_linkedin_id import lookup_company_by_linkedin_id
 from read.lookup_person_past_employers import lookup_person_past_employers
+from read.lookup_alumni_gtm_leads import lookup_alumni_gtm_leads
 from ingest.company import ingest_clay_company_firmo, ingest_clay_find_companies, ingest_all_comp_customers, upsert_core_company, ingest_manual_comp_customer, ingest_clay_find_co_lctn_prsd
 from ingest.person import ingest_clay_person_profile, ingest_clay_find_people, ingest_clay_find_ppl_lctn_prsd, ingest_ppl_title_enrich
 from ingest.clay_native_person import ingest_clay_native_person, ingest_clay_native_person_batch
@@ -400,4 +401,5 @@ __all__ = [
     "rapidapi_linkedin_people",
     "lookup_company_by_name",
     "resolve_company_identity",
+    "lookup_alumni_gtm_leads",
 ]
