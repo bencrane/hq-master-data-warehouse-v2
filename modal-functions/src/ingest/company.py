@@ -132,10 +132,25 @@ def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
 
         # Upsert to core.companies (only sets name if currently NULL)
         if request.company_name:
-            supabase.rpc(
-                "upsert_company_name_if_null",
-                {"p_domain": request.company_domain, "p_name": request.company_name}
-            ).execute()
+            existing = (
+                supabase.schema("core")
+                .from_("companies")
+                .select("id, name")
+                .eq("domain", request.company_domain)
+                .maybe_single()
+                .execute()
+            )
+            if existing.data is None:
+                # Domain doesn't exist - insert
+                supabase.schema("core").from_("companies").insert({
+                    "domain": request.company_domain,
+                    "name": request.company_name,
+                }).execute()
+            elif existing.data.get("name") is None:
+                # Domain exists but name is NULL - update
+                supabase.schema("core").from_("companies").update({
+                    "name": request.company_name,
+                }).eq("domain", request.company_domain).execute()
 
         return {
             "success": True,
