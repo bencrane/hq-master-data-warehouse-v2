@@ -130,12 +130,12 @@ def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
                 supabase, raw_id, request.company_domain, request.raw_payload
             )
 
-        # Upsert to core.companies (only fill name if currently NULL)
+        # Upsert to core.companies
         if request.company_name:
-            supabase.rpc(
-                "upsert_company_coalesce",
-                {"p_domain": request.company_domain, "p_name": request.company_name}
-            ).execute()
+            supabase.schema("core").from_("companies").upsert({
+                "domain": request.company_domain,
+                "name": request.company_name,
+            }, on_conflict="domain").execute()
 
         return {
             "success": True,
