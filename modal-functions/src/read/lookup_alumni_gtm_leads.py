@@ -26,8 +26,6 @@ ALLOWED_ORIGINS = [
 
 class AlumniGTMLeadsRequest(BaseModel):
     origin_company_domain: str
-    gtm_fit: Optional[bool] = None
-    prior_company_domain: Optional[str] = None
 
 
 class PersonData(BaseModel):
@@ -226,14 +224,6 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest, raw_request: Request
 
         params = {"origin_domain": origin_domain}
 
-        if request.gtm_fit is not None:
-            query += " AND ct.gtm_fit = :gtm_fit"
-            params["gtm_fit"] = request.gtm_fit
-
-        if request.prior_company_domain:
-            query += " AND ct.target_company_domain = :prior_company_domain"
-            params["prior_company_domain"] = request.prior_company_domain.lower().strip()
-
         query += " ORDER BY pt.full_name"
 
         # Execute main query
@@ -262,23 +252,13 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest, raw_request: Request
         people_targets_result = base_query.execute()
 
         # Get company_targets for this origin
-        company_targets_query = (
+        company_targets_result = (
             supabase.schema("core")
             .from_("company_targets")
             .select("*")
             .eq("origin_company_domain", origin_domain)
+            .execute()
         )
-
-        if request.gtm_fit is not None:
-            company_targets_query = company_targets_query.eq("gtm_fit", request.gtm_fit)
-
-        if request.prior_company_domain:
-            company_targets_query = company_targets_query.eq(
-                "target_company_domain",
-                request.prior_company_domain.lower().strip()
-            )
-
-        company_targets_result = company_targets_query.execute()
 
         # Build lookup dict for company_targets by target_company_domain
         company_targets_by_domain = {}
