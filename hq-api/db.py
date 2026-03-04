@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SECRET_KEY")
 DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip() or None
 AUTH_DATABASE_URL = (os.getenv("AUTH_DATABASE_URL") or "").strip() or None
 PIPELINE_DATABASE_URL = (os.getenv("PIPELINE_DATABASE_URL") or "").strip() or None
@@ -19,7 +19,7 @@ _pipeline_pool: asyncpg.Pool = None
 
 def get_supabase() -> Client:
     if not SUPABASE_URL or not SUPABASE_KEY:
-        raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set")
+        raise ValueError("SUPABASE_URL and SUPABASE_SECRET_KEY must be set")
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 supabase = get_supabase()
