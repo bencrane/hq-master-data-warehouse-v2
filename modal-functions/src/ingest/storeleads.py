@@ -153,14 +153,6 @@ def ingest_storeleads(request: StoreleadsRequest) -> dict:
             }).execute()
             technologies_extracted += 1
 
-        # 6. Upsert to core.company_linkedin_urls (if we have one)
-        if linkedin_url:
-            supabase.schema("core").from_("company_linkedin_urls").upsert({
-                "domain": domain,
-                "linkedin_url": linkedin_url,
-                "source": "storeleads",
-            }, on_conflict="domain").execute()
-
         # 8. Upsert to core.company_employee_ranges (if we have employee_count)
         employee_count = domain_data.get("employee_count")
         if employee_count:
