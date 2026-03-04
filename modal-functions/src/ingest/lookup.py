@@ -224,7 +224,7 @@ def lookup_job_title(request: JobTitleLookupRequest) -> dict:
             supabase.schema("reference")
             .from_("job_title_lookup")
             .select("cleaned_job_title, seniority_level, job_function")
-            .eq("latest_title", request.job_title)
+            .eq("raw_job_title_normalized", request.job_title.lower().strip())
             .execute()
         )
 
