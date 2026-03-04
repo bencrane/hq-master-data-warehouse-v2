@@ -16,7 +16,7 @@ from config import app, image
 
 class CompareJobTitlesRequest(BaseModel):
     candidate_title: str
-    job_title_list: List[str] | str  # Accept array or comma-separated string
+    job_title_list: List[str]
 
 
 PROMPT_TEMPLATE = """#CONTEXT#
@@ -171,17 +171,9 @@ def compare_job_titles(request: CompareJobTitlesRequest) -> dict:
 
     model = genai.GenerativeModel("gemini-2.5-flash")
 
-    # Handle comma-separated string or array
-    job_title_list = request.job_title_list
-    if isinstance(job_title_list, str):
-        job_title_list = [t.strip() for t in job_title_list.split(",") if t.strip()]
-
-    if not job_title_list:
-        return {"success": False, "error": "job_title_list must be non-empty"}
-
     prompt = PROMPT_TEMPLATE.format(
         candidate_title=request.candidate_title,
-        job_title_list=json.dumps(job_title_list),
+        job_title_list=json.dumps(request.job_title_list),
     )
 
     try:

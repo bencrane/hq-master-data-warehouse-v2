@@ -174,7 +174,6 @@ from ingest.salesnav_job_title_normalized import ingest_salesnav_job_title_norma
 from ingest.parallel_icp_job_titles import parallel_icp_job_titles
 from ingest.extract_icp_titles import extract_icp_titles
 from ingest.match_job_titles import match_job_titles
-from ingest.compare_job_titles import compare_job_titles
 from ingest.prospect_fit import evaluate_prospect_fit
 from ingest.company_competitors_research import ingest_company_competitors_research
 from ingest.get_customers_of import get_customers_of
