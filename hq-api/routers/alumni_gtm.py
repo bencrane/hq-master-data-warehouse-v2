@@ -1,30 +1,22 @@
 """
 AlumniGTM Leads Router
 
-Returns qualified leads for AlumniGTM - people who previously worked at a client's
+Returns qualified leads for AlumniGTM — people who previously worked at a client's
 customers and now hold buying authority at new companies.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Query
 from typing import Optional, List
 from pydantic import BaseModel
-from db import core, extracted, get_pool
+from db import get_pool
 
 router = APIRouter(prefix="/v1/alumni-gtm", tags=["alumni-gtm"])
 
 
-def row_to_dict(row):
-    """Convert asyncpg Record to dict, converting UUIDs and dates to strings."""
-    d = dict(row)
-    for k, v in d.items():
-        if hasattr(v, 'hex'):  # UUID
-            d[k] = str(v)
-        elif hasattr(v, 'isoformat'):  # date/datetime
-            d[k] = v.isoformat()
-    return d
-
-
+# ---------------------------------------------------------------------------
 # Response models
+# ---------------------------------------------------------------------------
+
 class PersonData(BaseModel):
     full_name: Optional[str] = None
     first_name: Optional[str] = None
@@ -57,8 +49,8 @@ class StoreleadsData(BaseModel):
 
 
 class AdsData(BaseModel):
-    meta_ads_count: Optional[int] = None
-    google_ads_count: Optional[int] = None
+    meta_ads_count: Optional[int] = 0
+    google_ads_count: Optional[int] = 0
 
 
 class CurrentCompany(BaseModel):
@@ -107,253 +99,262 @@ class AlumniGTMLeadsResponse(BaseModel):
 
 class AlumniGTMLeadsRequest(BaseModel):
     origin_company_domain: str
+    gtm_fit: Optional[bool] = None
+    prior_company_domain: Optional[str] = None
+    limit: Optional[int] = 100
+    offset: Optional[int] = 0
+
+
+# ---------------------------------------------------------------------------
+# Main query — single JOIN that gets leads + enrichments in one pass.
+# DISTINCT ON deduplicates when person_work_history has multiple rows.
+# ---------------------------------------------------------------------------
+
+LEADS_QUERY = """
+SELECT DISTINCT ON (pt.person_linkedin_url, ct.target_company_domain)
+    pt.full_name,
+    pt.first_name,
+    pt.last_name,
+    pt.person_linkedin_url,
+    pt.cleaned_job_title  AS current_role,
+    pt.company_name       AS current_company_name,
+    pt.domain             AS current_company_domain,
+    pt.company_linkedin_url AS current_company_linkedin_url,
+
+    ct.target_company_name   AS prior_company_name,
+    ct.target_company_domain AS prior_company_domain,
+    ct.target_company_linkedin_url AS prior_company_linkedin_url,
+    ct.gtm_fit,
+    ct.reason AS gtm_fit_reason,
+
+    pwh.title      AS prior_role,
+    pwh.start_date AS prior_start_date,
+    pwh.end_date   AS prior_end_date,
+
+    pp.headline,
+    pp.location_name,
+    pp.picture_url,
+    pp.matched_seniority,
+    pp.matched_job_function,
+
+    cf.industry,
+    cf.employee_count,
+    cf.size_range,
+    cf.founded_year,
+    cf.country,
+    cf.city,
+    cf.state,
+    cf.description AS company_description,
+
+    sl.platform,
+    sl.estimated_sales_yearly,
+    sl.product_count,
+    sl.rank AS storeleads_rank
+
+FROM core.people_targets pt
+
+JOIN core.company_targets ct
+    ON pt.domain = ct.target_company_domain
+   AND ct.origin_company_domain = $1
+
+LEFT JOIN core.person_work_history pwh
+    ON pt.person_linkedin_url = pwh.linkedin_url
+   AND pwh.company_domain = ct.target_company_domain
+
+LEFT JOIN extracted.person_profile pp
+    ON pt.person_linkedin_url = pp.linkedin_url
+
+LEFT JOIN extracted.company_firmographics cf
+    ON pt.domain = cf.company_domain
+
+LEFT JOIN extracted.storeleads_company sl
+    ON pt.domain = sl.domain
+
+WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
+  AND ($3::text    IS NULL OR ct.target_company_domain = $3)
+
+ORDER BY pt.person_linkedin_url, ct.target_company_domain, pwh.start_date DESC NULLS LAST
+"""
+
+COUNT_QUERY = """
+SELECT count(DISTINCT (pt.person_linkedin_url, ct.target_company_domain)) AS total
+FROM core.people_targets pt
+JOIN core.company_targets ct
+    ON pt.domain = ct.target_company_domain
+   AND ct.origin_company_domain = $1
+WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
+  AND ($3::text    IS NULL OR ct.target_company_domain = $3)
+"""
+
+TECHNOLOGIES_QUERY = """
+SELECT domain, name
+FROM extracted.storeleads_technology
+WHERE domain = ANY($1::text[])
+"""
+
+META_ADS_COUNT_QUERY = """
+SELECT domain, count(*) AS cnt
+FROM extracted.company_meta_ads
+WHERE domain = ANY($1::text[])
+GROUP BY domain
+"""
+
+GOOGLE_ADS_COUNT_QUERY = """
+SELECT domain, count(*) AS cnt
+FROM extracted.company_google_ads
+WHERE domain = ANY($1::text[])
+GROUP BY domain
+"""
+
+PRIOR_COMPANIES_SUMMARY_QUERY = """
+SELECT
+    ct.target_company_name AS name,
+    ct.target_company_domain AS domain,
+    count(DISTINCT pt.person_linkedin_url) AS lead_count
+FROM core.people_targets pt
+JOIN core.company_targets ct
+    ON pt.domain = ct.target_company_domain
+   AND ct.origin_company_domain = $1
+WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
+  AND ($3::text    IS NULL OR ct.target_company_domain = $3)
+GROUP BY ct.target_company_domain, ct.target_company_name
+ORDER BY lead_count DESC
+"""
+
+
+def _str_or_none(val) -> Optional[str]:
+    if val is None:
+        return None
+    if hasattr(val, "isoformat"):
+        return val.isoformat()
+    return str(val)
 
 
 @router.post("/leads", response_model=AlumniGTMLeadsResponse)
-async def get_alumni_gtm_leads(
-    request: AlumniGTMLeadsRequest
-):
+async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
     """
     Get AlumniGTM leads for an origin company.
     Returns people who previously worked at the client's customers
     and now hold positions at new companies.
     """
     origin_domain = request.origin_company_domain.lower().strip()
+    gtm_fit = request.gtm_fit
+    prior_company_domain = request.prior_company_domain
+    limit = min(request.limit or 100, 500)
+    offset = request.offset or 0
+
+    pool = get_pool()
 
     try:
-        # Get people_targets
-        people_targets_result = (
-            core()
-            .from_("people_targets")
-            .select("id, full_name, first_name, last_name, person_linkedin_url, cleaned_job_title, company_name, domain, company_linkedin_url")
-            .execute()
-        )
-
-        # Get company_targets for this origin
-        company_targets_result = (
-            core()
-            .from_("company_targets")
-            .select("*")
-            .eq("origin_company_domain", origin_domain)
-            .execute()
-        )
-
-        # Build lookup dict for company_targets by target_company_domain
-        company_targets_by_domain = {}
-        for ct in company_targets_result.data or []:
-            company_targets_by_domain[ct["target_company_domain"]] = ct
-
-        # Filter people_targets to only those with matching company_targets
-        matching_people = []
-        for pt in people_targets_result.data or []:
-            if pt.get("domain") in company_targets_by_domain:
-                matching_people.append(pt)
-
-        total_leads = len(matching_people)
-
-        # Get unique domains for batch lookups
-        current_domains = list(set(p.get("domain") for p in matching_people if p.get("domain")))
-        linkedin_urls = list(set(p.get("person_linkedin_url") for p in matching_people if p.get("person_linkedin_url")))
-
-        # Batch fetch person profiles
-        person_profiles = {}
-        if linkedin_urls:
-            pp_result = (
-                extracted()
-                .from_("person_profile")
-                .select("linkedin_url, headline, location_name, picture_url, matched_seniority, matched_job_function")
-                .in_("linkedin_url", linkedin_urls)
-                .execute()
+        async with pool.acquire() as conn:
+            # Run count + paginated leads + summary concurrently-ish
+            # (asyncpg doesn't support true parallel on one conn, but we
+            #  keep it in one connection to avoid pool pressure)
+            total_row = await conn.fetchrow(
+                COUNT_QUERY, origin_domain, gtm_fit, prior_company_domain
             )
-            for pp in pp_result.data or []:
-                person_profiles[pp["linkedin_url"]] = pp
+            total_leads = total_row["total"] if total_row else 0
 
-        # Batch fetch company firmographics
-        firmographics = {}
-        if current_domains:
-            cf_result = (
-                extracted()
-                .from_("company_firmographics")
-                .select("company_domain, industry, employee_count, size_range, founded_year, country, city, state, description")
-                .in_("company_domain", current_domains)
-                .execute()
+            paginated_query = LEADS_QUERY + " LIMIT $4 OFFSET $5"
+            rows = await conn.fetch(
+                paginated_query, origin_domain, gtm_fit, prior_company_domain, limit, offset
             )
-            for cf in cf_result.data or []:
-                firmographics[cf["company_domain"]] = cf
 
-        # Batch fetch storeleads
-        storeleads_data = {}
-        if current_domains:
-            sl_result = (
-                extracted()
-                .from_("storeleads_company")
-                .select("domain, platform, estimated_sales_yearly, product_count, rank")
-                .in_("domain", current_domains)
-                .execute()
+            summary_rows = await conn.fetch(
+                PRIOR_COMPANIES_SUMMARY_QUERY, origin_domain, gtm_fit, prior_company_domain
             )
-            for sl in sl_result.data or []:
-                storeleads_data[sl["domain"]] = sl
 
-        # Batch fetch technologies
-        technologies_by_domain = {}
-        if current_domains:
-            tech_result = (
-                extracted()
-                .from_("storeleads_technology")
-                .select("domain, name")
-                .in_("domain", current_domains)
-                .execute()
-            )
-            for tech in tech_result.data or []:
-                domain = tech["domain"]
-                if domain not in technologies_by_domain:
-                    technologies_by_domain[domain] = []
-                technologies_by_domain[domain].append(tech["name"])
+            # Collect unique current-company domains for batch lookups
+            current_domains = list({r["current_company_domain"] for r in rows if r["current_company_domain"]})
 
-        # Batch fetch work history for prior roles
-        work_history = {}
-        if linkedin_urls:
-            prior_domains = list(company_targets_by_domain.keys())
-            if prior_domains:
-                wh_result = (
-                    core()
-                    .from_("person_work_history")
-                    .select("linkedin_url, company_domain, title, start_date, end_date")
-                    .in_("linkedin_url", linkedin_urls)
-                    .in_("company_domain", prior_domains)
-                    .execute()
-                )
-                for wh in wh_result.data or []:
-                    key = f"{wh['linkedin_url']}|{wh['company_domain']}"
-                    work_history[key] = wh
+            # Batch: technologies, meta ads, google ads
+            tech_map: dict[str, list[str]] = {}
+            meta_ads_map: dict[str, int] = {}
+            google_ads_map: dict[str, int] = {}
 
-        # Batch fetch ad counts
-        meta_ads_counts = {}
-        google_ads_counts = {}
-        if current_domains:
-            for domain in current_domains:
-                meta_result = (
-                    extracted()
-                    .from_("company_meta_ads")
-                    .select("id", count="exact")
-                    .eq("domain", domain)
-                    .execute()
-                )
-                meta_ads_counts[domain] = meta_result.count or 0
+            if current_domains:
+                tech_rows = await conn.fetch(TECHNOLOGIES_QUERY, current_domains)
+                for tr in tech_rows:
+                    tech_map.setdefault(tr["domain"], []).append(tr["name"])
 
-                google_result = (
-                    extracted()
-                    .from_("company_google_ads")
-                    .select("id", count="exact")
-                    .eq("domain", domain)
-                    .execute()
-                )
-                google_ads_counts[domain] = google_result.count or 0
+                meta_rows = await conn.fetch(META_ADS_COUNT_QUERY, current_domains)
+                for mr in meta_rows:
+                    meta_ads_map[mr["domain"]] = mr["cnt"]
 
-        # Build leads response
-        leads = []
-        prior_companies_count = {}
+                google_rows = await conn.fetch(GOOGLE_ADS_COUNT_QUERY, current_domains)
+                for gr in google_rows:
+                    google_ads_map[gr["domain"]] = gr["cnt"]
 
-        for pt in matching_people:
-            domain = pt.get("domain")
-            linkedin_url = pt.get("person_linkedin_url")
-            ct = company_targets_by_domain.get(domain, {})
-            prior_domain = ct.get("target_company_domain")
-
-            # Get work history for prior role
-            wh_key = f"{linkedin_url}|{prior_domain}" if linkedin_url and prior_domain else None
-            wh = work_history.get(wh_key, {})
-
-            # Get person profile
-            pp = person_profiles.get(linkedin_url, {})
-
-            # Get firmographics
-            cf = firmographics.get(domain, {})
-
-            # Get storeleads
-            sl = storeleads_data.get(domain, {})
-
-            # Get technologies
-            techs = technologies_by_domain.get(domain, [])
-
-            lead = Lead(
+        # Build response objects
+        leads: list[Lead] = []
+        for r in rows:
+            domain = r["current_company_domain"]
+            leads.append(Lead(
                 person=PersonData(
-                    full_name=pt.get("full_name"),
-                    first_name=pt.get("first_name"),
-                    last_name=pt.get("last_name"),
-                    linkedin_url=linkedin_url,
-                    headline=pp.get("headline"),
-                    location=pp.get("location_name"),
-                    picture_url=pp.get("picture_url"),
-                    matched_seniority=pp.get("matched_seniority"),
-                    matched_job_function=pp.get("matched_job_function"),
+                    full_name=r["full_name"],
+                    first_name=r["first_name"],
+                    last_name=r["last_name"],
+                    linkedin_url=r["person_linkedin_url"],
+                    headline=r["headline"],
+                    location=r["location_name"],
+                    picture_url=r["picture_url"],
+                    matched_seniority=r["matched_seniority"],
+                    matched_job_function=r["matched_job_function"],
                 ),
                 current_company=CurrentCompany(
-                    name=pt.get("company_name"),
+                    name=r["current_company_name"],
                     domain=domain,
-                    linkedin_url=pt.get("company_linkedin_url"),
-                    role=pt.get("cleaned_job_title"),
-                    cleaned_job_title=pt.get("cleaned_job_title"),
+                    linkedin_url=r["current_company_linkedin_url"],
+                    role=r["current_role"],
+                    cleaned_job_title=r["current_role"],
                     firmographics=Firmographics(
-                        industry=cf.get("industry"),
-                        employee_count=cf.get("employee_count"),
-                        size_range=cf.get("size_range"),
-                        founded_year=cf.get("founded_year"),
-                        country=cf.get("country"),
-                        city=cf.get("city"),
-                        state=cf.get("state"),
-                        description=cf.get("description"),
-                    ) if cf else None,
+                        industry=r["industry"],
+                        employee_count=r["employee_count"],
+                        size_range=r["size_range"],
+                        founded_year=r["founded_year"],
+                        country=r["country"],
+                        city=r["city"],
+                        state=r["state"],
+                        description=r["company_description"],
+                    ) if r["industry"] or r["employee_count"] else None,
                     storeleads=StoreleadsData(
-                        platform=sl.get("platform"),
-                        estimated_sales_yearly=float(sl["estimated_sales_yearly"]) if sl.get("estimated_sales_yearly") else None,
-                        product_count=sl.get("product_count"),
-                        rank=sl.get("rank"),
-                        technologies=techs if techs else None,
-                    ) if sl else None,
+                        platform=r["platform"],
+                        estimated_sales_yearly=float(r["estimated_sales_yearly"]) if r["estimated_sales_yearly"] else None,
+                        product_count=r["product_count"],
+                        rank=r["storeleads_rank"],
+                        technologies=tech_map.get(domain),
+                    ) if r["platform"] or r["storeleads_rank"] else None,
                     ads=AdsData(
-                        meta_ads_count=meta_ads_counts.get(domain, 0),
-                        google_ads_count=google_ads_counts.get(domain, 0),
+                        meta_ads_count=meta_ads_map.get(domain, 0),
+                        google_ads_count=google_ads_map.get(domain, 0),
                     ),
                 ),
                 prior_company=PriorCompany(
-                    name=ct.get("target_company_name"),
-                    domain=prior_domain,
-                    linkedin_url=ct.get("target_company_linkedin_url"),
-                    role=wh.get("title"),
-                    start_date=str(wh["start_date"]) if wh.get("start_date") else None,
-                    end_date=str(wh["end_date"]) if wh.get("end_date") else None,
-                    gtm_fit=ct.get("gtm_fit"),
-                    gtm_fit_reason=ct.get("reason"),
+                    name=r["prior_company_name"],
+                    domain=r["prior_company_domain"],
+                    linkedin_url=r["prior_company_linkedin_url"],
+                    role=r["prior_role"],
+                    start_date=_str_or_none(r["prior_start_date"]),
+                    end_date=_str_or_none(r["prior_end_date"]),
+                    gtm_fit=r["gtm_fit"],
+                    gtm_fit_reason=r["gtm_fit_reason"],
                 ),
-            )
-            leads.append(lead)
+            ))
 
-            # Count for prior companies summary
-            if prior_domain:
-                if prior_domain not in prior_companies_count:
-                    prior_companies_count[prior_domain] = {
-                        "name": ct.get("target_company_name"),
-                        "domain": prior_domain,
-                        "count": 0
-                    }
-                prior_companies_count[prior_domain]["count"] += 1
-
-        # Build prior companies summary
         prior_companies_summary = [
             PriorCompanySummary(
-                name=v["name"],
-                domain=v["domain"],
-                lead_count=v["count"]
+                name=sr["name"],
+                domain=sr["domain"],
+                lead_count=sr["lead_count"],
             )
-            for v in sorted(prior_companies_count.values(), key=lambda x: -x["count"])
+            for sr in summary_rows
         ]
 
         return AlumniGTMLeadsResponse(
             success=True,
             origin_company_domain=origin_domain,
             total_leads=total_leads,
-            total_prior_companies=len(prior_companies_count),
+            total_prior_companies=len(prior_companies_summary),
             leads=leads,
             prior_companies_summary=prior_companies_summary,
         )
