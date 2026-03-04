@@ -4,7 +4,6 @@ Storeleads Ingest Endpoint
 Expects:
 {
   "domain": "hm.com",
-  "merchant_name": "H&M",
   "raw_payload": {}
 }
 """
@@ -18,7 +17,6 @@ from config import app, image
 
 class StoreleadsRequest(BaseModel):
     domain: str
-    merchant_name: str
     raw_payload: dict
 
 
@@ -45,7 +43,6 @@ def ingest_storeleads(request: StoreleadsRequest) -> dict:
 
     try:
         domain = request.domain.lower().strip()
-        merchant_name = request.merchant_name.strip() if request.merchant_name else None
         payload = request.raw_payload
 
         if not domain:
@@ -60,7 +57,6 @@ def ingest_storeleads(request: StoreleadsRequest) -> dict:
             .from_("storeleads_payloads")
             .insert({
                 "domain": domain,
-                "merchant_name": merchant_name,
                 "payload": payload,
             })
             .execute()
@@ -87,7 +83,6 @@ def ingest_storeleads(request: StoreleadsRequest) -> dict:
             .insert({
                 "raw_payload_id": raw_payload_id,
                 "domain": domain,
-                "merchant_name": merchant_name,
                 "city": domain_data.get("city"),
                 "location": domain_data.get("location"),
                 "country_code": domain_data.get("country_code"),
