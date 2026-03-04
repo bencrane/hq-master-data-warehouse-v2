@@ -158,31 +158,12 @@ def ingest_storeleads(request: StoreleadsRequest) -> dict:
             }).execute()
             technologies_extracted += 1
 
-        # 6. Upsert to core.companies (only set name/linkedin_url if currently NULL)
-        existing = (
-            supabase.schema("core")
-            .from_("companies")
-            .select("id, name, linkedin_url")
-            .eq("domain", domain)
-            .maybe_single()
-            .execute()
-        )
-        if existing.data is None:
-            # Domain doesn't exist - insert
-            supabase.schema("core").from_("companies").insert({
-                "domain": domain,
-                "name": merchant_name,
-                "linkedin_url": linkedin_url,
-            }).execute()
-        else:
-            # Domain exists - only update NULL fields
-            updates = {}
-            if existing.data.get("name") is None and merchant_name:
-                updates["name"] = merchant_name
-            if existing.data.get("linkedin_url") is None and linkedin_url:
-                updates["linkedin_url"] = linkedin_url
-            if updates:
-                supabase.schema("core").from_("companies").update(updates).eq("domain", domain).execute()
+        # 6. Upsert to core.companies
+        supabase.schema("core").from_("companies").upsert({
+            "domain": domain,
+            "name": merchant_name,
+            "linkedin_url": linkedin_url,
+        }, on_conflict="domain").execute()
 
         # 7. Upsert to core.company_linkedin_urls (if we have one)
         if linkedin_url:

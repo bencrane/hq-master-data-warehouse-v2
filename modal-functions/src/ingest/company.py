@@ -28,7 +28,6 @@ from extraction.company_mapping import map_company_discovery
 
 
 class CompanyIngestRequest(BaseModel):
-    company_name: Optional[str] = None
     company_domain: str
     workflow_slug: str
     raw_payload: dict
@@ -129,28 +128,6 @@ def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
             extracted_id = extract_company_firmographics(
                 supabase, raw_id, request.company_domain, request.raw_payload
             )
-
-        # Upsert to core.companies (only sets name if currently NULL)
-        if request.company_name:
-            existing = (
-                supabase.schema("core")
-                .from_("companies")
-                .select("id, name")
-                .eq("domain", request.company_domain)
-                .maybe_single()
-                .execute()
-            )
-            if existing.data is None:
-                # Domain doesn't exist - insert
-                supabase.schema("core").from_("companies").insert({
-                    "domain": request.company_domain,
-                    "name": request.company_name,
-                }).execute()
-            elif existing.data.get("name") is None:
-                # Domain exists but name is NULL - update
-                supabase.schema("core").from_("companies").update({
-                    "name": request.company_name,
-                }).eq("domain", request.company_domain).execute()
 
         return {
             "success": True,
