@@ -106,12 +106,13 @@ class AlumniGTMLeadsRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Main query — single JOIN that gets leads + enrichments in one pass.
-# DISTINCT ON deduplicates when person_work_history has multiple rows.
+# Main query — finds alumni leads:
+#   people_targets (current company) ← person_work_history → company_customers (prior customer)
+# DISTINCT ON deduplicates when person has multiple roles at the same customer.
 # ---------------------------------------------------------------------------
 
 LEADS_QUERY = """
-SELECT DISTINCT ON (pt.person_linkedin_url, ct.target_company_domain)
+SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     pt.full_name,
     pt.first_name,
     pt.last_name,
@@ -121,15 +122,15 @@ SELECT DISTINCT ON (pt.person_linkedin_url, ct.target_company_domain)
     pt.domain             AS current_company_domain,
     pt.company_linkedin_url AS current_company_linkedin_url,
 
-    ct.target_company_name   AS prior_company_name,
-    ct.target_company_domain AS prior_company_domain,
-    ct.target_company_linkedin_url AS prior_company_linkedin_url,
-    ct.gtm_fit,
-    ct.reason AS gtm_fit_reason,
+    cc.customer_name      AS prior_company_name,
+    cc.customer_domain    AS prior_company_domain,
 
-    pwh.title      AS prior_role,
-    pwh.start_date AS prior_start_date,
-    pwh.end_date   AS prior_end_date,
+    pwh.title             AS prior_role,
+    pwh.start_date        AS prior_start_date,
+    pwh.end_date          AS prior_end_date,
+
+    ct.gtm_fit,
+    ct.reason             AS gtm_fit_reason,
 
     pp.headline,
     pp.location_name,
@@ -144,22 +145,26 @@ SELECT DISTINCT ON (pt.person_linkedin_url, ct.target_company_domain)
     cf.country,
     cf.city,
     cf.state,
-    cf.description AS company_description,
+    cf.description        AS company_description,
 
     sl.platform,
     sl.estimated_sales_yearly,
     sl.product_count,
-    sl.rank AS storeleads_rank
+    sl.rank               AS storeleads_rank
 
 FROM core.people_targets pt
 
-JOIN core.company_targets ct
+JOIN core.person_work_history pwh
+    ON pt.person_linkedin_url = pwh.linkedin_url
+   AND pwh.is_current IS NOT TRUE
+
+JOIN core.company_customers cc
+    ON pwh.company_domain = cc.customer_domain
+   AND cc.origin_company_domain = $1
+
+LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
-
-LEFT JOIN core.person_work_history pwh
-    ON pt.person_linkedin_url = pwh.linkedin_url
-   AND pwh.company_domain = ct.target_company_domain
 
 LEFT JOIN extracted.person_profile pp
     ON pt.person_linkedin_url = pp.linkedin_url
@@ -171,19 +176,25 @@ LEFT JOIN extracted.storeleads_company sl
     ON pt.domain = sl.domain
 
 WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
-  AND ($3::text    IS NULL OR ct.target_company_domain = $3)
+  AND ($3::text    IS NULL OR cc.customer_domain = $3)
 
-ORDER BY pt.person_linkedin_url, ct.target_company_domain, pwh.start_date DESC NULLS LAST
+ORDER BY pt.person_linkedin_url, cc.customer_domain, pwh.end_date DESC NULLS FIRST
 """
 
 COUNT_QUERY = """
-SELECT count(DISTINCT (pt.person_linkedin_url, ct.target_company_domain)) AS total
+SELECT count(DISTINCT (pt.person_linkedin_url, cc.customer_domain)) AS total
 FROM core.people_targets pt
-JOIN core.company_targets ct
+JOIN core.person_work_history pwh
+    ON pt.person_linkedin_url = pwh.linkedin_url
+   AND pwh.is_current IS NOT TRUE
+JOIN core.company_customers cc
+    ON pwh.company_domain = cc.customer_domain
+   AND cc.origin_company_domain = $1
+LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
 WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
-  AND ($3::text    IS NULL OR ct.target_company_domain = $3)
+  AND ($3::text    IS NULL OR cc.customer_domain = $3)
 """
 
 TECHNOLOGIES_QUERY = """
@@ -208,16 +219,22 @@ GROUP BY domain
 
 PRIOR_COMPANIES_SUMMARY_QUERY = """
 SELECT
-    ct.target_company_name AS name,
-    ct.target_company_domain AS domain,
+    cc.customer_name  AS name,
+    cc.customer_domain AS domain,
     count(DISTINCT pt.person_linkedin_url) AS lead_count
 FROM core.people_targets pt
-JOIN core.company_targets ct
+JOIN core.person_work_history pwh
+    ON pt.person_linkedin_url = pwh.linkedin_url
+   AND pwh.is_current IS NOT TRUE
+JOIN core.company_customers cc
+    ON pwh.company_domain = cc.customer_domain
+   AND cc.origin_company_domain = $1
+LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
 WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
-  AND ($3::text    IS NULL OR ct.target_company_domain = $3)
-GROUP BY ct.target_company_domain, ct.target_company_name
+  AND ($3::text    IS NULL OR cc.customer_domain = $3)
+GROUP BY cc.customer_domain, cc.customer_name
 ORDER BY lead_count DESC
 """
 
@@ -332,7 +349,6 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                 prior_company=PriorCompany(
                     name=r["prior_company_name"],
                     domain=r["prior_company_domain"],
-                    linkedin_url=r["prior_company_linkedin_url"],
                     role=r["prior_role"],
                     start_date=_str_or_none(r["prior_start_date"]),
                     end_date=_str_or_none(r["prior_end_date"]),
