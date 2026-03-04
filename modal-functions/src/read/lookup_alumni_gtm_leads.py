@@ -11,7 +11,17 @@ import os
 import modal
 from pydantic import BaseModel
 from typing import Optional, List, Any
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from config import app, image
+
+
+ALLOWED_ORIGINS = [
+    "https://outboundsolutions.com",
+    "https://www.outboundsolutions.com",
+    "https://alumnigtm.com",
+    "https://www.alumnigtm.com",
+] + [f"http://localhost:{port}" for port in range(3000, 3011)]
 
 
 class AlumniGTMLeadsRequest(BaseModel):
@@ -100,12 +110,36 @@ class AlumniGTMLeadsResponse(BaseModel):
     error: Optional[str] = None
 
 
+def get_cors_headers(origin: Optional[str] = None) -> dict:
+    """Return CORS headers if origin is allowed."""
+    if origin and origin in ALLOWED_ORIGINS:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Max-Age": "86400",
+        }
+    return {}
+
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("supabase-credentials")],
+)
+@modal.fastapi_endpoint(method="OPTIONS")
+def lookup_alumni_gtm_leads_options(request: Request) -> JSONResponse:
+    """Handle CORS preflight requests."""
+    origin = request.headers.get("origin")
+    headers = get_cors_headers(origin)
+    return JSONResponse(content={}, headers=headers)
+
+
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("supabase-credentials")],
 )
 @modal.fastapi_endpoint(method="POST")
-def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
+def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest, raw_request: Request) -> JSONResponse:
     """
     Get AlumniGTM leads for an origin company.
     Returns people who previously worked at the client's customers
@@ -116,6 +150,10 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
     supabase_url = os.environ["SUPABASE_URL"]
     supabase_key = os.environ["SUPABASE_SERVICE_KEY"]
     supabase = create_client(supabase_url, supabase_key)
+
+    # Get CORS headers
+    origin = raw_request.headers.get("origin")
+    cors_headers = get_cors_headers(origin)
 
     try:
         origin_domain = request.origin_company_domain.lower().strip()
@@ -456,22 +494,28 @@ def lookup_alumni_gtm_leads(request: AlumniGTMLeadsRequest) -> dict:
             for v in sorted(prior_companies_count.values(), key=lambda x: -x["count"])
         ]
 
-        return {
-            "success": True,
-            "origin_company_domain": origin_domain,
-            "total_leads": total_leads,
-            "total_prior_companies": len(prior_companies_count),
-            "leads": [lead.dict() for lead in leads],
-            "prior_companies_summary": [s.dict() for s in prior_companies_summary],
-        }
+        return JSONResponse(
+            content={
+                "success": True,
+                "origin_company_domain": origin_domain,
+                "total_leads": total_leads,
+                "total_prior_companies": len(prior_companies_count),
+                "leads": [lead.dict() for lead in leads],
+                "prior_companies_summary": [s.dict() for s in prior_companies_summary],
+            },
+            headers=cors_headers,
+        )
 
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "origin_company_domain": request.origin_company_domain,
-            "total_leads": 0,
-            "total_prior_companies": 0,
-            "leads": [],
-            "prior_companies_summary": [],
-        }
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": str(e),
+                "origin_company_domain": request.origin_company_domain,
+                "total_leads": 0,
+                "total_prior_companies": 0,
+                "leads": [],
+                "prior_companies_summary": [],
+            },
+            headers=cors_headers,
+        )
