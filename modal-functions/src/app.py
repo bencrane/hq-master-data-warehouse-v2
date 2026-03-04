@@ -131,6 +131,7 @@ from ingest.company_classification import ingest_company_classification
 from ingest.linkedin_ads import ingest_linkedin_ads
 from ingest.google_ads import ingest_google_ads
 from ingest.meta_ads import ingest_meta_ads
+from ingest.storeleads import ingest_storeleads
 from ingest.sales_motion import infer_sales_motion
 from ingest.free_trial import infer_free_trial
 from ingest.pricing_visibility import infer_pricing_visibility
@@ -332,6 +333,7 @@ __all__ = [
     "ingest_linkedin_ads",
     "ingest_google_ads",
     "ingest_meta_ads",
+    "ingest_storeleads",
     "infer_sales_motion",
     "infer_free_trial",
     "infer_pricing_visibility",
