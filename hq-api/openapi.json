@@ -12014,6 +12014,48 @@
         }
       }
     },
+    "/run/companies/db/company-customers/lookup-resolved": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup company customers by domain (resolved only)",
+        "description": "Wrapper for Modal function: lookup_company_customers_resolved. Only returns customers where customer_domain is not null.",
+        "operationId": "lookup_company_customers_resolved_run_companies_db_company_customers_lookup_resolved_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyCustomersLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyCustomersLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/run/companies/db/company-business-model/lookup": {
       "post": {
         "tags": [
@@ -15418,6 +15460,138 @@
         }
       }
     },
+    "/run/rapidapi-linkedin-people": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Extract LinkedIn people from RapidAPI response",
+        "description": "Takes a RapidAPI LinkedIn people search response and extracts/normalizes via Claude Haiku 3.5.",
+        "operationId": "rapidapi_linkedin_people_run_rapidapi_linkedin_people_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RapidAPILinkedInPeopleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Rapidapi Linkedin People Run Rapidapi Linkedin People Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/lookup-company-by-name": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Lookup company by name",
+        "description": "Returns domain and linkedin_url for a given company name. Only returns if exactly 1 close/exact match found.",
+        "operationId": "lookup_company_by_name_run_lookup_company_by_name_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupCompanyByNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Lookup Company By Name Run Lookup Company By Name Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run/resolve-company-identity": {
+      "post": {
+        "tags": [
+          "run"
+        ],
+        "summary": "Resolve company domain and LinkedIn URL",
+        "description": "Uses Gemini 3 Flash to find company domain and LinkedIn URL from name, location, and industry.",
+        "operationId": "resolve_company_identity_run_resolve_company_identity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCompanyIdentityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Resolve Company Identity Run Resolve Company Identity Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/read/companies/db/check-existence": {
       "post": {
         "tags": [
@@ -17693,6 +17867,51 @@
         }
       }
     },
+    "/v1/alumni-gtm/leads": {
+      "get": {
+        "tags": [
+          "alumni-gtm"
+        ],
+        "summary": "Get Alumni Gtm Leads",
+        "description": "Get AlumniGTM leads for an origin company.\nReturns people who previously worked at the client's customers\nand now hold positions at new companies.",
+        "operationId": "get_alumni_gtm_leads_v1_alumni_gtm_leads_get",
+        "parameters": [
+          {
+            "name": "origin_company_domain",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The client's domain (e.g. nostra.ai)",
+              "title": "Origin Company Domain"
+            },
+            "description": "The client's domain (e.g. nostra.ai)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlumniGTMLeadsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -17796,6 +18015,34 @@
         ],
         "title": "AddOnsOfferedResponse"
       },
+      "AdsData": {
+        "properties": {
+          "meta_ads_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta Ads Count"
+          },
+          "google_ads_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Ads Count"
+          }
+        },
+        "type": "object",
+        "title": "AdsData"
+      },
       "AllFiltersResponse": {
         "properties": {
           "seniorities": {
@@ -17851,6 +18098,61 @@
           "business_models"
         ],
         "title": "AllFiltersResponse"
+      },
+      "AlumniGTMLeadsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "origin_company_domain": {
+            "type": "string",
+            "title": "Origin Company Domain"
+          },
+          "total_leads": {
+            "type": "integer",
+            "title": "Total Leads"
+          },
+          "total_prior_companies": {
+            "type": "integer",
+            "title": "Total Prior Companies"
+          },
+          "leads": {
+            "items": {
+              "$ref": "#/components/schemas/Lead"
+            },
+            "type": "array",
+            "title": "Leads"
+          },
+          "prior_companies_summary": {
+            "items": {
+              "$ref": "#/components/schemas/PriorCompanySummary"
+            },
+            "type": "array",
+            "title": "Prior Companies Summary"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "origin_company_domain",
+          "total_leads",
+          "total_prior_companies",
+          "leads",
+          "prior_companies_summary"
+        ],
+        "title": "AlumniGTMLeadsResponse"
       },
       "AlumniInfo": {
         "properties": {
@@ -24751,6 +25053,97 @@
         ],
         "title": "CrunchbaseUrlResponse"
       },
+      "CurrentCompany": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "cleaned_job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleaned Job Title"
+          },
+          "firmographics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Firmographics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "storeleads": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreleadsData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ads": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdsData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CurrentCompany"
+      },
       "CustomerInfo": {
         "properties": {
           "origin_company_name": {
@@ -25625,6 +26018,100 @@
           "name"
         ],
         "title": "FilterOption"
+      },
+      "Firmographics": {
+        "properties": {
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "employee_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Count"
+          },
+          "size_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Range"
+          },
+          "founded_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Founded Year"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "Firmographics"
       },
       "FocusCompanySendRequest": {
         "properties": {
@@ -28927,251 +29414,22 @@
       },
       "Lead": {
         "properties": {
-          "person_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person Id"
+          "person": {
+            "$ref": "#/components/schemas/PersonData"
           },
-          "linkedin_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin Url"
+          "current_company": {
+            "$ref": "#/components/schemas/CurrentCompany"
           },
-          "linkedin_slug": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin Slug"
-          },
-          "full_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Full Name"
-          },
-          "linkedin_url_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin Url Type"
-          },
-          "linkedin_user_profile_urn": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Linkedin User Profile Urn"
-          },
-          "person_city": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person City"
-          },
-          "person_state": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person State"
-          },
-          "person_country": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person Country"
-          },
-          "matched_cleaned_job_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Cleaned Job Title"
-          },
-          "matched_job_function": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Job Function"
-          },
-          "matched_seniority": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Seniority"
-          },
-          "job_start_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Job Start Date"
-          },
-          "company_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Id"
-          },
-          "company_domain": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Domain"
-          },
-          "company_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Name"
-          },
-          "company_linkedin_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Linkedin Url"
-          },
-          "company_city": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company City"
-          },
-          "company_state": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company State"
-          },
-          "company_country": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company Country"
-          },
-          "matched_industry": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Matched Industry"
-          },
-          "employee_range": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Employee Range"
+          "prior_company": {
+            "$ref": "#/components/schemas/PriorCompany"
           }
         },
         "type": "object",
+        "required": [
+          "person",
+          "current_company",
+          "prior_company"
+        ],
         "title": "Lead"
       },
       "LeadAtVCPortfolio": {
@@ -30029,7 +30287,7 @@
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/Lead"
+              "$ref": "#/components/schemas/models__Lead"
             },
             "type": "array",
             "title": "Data"
@@ -30065,7 +30323,7 @@
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/Lead"
+              "$ref": "#/components/schemas/models__Lead"
             },
             "type": "array",
             "title": "Data"
@@ -30658,6 +30916,19 @@
           "success"
         ],
         "title": "LocationUpdateResponse"
+      },
+      "LookupCompanyByNameRequest": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name"
+        ],
+        "title": "LookupCompanyByNameRequest"
       },
       "MagicLinkRequest": {
         "properties": {
@@ -32052,6 +32323,111 @@
         ],
         "title": "PersonContactRequest"
       },
+      "PersonData": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "picture_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture Url"
+          },
+          "matched_seniority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Seniority"
+          },
+          "matched_job_function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Job Function"
+          }
+        },
+        "type": "object",
+        "title": "PersonData"
+      },
       "PersonDiscoveryRequest": {
         "properties": {
           "linkedin_url": {
@@ -33038,6 +33414,129 @@
         ],
         "title": "PricingVisibilityResponse"
       },
+      "PriorCompany": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "gtm_fit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gtm Fit"
+          },
+          "gtm_fit_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gtm Fit Reason"
+          }
+        },
+        "type": "object",
+        "title": "PriorCompany"
+      },
+      "PriorCompanySummary": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "lead_count": {
+            "type": "integer",
+            "title": "Lead Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "lead_count"
+        ],
+        "title": "PriorCompanySummary"
+      },
       "PriorityCompaniesResponse": {
         "properties": {
           "data": {
@@ -33315,6 +33814,60 @@
           "success"
         ],
         "title": "PublicCompanyResponse"
+      },
+      "RapidAPILinkedInPeopleRequest": {
+        "properties": {
+          "company_domain": {
+            "type": "string",
+            "title": "Company Domain"
+          },
+          "rapidapi_response": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rapidapi Response"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_domain",
+          "rapidapi_response"
+        ],
+        "title": "RapidAPILinkedInPeopleRequest"
+      },
+      "ResolveCompanyIdentityRequest": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name"
+        ],
+        "title": "ResolveCompanyIdentityRequest"
       },
       "ResolveCompanyLocationFromDomainSingleRequest": {
         "properties": {
@@ -35645,6 +36198,70 @@
         ],
         "title": "StagingCompanyLinkedInResponse"
       },
+      "StoreleadsData": {
+        "properties": {
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "estimated_sales_yearly": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Sales Yearly"
+          },
+          "product_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Count"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "technologies": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technologies"
+          }
+        },
+        "type": "object",
+        "title": "StoreleadsData"
+      },
       "TableCountResponse": {
         "properties": {
           "schema_name": {
@@ -37459,6 +38076,255 @@
         },
         "type": "object",
         "title": "WorkHistoryEntry"
+      },
+      "models__Lead": {
+        "properties": {
+          "person_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          },
+          "linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url"
+          },
+          "linkedin_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Slug"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "linkedin_url_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin Url Type"
+          },
+          "linkedin_user_profile_urn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkedin User Profile Urn"
+          },
+          "person_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person City"
+          },
+          "person_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person State"
+          },
+          "person_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Country"
+          },
+          "matched_cleaned_job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Cleaned Job Title"
+          },
+          "matched_job_function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Job Function"
+          },
+          "matched_seniority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Seniority"
+          },
+          "job_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Start Date"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Domain"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "company_linkedin_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Linkedin Url"
+          },
+          "company_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company City"
+          },
+          "company_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company State"
+          },
+          "company_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Country"
+          },
+          "matched_industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Industry"
+          },
+          "employee_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Range"
+          }
+        },
+        "type": "object",
+        "title": "Lead"
       }
     }
   }
