@@ -138,7 +138,7 @@ def ingest_clay_company_firmo(request: CompanyIngestRequest) -> dict:
                 .from_("companies")
                 .select("name")
                 .eq("domain", request.company_domain)
-                .maybeSingle()
+                .maybe_single()
                 .execute()
             )
             if existing.data is None:
