@@ -126,7 +126,6 @@ class AlumniGTMLeadsResponse(BaseModel):
 
 class AlumniGTMLeadsRequest(BaseModel):
     origin_company_domain: str
-    gtm_fit: Optional[bool] = None
     prior_company_domain: Optional[str] = None
     limit: Optional[int] = 500
     offset: Optional[int] = 0
@@ -215,8 +214,9 @@ LEFT JOIN extracted.storeleads_company sl
 LEFT JOIN extracted.company_firmographics cf2
     ON cc.customer_domain = cf2.company_domain
 
-WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
-  AND ($3::text    IS NULL OR cc.customer_domain = $3)
+WHERE ct.gtm_fit = true
+  AND pt.icp_fit = true
+  AND ($2::text IS NULL OR cc.customer_domain = $2)
 
 ORDER BY pt.person_linkedin_url, cc.customer_domain, pwh.end_date DESC NULLS FIRST
 """
@@ -233,8 +233,9 @@ JOIN core.company_customers cc
 LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
-WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
-  AND ($3::text    IS NULL OR cc.customer_domain = $3)
+WHERE ct.gtm_fit = true
+  AND pt.icp_fit = true
+  AND ($2::text IS NULL OR cc.customer_domain = $2)
 """
 
 TECHNOLOGIES_QUERY = """
@@ -275,8 +276,9 @@ JOIN core.company_customers cc
 LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
-WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
-  AND ($3::text    IS NULL OR cc.customer_domain = $3)
+WHERE ct.gtm_fit = true
+  AND pt.icp_fit = true
+  AND ($2::text IS NULL OR cc.customer_domain = $2)
 GROUP BY cc.customer_domain, cc.customer_name
 ORDER BY lead_count DESC
 """
@@ -298,30 +300,26 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
     and now hold positions at new companies.
     """
     origin_domain = request.origin_company_domain.lower().strip()
-    gtm_fit = request.gtm_fit
     prior_company_domain = request.prior_company_domain
-    limit = min(request.limit or 100, 500)
+    limit = min(request.limit or 500, 500)
     offset = request.offset or 0
 
     pool = get_pool()
 
     try:
         async with pool.acquire() as conn:
-            # Run count + paginated leads + summary concurrently-ish
-            # (asyncpg doesn't support true parallel on one conn, but we
-            #  keep it in one connection to avoid pool pressure)
             total_row = await conn.fetchrow(
-                COUNT_QUERY, origin_domain, gtm_fit, prior_company_domain
+                COUNT_QUERY, origin_domain, prior_company_domain
             )
             total_leads = total_row["total"] if total_row else 0
 
-            paginated_query = LEADS_QUERY + " LIMIT $4 OFFSET $5"
+            paginated_query = LEADS_QUERY + " LIMIT $3 OFFSET $4"
             rows = await conn.fetch(
-                paginated_query, origin_domain, gtm_fit, prior_company_domain, limit, offset
+                paginated_query, origin_domain, prior_company_domain, limit, offset
             )
 
             summary_rows = await conn.fetch(
-                PRIOR_COMPANIES_SUMMARY_QUERY, origin_domain, gtm_fit, prior_company_domain
+                PRIOR_COMPANIES_SUMMARY_QUERY, origin_domain, prior_company_domain
             )
 
             # Collect unique current-company domains for batch lookups
