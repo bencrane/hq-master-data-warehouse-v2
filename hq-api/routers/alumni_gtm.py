@@ -52,6 +52,7 @@ class MetaAd(BaseModel):
     ad_id: Optional[str] = None
     platform: Optional[str] = None
     start_date: Optional[str] = None
+    end_date: Optional[str] = None
     status: Optional[str] = None
     page_name: Optional[str] = None
     ad_creative_body: Optional[str] = None
@@ -59,6 +60,7 @@ class MetaAd(BaseModel):
     ad_creative_link_description: Optional[str] = None
     landing_page_url: Optional[str] = None
     image_url: Optional[str] = None
+    video_url: Optional[str] = None
 
 
 class GoogleAd(BaseModel):
@@ -245,9 +247,9 @@ WHERE domain = ANY($1::text[])
 """
 
 META_ADS_QUERY = """
-SELECT domain, ad_id, platform, start_date, status, page_name,
+SELECT domain, ad_id, platform, start_date, end_date, status, page_name,
        ad_creative_body, ad_creative_link_title, ad_creative_link_description,
-       landing_page_url, image_url
+       landing_page_url, image_url, video_url
 FROM extracted.company_meta_ads
 WHERE domain = ANY($1::text[])
 ORDER BY start_date DESC NULLS LAST
@@ -391,6 +393,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                                 ad_id=a.get("ad_id"),
                                 platform=a.get("platform"),
                                 start_date=_str_or_none(a.get("start_date")),
+                                end_date=_str_or_none(a.get("end_date")),
                                 status=a.get("status"),
                                 page_name=a.get("page_name"),
                                 ad_creative_body=a.get("ad_creative_body"),
@@ -398,6 +401,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                                 ad_creative_link_description=a.get("ad_creative_link_description"),
                                 landing_page_url=a.get("landing_page_url"),
                                 image_url=a.get("image_url"),
+                                video_url=a.get("video_url"),
                             ) for a in meta_ads_map.get(domain, [])[:5]
                         ] or None,
                         google_ads=[
