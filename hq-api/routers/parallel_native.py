@@ -45,6 +45,25 @@ class CompetitorsRequest(BaseModel):
     workflow_source: str = "parallel-native/competitors/ingest/db-direct"
 
 
+class GtmBriefLeadsRequest(BaseModel):
+    origin_company_domain: str
+    limit: int = 1
+
+
+class GtmBriefResultRequest(BaseModel):
+    person_linkedin_url: str
+    origin_company_domain: str
+    lead_full_name: str
+    lead_current_company_domain: Optional[str] = None
+    lead_past_company_domain: Optional[str] = None
+    run_id: str
+    raw_payload: dict
+    output: Optional[dict] = None
+    success: bool = True
+    error_message: Optional[str] = None
+    enrichment_slug: str = "alumni_person_gtm_brief_unstructured_output"
+
+
 class PersonContactRequest(BaseModel):
     full_name: str
     company: str
@@ -768,4 +787,114 @@ async def extract_case_study_v2(request: CaseStudyExtractRequest):
         "customer_company_domain": output.get("customer_company_domain"),
         "publishing_company_name": output.get("publishing_company_name"),
         "champions": output.get("champions", [])
+    }
+
+
+# =============================================================================
+# GTM Brief Endpoints (for Trigger.dev)
+# =============================================================================
+
+@router.get("/gtm-brief/leads")
+async def get_gtm_brief_leads(origin_company_domain: str, limit: int = 1):
+    """
+    Fetch unprocessed alumni GTM leads for a given origin company.
+    Returns leads from core.alumni_gtm_leads where has_gtm_brief = false.
+    Also returns the prompt template from the enrichment registry.
+    """
+    pool = get_pool()
+
+    # Fetch the prompt template
+    registry_row = await pool.fetchrow("""
+        SELECT prompt_template, processor
+        FROM reference.parallel_enrichment_registry
+        WHERE slug = 'alumni_person_gtm_brief_unstructured_output'
+        AND is_active = true
+    """)
+
+    if not registry_row:
+        raise HTTPException(status_code=404, detail="Enrichment registry entry not found")
+
+    prompt_template = registry_row["prompt_template"]
+
+    # Fetch unprocessed leads
+    leads = await pool.fetch("""
+        SELECT *
+        FROM core.alumni_gtm_leads
+        WHERE has_gtm_brief = false
+        AND origin_company_domain = $1
+        LIMIT $2
+    """, origin_company_domain, limit)
+
+    return {
+        "leads": [dict(row) for row in leads],
+        "prompt_template": json.loads(prompt_template) if isinstance(prompt_template, str) else prompt_template,
+        "processor": registry_row["processor"],
+        "count": len(leads),
+    }
+
+
+@router.post("/gtm-brief/result")
+async def store_gtm_brief_result(request: GtmBriefResultRequest):
+    """
+    Store GTM brief result from Parallel AI and update has_gtm_brief flag.
+    Writes to raw.parallel_person_gtm_briefs and extracted.parallel_person_gtm_briefs.
+    """
+    pool = get_pool()
+
+    # 1. Store raw result
+    raw_id = await pool.fetchval("""
+        INSERT INTO raw.parallel_person_gtm_briefs
+            (person_linkedin_url, origin_company_domain, lead_current_company_domain,
+             lead_past_company_domain, run_id, raw_payload, success, error_message,
+             enrichment_slug)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)
+        RETURNING id
+    """,
+        request.person_linkedin_url,
+        request.origin_company_domain,
+        request.lead_current_company_domain,
+        request.lead_past_company_domain,
+        request.run_id,
+        json.dumps(request.raw_payload),
+        request.success,
+        request.error_message,
+        request.enrichment_slug,
+    )
+
+    # 2. Store extracted result (only if successful)
+    extracted_id = None
+    if request.success and request.output:
+        extracted_id = await pool.fetchval("""
+            INSERT INTO extracted.parallel_person_gtm_briefs
+                (raw_payload_id, person_linkedin_url, origin_company_domain,
+                 lead_full_name, lead_current_company_domain, lead_past_company_domain,
+                 run_id, output, enrichment_slug)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
+            RETURNING id
+        """,
+            raw_id,
+            request.person_linkedin_url,
+            request.origin_company_domain,
+            request.lead_full_name,
+            request.lead_current_company_domain,
+            request.lead_past_company_domain,
+            request.run_id,
+            json.dumps(request.output),
+            request.enrichment_slug,
+        )
+
+    # 3. Update has_gtm_brief on people_targets (only if successful)
+    if request.success:
+        await pool.execute("""
+            UPDATE core.people_targets
+            SET has_gtm_brief = true
+            WHERE person_linkedin_url = $1
+        """, request.person_linkedin_url)
+
+    return {
+        "success": True,
+        "raw_id": str(raw_id),
+        "extracted_id": str(extracted_id) if extracted_id else None,
+        "person_linkedin_url": request.person_linkedin_url,
+        "has_gtm_brief_updated": request.success,
     }
