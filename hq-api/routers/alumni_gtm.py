@@ -97,6 +97,7 @@ class CurrentCompany(BaseModel):
     linkedin_url: Optional[str] = None
     role: Optional[str] = None
     cleaned_job_title: Optional[str] = None
+    revenue_range: Optional[str] = None
     firmographics: Optional[Firmographics] = None
     storeleads: Optional[StoreleadsData] = None
     ads: Optional[AdsData] = None
@@ -203,6 +204,8 @@ SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     sl.city               AS storeleads_city,
     sl.state              AS storeleads_state,
 
+    cr.matched_revenue_range AS revenue_range,
+
     cf2.industry          AS prior_industry,
     cf2.employee_count    AS prior_employee_count,
     cf2.size_range        AS prior_size_range,
@@ -234,6 +237,9 @@ LEFT JOIN extracted.company_firmographics cf
 
 LEFT JOIN extracted.storeleads_company sl
     ON pt.domain = sl.domain
+
+LEFT JOIN core.company_revenue cr
+    ON pt.domain = cr.domain
 
 LEFT JOIN extracted.company_firmographics cf2
     ON cc.customer_domain = cf2.company_domain
@@ -390,6 +396,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     linkedin_url=r["current_company_linkedin_url"],
                     role=r["current_role"],
                     cleaned_job_title=r["current_role"],
+                    revenue_range=r["revenue_range"],
                     firmographics=Firmographics(
                         industry=r["industry"],
                         employee_count=r["employee_count"],
