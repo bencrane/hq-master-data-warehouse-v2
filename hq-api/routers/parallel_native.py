@@ -803,9 +803,9 @@ async def get_gtm_brief_leads(origin_company_domain: str, limit: int = 1):
     """
     pool = get_pool()
 
-    # Fetch the prompt template
+    # Fetch the prompt template (stored in input_template column)
     registry_row = await pool.fetchrow("""
-        SELECT prompt_template, processor
+        SELECT input_template, processor
         FROM reference.parallel_enrichment_registry
         WHERE slug = 'alumni_person_gtm_brief_unstructured_output'
         AND is_active = true
@@ -814,7 +814,7 @@ async def get_gtm_brief_leads(origin_company_domain: str, limit: int = 1):
     if not registry_row:
         raise HTTPException(status_code=404, detail="Enrichment registry entry not found")
 
-    prompt_template = registry_row["prompt_template"]
+    prompt_template = registry_row["input_template"]
 
     # Fetch unprocessed leads
     leads = await pool.fetch("""
