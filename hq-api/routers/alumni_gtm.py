@@ -5,7 +5,6 @@ Returns qualified leads for AlumniGTM — people who previously worked at a clie
 customers and now hold buying authority at new companies.
 """
 
-import json
 from fastapi import APIRouter, Query
 from typing import Optional, List
 from pydantic import BaseModel
@@ -54,7 +53,6 @@ class StoreleadsData(BaseModel):
     platform_rank_percentile: Optional[float] = None
     trustpilot_avg_rating: Optional[float] = None
     trustpilot_review_count: Optional[int] = None
-    categories: Optional[List[str]] = None
     country_code: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
@@ -201,7 +199,6 @@ SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     sl.platform_rank_percentile,
     sl.trustpilot_avg_rating,
     sl.trustpilot_review_count,
-    sl.categories         AS storeleads_categories,
     sl.country_code       AS storeleads_country_code,
     sl.city               AS storeleads_city,
     sl.state              AS storeleads_state,
@@ -416,7 +413,6 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                         platform_rank_percentile=float(r["platform_rank_percentile"]) if r["platform_rank_percentile"] else None,
                         trustpilot_avg_rating=float(r["trustpilot_avg_rating"]) if r["trustpilot_avg_rating"] else None,
                         trustpilot_review_count=r["trustpilot_review_count"],
-                        categories=json.loads(r["storeleads_categories"]) if isinstance(r["storeleads_categories"], str) else r["storeleads_categories"],
                         country_code=r["storeleads_country_code"],
                         city=r["storeleads_city"],
                         state=r["storeleads_state"],
