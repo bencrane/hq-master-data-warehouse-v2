@@ -42,9 +42,21 @@ class Firmographics(BaseModel):
 
 class StoreleadsData(BaseModel):
     platform: Optional[str] = None
+    estimated_sales: Optional[float] = None
     estimated_sales_yearly: Optional[float] = None
     product_count: Optional[int] = None
+    estimated_visits: Optional[int] = None
+    estimated_page_views: Optional[int] = None
     rank: Optional[int] = None
+    platform_rank: Optional[int] = None
+    rank_percentile: Optional[float] = None
+    platform_rank_percentile: Optional[float] = None
+    trustpilot_avg_rating: Optional[float] = None
+    trustpilot_review_count: Optional[int] = None
+    categories: Optional[list] = None
+    country_code: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
     technologies: Optional[List[str]] = None
 
 
@@ -177,9 +189,21 @@ SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     cf.description        AS company_description,
 
     sl.platform,
+    sl.estimated_sales,
     sl.estimated_sales_yearly,
     sl.product_count,
+    sl.estimated_visits,
+    sl.estimated_page_views,
     sl.rank               AS storeleads_rank,
+    sl.platform_rank,
+    sl.rank_percentile,
+    sl.platform_rank_percentile,
+    sl.trustpilot_avg_rating,
+    sl.trustpilot_review_count,
+    sl.categories         AS storeleads_categories,
+    sl.country_code       AS storeleads_country_code,
+    sl.city               AS storeleads_city,
+    sl.state              AS storeleads_state,
 
     cf2.industry          AS prior_industry,
     cf2.employee_count    AS prior_employee_count,
@@ -380,9 +404,21 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     ) if r["industry"] or r["employee_count"] else None,
                     storeleads=StoreleadsData(
                         platform=r["platform"],
+                        estimated_sales=float(r["estimated_sales"]) if r["estimated_sales"] else None,
                         estimated_sales_yearly=float(r["estimated_sales_yearly"]) if r["estimated_sales_yearly"] else None,
                         product_count=r["product_count"],
+                        estimated_visits=r["estimated_visits"],
+                        estimated_page_views=r["estimated_page_views"],
                         rank=r["storeleads_rank"],
+                        platform_rank=r["platform_rank"],
+                        rank_percentile=float(r["rank_percentile"]) if r["rank_percentile"] else None,
+                        platform_rank_percentile=float(r["platform_rank_percentile"]) if r["platform_rank_percentile"] else None,
+                        trustpilot_avg_rating=float(r["trustpilot_avg_rating"]) if r["trustpilot_avg_rating"] else None,
+                        trustpilot_review_count=r["trustpilot_review_count"],
+                        categories=r["storeleads_categories"],
+                        country_code=r["storeleads_country_code"],
+                        city=r["storeleads_city"],
+                        state=r["storeleads_state"],
                         technologies=tech_map.get(domain),
                     ) if r["platform"] or r["storeleads_rank"] else None,
                     ads=AdsData(
