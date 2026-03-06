@@ -5,7 +5,7 @@
 export const GTM_BRIEF_CONFIG = {
   enrichmentSlug: "alumni_person_gtm_brief_unstructured_output",
   processor: "pro" as const,
-  maxDuration: 600, // 10 minutes — pro processor can take a few minutes
+  maxDuration: 1500, // 25 minutes — pro processor deep research takes time
 
   // Maps view column names to template {{placeholder}} names
   // These are identical in this case, but the mapping makes it explicit

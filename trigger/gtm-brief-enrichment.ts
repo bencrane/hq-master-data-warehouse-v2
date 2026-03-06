@@ -38,6 +38,7 @@ export const gtmBriefEnrichment = task({
 
     const parallel = new Parallel({
       apiKey: process.env.PARALLEL_API_KEY!,
+      timeout: 1_500_000, // 25 min HTTP timeout — result endpoint blocks until task completes
     });
 
     const results = [];
@@ -84,7 +85,7 @@ export const gtmBriefEnrichment = task({
       let runResult;
       try {
         runResult = await parallel.taskRun.result(taskRun.run_id, {
-          timeout: 3600,
+          timeout: 1_500_000, // 25 minutes in ms — pro processor deep research
         });
         logger.info(`Result received for ${lead.lead_full_name}`);
       } catch (err) {
