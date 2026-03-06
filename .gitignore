@@ -21,3 +21,6 @@ build/
 # OS
 .DS_Store
 railway-env.json
+
+# Doppler
+.doppler.yaml
