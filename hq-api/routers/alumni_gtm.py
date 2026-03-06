@@ -48,9 +48,34 @@ class StoreleadsData(BaseModel):
     technologies: Optional[List[str]] = None
 
 
+class MetaAd(BaseModel):
+    ad_id: Optional[str] = None
+    platform: Optional[str] = None
+    start_date: Optional[str] = None
+    status: Optional[str] = None
+    page_name: Optional[str] = None
+    ad_creative_body: Optional[str] = None
+    ad_creative_link_title: Optional[str] = None
+    ad_creative_link_description: Optional[str] = None
+    landing_page_url: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class GoogleAd(BaseModel):
+    creative_id: Optional[str] = None
+    format: Optional[str] = None
+    start_date: Optional[str] = None
+    last_seen: Optional[str] = None
+    advertiser_name: Optional[str] = None
+    original_url: Optional[str] = None
+    variant_content: Optional[str] = None
+
+
 class AdsData(BaseModel):
     meta_ads_count: Optional[int] = 0
     google_ads_count: Optional[int] = 0
+    meta_ads: Optional[List[MetaAd]] = None
+    google_ads: Optional[List[GoogleAd]] = None
 
 
 class CurrentCompany(BaseModel):
@@ -218,18 +243,21 @@ FROM extracted.storeleads_technology
 WHERE domain = ANY($1::text[])
 """
 
-META_ADS_COUNT_QUERY = """
-SELECT domain, count(*) AS cnt
+META_ADS_QUERY = """
+SELECT domain, ad_id, platform, start_date, status, page_name,
+       ad_creative_body, ad_creative_link_title, ad_creative_link_description,
+       landing_page_url, image_url
 FROM extracted.company_meta_ads
 WHERE domain = ANY($1::text[])
-GROUP BY domain
+ORDER BY start_date DESC NULLS LAST
 """
 
-GOOGLE_ADS_COUNT_QUERY = """
-SELECT domain, count(*) AS cnt
+GOOGLE_ADS_QUERY = """
+SELECT domain, creative_id, format, start_date, last_seen,
+       advertiser_name, original_url, variant_content
 FROM extracted.company_google_ads
 WHERE domain = ANY($1::text[])
-GROUP BY domain
+ORDER BY last_seen DESC NULLS LAST
 """
 
 PRIOR_COMPANIES_SUMMARY_QUERY = """
@@ -301,21 +329,21 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
 
             # Batch: technologies, meta ads, google ads
             tech_map: dict[str, list[str]] = {}
-            meta_ads_map: dict[str, int] = {}
-            google_ads_map: dict[str, int] = {}
+            meta_ads_map: dict[str, list[dict]] = {}
+            google_ads_map: dict[str, list[dict]] = {}
 
             if current_domains:
                 tech_rows = await conn.fetch(TECHNOLOGIES_QUERY, current_domains)
                 for tr in tech_rows:
                     tech_map.setdefault(tr["domain"], []).append(tr["name"])
 
-                meta_rows = await conn.fetch(META_ADS_COUNT_QUERY, current_domains)
+                meta_rows = await conn.fetch(META_ADS_QUERY, current_domains)
                 for mr in meta_rows:
-                    meta_ads_map[mr["domain"]] = mr["cnt"]
+                    meta_ads_map.setdefault(mr["domain"], []).append(dict(mr))
 
-                google_rows = await conn.fetch(GOOGLE_ADS_COUNT_QUERY, current_domains)
+                google_rows = await conn.fetch(GOOGLE_ADS_QUERY, current_domains)
                 for gr in google_rows:
-                    google_ads_map[gr["domain"]] = gr["cnt"]
+                    google_ads_map.setdefault(gr["domain"], []).append(dict(gr))
 
         # Build response objects
         leads: list[Lead] = []
@@ -358,8 +386,33 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                         technologies=tech_map.get(domain),
                     ) if r["platform"] or r["storeleads_rank"] else None,
                     ads=AdsData(
-                        meta_ads_count=meta_ads_map.get(domain, 0),
-                        google_ads_count=google_ads_map.get(domain, 0),
+                        meta_ads_count=len(meta_ads_map.get(domain, [])),
+                        google_ads_count=len(google_ads_map.get(domain, [])),
+                        meta_ads=[
+                            MetaAd(
+                                ad_id=a.get("ad_id"),
+                                platform=a.get("platform"),
+                                start_date=_str_or_none(a.get("start_date")),
+                                status=a.get("status"),
+                                page_name=a.get("page_name"),
+                                ad_creative_body=a.get("ad_creative_body"),
+                                ad_creative_link_title=a.get("ad_creative_link_title"),
+                                ad_creative_link_description=a.get("ad_creative_link_description"),
+                                landing_page_url=a.get("landing_page_url"),
+                                image_url=a.get("image_url"),
+                            ) for a in meta_ads_map.get(domain, [])[:5]
+                        ] or None,
+                        google_ads=[
+                            GoogleAd(
+                                creative_id=a.get("creative_id"),
+                                format=a.get("format"),
+                                start_date=_str_or_none(a.get("start_date")),
+                                last_seen=_str_or_none(a.get("last_seen")),
+                                advertiser_name=a.get("advertiser_name"),
+                                original_url=a.get("original_url"),
+                                variant_content=a.get("variant_content"),
+                            ) for a in google_ads_map.get(domain, [])[:5]
+                        ] or None,
                     ),
                 ),
                 prior_company=PriorCompany(
