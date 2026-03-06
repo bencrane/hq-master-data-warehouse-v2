@@ -76,6 +76,7 @@ class PriorCompany(BaseModel):
 
 
 class Lead(BaseModel):
+    id: Optional[str] = None
     person: PersonData
     current_company: CurrentCompany
     prior_company: PriorCompany
@@ -113,6 +114,7 @@ class AlumniGTMLeadsRequest(BaseModel):
 
 LEADS_QUERY = """
 SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
+    pt.id AS people_target_id,
     pt.full_name,
     pt.first_name,
     pt.last_name,
@@ -307,6 +309,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
         for r in rows:
             domain = r["current_company_domain"]
             leads.append(Lead(
+                id=str(r["people_target_id"]),
                 person=PersonData(
                     full_name=r["full_name"],
                     first_name=r["first_name"],
