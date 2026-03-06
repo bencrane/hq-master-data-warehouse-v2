@@ -73,6 +73,7 @@ class PriorCompany(BaseModel):
     end_date: Optional[str] = None
     gtm_fit: Optional[bool] = None
     gtm_fit_reason: Optional[str] = None
+    firmographics: Optional[Firmographics] = None
 
 
 class Lead(BaseModel):
@@ -152,7 +153,16 @@ SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     sl.platform,
     sl.estimated_sales_yearly,
     sl.product_count,
-    sl.rank               AS storeleads_rank
+    sl.rank               AS storeleads_rank,
+
+    cf2.industry          AS prior_industry,
+    cf2.employee_count    AS prior_employee_count,
+    cf2.size_range        AS prior_size_range,
+    cf2.founded_year      AS prior_founded_year,
+    cf2.country           AS prior_country,
+    cf2.city              AS prior_city,
+    cf2.state             AS prior_state,
+    cf2.description       AS prior_company_description
 
 FROM core.people_targets pt
 
@@ -176,6 +186,9 @@ LEFT JOIN extracted.company_firmographics cf
 
 LEFT JOIN extracted.storeleads_company sl
     ON pt.domain = sl.domain
+
+LEFT JOIN extracted.company_firmographics cf2
+    ON cc.customer_domain = cf2.company_domain
 
 WHERE ($2::boolean IS NULL OR ct.gtm_fit = $2)
   AND ($3::text    IS NULL OR cc.customer_domain = $3)
@@ -357,6 +370,16 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     end_date=_str_or_none(r["prior_end_date"]),
                     gtm_fit=r["gtm_fit"],
                     gtm_fit_reason=r["gtm_fit_reason"],
+                    firmographics=Firmographics(
+                        industry=r["prior_industry"],
+                        employee_count=r["prior_employee_count"],
+                        size_range=r["prior_size_range"],
+                        founded_year=r["prior_founded_year"],
+                        country=r["prior_country"],
+                        city=r["prior_city"],
+                        state=r["prior_state"],
+                        description=r["prior_company_description"],
+                    ) if r["prior_industry"] or r["prior_employee_count"] else None,
                 ),
             ))
 
