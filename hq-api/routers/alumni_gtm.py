@@ -247,7 +247,7 @@ LEFT JOIN extracted.company_firmographics cf2
     ON cc.customer_domain = cf2.company_domain
 
 WHERE ct.gtm_fit = true
-  AND pt.icp_fit = true
+  AND pt.icp_fit = 'YES'
   AND ($2::text IS NULL OR cc.customer_domain = $2)
 
 ORDER BY pt.person_linkedin_url, cc.customer_domain, pwh.end_date DESC NULLS FIRST
@@ -266,7 +266,7 @@ LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
 WHERE ct.gtm_fit = true
-  AND pt.icp_fit = true
+  AND pt.icp_fit = 'YES'
   AND ($2::text IS NULL OR cc.customer_domain = $2)
 """
 
@@ -309,7 +309,7 @@ LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
 WHERE ct.gtm_fit = true
-  AND pt.icp_fit = true
+  AND pt.icp_fit = 'YES'
   AND ($2::text IS NULL OR cc.customer_domain = $2)
 GROUP BY cc.customer_domain, cc.customer_name
 ORDER BY lead_count DESC
