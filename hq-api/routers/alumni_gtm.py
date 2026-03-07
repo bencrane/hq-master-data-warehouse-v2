@@ -5,6 +5,7 @@ Returns qualified leads for AlumniGTM — people who previously worked at a clie
 customers and now hold buying authority at new companies.
 """
 
+import json
 from fastapi import APIRouter, Query
 from typing import Optional, List
 from pydantic import BaseModel
@@ -120,6 +121,7 @@ class Lead(BaseModel):
     person: PersonData
     current_company: CurrentCompany
     prior_company: PriorCompany
+    gtm_brief: Optional[dict] = None
 
 
 class PriorCompanySummary(BaseModel):
@@ -373,6 +375,20 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                 for gr in google_rows:
                     google_ads_map.setdefault(gr["domain"], []).append(dict(gr))
 
+            # Batch: GTM briefs
+            linkedin_urls = list({r["person_linkedin_url"] for r in rows if r["person_linkedin_url"]})
+            gtm_brief_map: dict[str, dict] = {}
+            if linkedin_urls:
+                brief_rows = await conn.fetch(
+                    "SELECT person_linkedin_url, output FROM extracted.parallel_person_gtm_briefs WHERE person_linkedin_url = ANY($1::text[]) AND origin_company_domain = $2",
+                    linkedin_urls, origin_domain
+                )
+                for br in brief_rows:
+                    output = br["output"]
+                    if isinstance(output, str):
+                        output = json.loads(output)
+                    gtm_brief_map[br["person_linkedin_url"]] = output
+
         # Build response objects
         leads: list[Lead] = []
         for r in rows:
@@ -476,6 +492,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                         description=r["prior_company_description"],
                     ) if r["prior_industry"] or r["prior_employee_count"] else None,
                 ),
+                gtm_brief=gtm_brief_map.get(r["person_linkedin_url"]),
             ))
 
         prior_companies_summary = [
