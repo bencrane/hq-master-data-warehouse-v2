@@ -28,6 +28,7 @@ class PersonData(BaseModel):
     picture_url: Optional[str] = None
     matched_seniority: Optional[str] = None
     matched_job_function: Optional[str] = None
+    icp_fit: Optional[str] = None
 
 
 class Firmographics(BaseModel):
@@ -130,11 +131,18 @@ class PriorCompanySummary(BaseModel):
     lead_count: int
 
 
+class FunnelSummary(BaseModel):
+    total_people: int
+    gtm_fit_true: int
+    gtm_fit_true_and_icp_fit_yes: int
+
+
 class AlumniGTMLeadsResponse(BaseModel):
     success: bool
     origin_company_domain: str
     total_leads: int
     total_prior_companies: int
+    funnel: Optional[FunnelSummary] = None
     leads: List[Lead]
     prior_companies_summary: List[PriorCompanySummary]
     error: Optional[str] = None
@@ -143,6 +151,8 @@ class AlumniGTMLeadsResponse(BaseModel):
 class AlumniGTMLeadsRequest(BaseModel):
     origin_company_domain: str
     prior_company_domain: Optional[str] = None
+    gtm_fit: Optional[bool] = None
+    icp_fit: Optional[str] = None
     limit: Optional[int] = 500
     offset: Optional[int] = 0
 
@@ -153,13 +163,14 @@ class AlumniGTMLeadsRequest(BaseModel):
 # DISTINCT ON deduplicates when person has multiple roles at the same customer.
 # ---------------------------------------------------------------------------
 
-LEADS_QUERY = """
+LEADS_BASE = """
 SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     pt.id AS people_target_id,
     pt.full_name,
     pt.first_name,
     pt.last_name,
     pt.person_linkedin_url,
+    pt.icp_fit,
     pt.cleaned_job_title  AS current_role,
     pt.company_name       AS current_company_name,
     pt.domain             AS current_company_domain,
@@ -245,15 +256,9 @@ LEFT JOIN core.company_revenue cr
 
 LEFT JOIN extracted.company_firmographics cf2
     ON cc.customer_domain = cf2.company_domain
-
-WHERE ct.gtm_fit = true
-  AND pt.icp_fit = 'YES'
-  AND ($2::text IS NULL OR cc.customer_domain = $2)
-
-ORDER BY pt.person_linkedin_url, cc.customer_domain, pwh.end_date DESC NULLS FIRST
 """
 
-COUNT_QUERY = """
+COUNT_BASE = """
 SELECT count(DISTINCT (pt.person_linkedin_url, cc.customer_domain)) AS total
 FROM core.people_targets pt
 JOIN core.person_work_history pwh
@@ -265,10 +270,52 @@ JOIN core.company_customers cc
 LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
-WHERE ct.gtm_fit = true
-  AND pt.icp_fit = 'YES'
-  AND ($2::text IS NULL OR cc.customer_domain = $2)
 """
+
+FUNNEL_QUERY = """
+SELECT
+    count(DISTINCT (pt.person_linkedin_url, cc.customer_domain)) AS total_people,
+    count(DISTINCT (pt.person_linkedin_url, cc.customer_domain))
+        FILTER (WHERE ct.gtm_fit = true) AS gtm_fit_true,
+    count(DISTINCT (pt.person_linkedin_url, cc.customer_domain))
+        FILTER (WHERE ct.gtm_fit = true AND pt.icp_fit = 'YES') AS gtm_fit_true_and_icp_fit_yes
+FROM core.people_targets pt
+JOIN core.person_work_history pwh
+    ON pt.person_linkedin_url = pwh.linkedin_url
+   AND pwh.is_current IS NOT TRUE
+JOIN core.company_customers cc
+    ON pwh.company_domain = cc.customer_domain
+   AND cc.origin_company_domain = $1
+LEFT JOIN core.company_targets ct
+    ON pt.domain = ct.target_company_domain
+   AND ct.origin_company_domain = $1
+WHERE ($2::text IS NULL OR cc.customer_domain = $2)
+"""
+
+
+def _build_where(prior_company_domain: str | None, gtm_fit: bool | None, icp_fit: str | None) -> tuple[str, list]:
+    """Build dynamic WHERE clause and param list (starting after $1 for origin_domain)."""
+    clauses = []
+    params = []
+    idx = 2  # $1 is origin_company_domain
+
+    # prior_company_domain is always included (nullable)
+    clauses.append(f"(${idx}::text IS NULL OR cc.customer_domain = ${idx})")
+    params.append(prior_company_domain)
+    idx += 1
+
+    if gtm_fit is not None:
+        clauses.append(f"ct.gtm_fit = ${idx}")
+        params.append(gtm_fit)
+        idx += 1
+
+    if icp_fit is not None:
+        clauses.append(f"pt.icp_fit = ${idx}")
+        params.append(icp_fit)
+        idx += 1
+
+    where = "WHERE " + " AND ".join(clauses)
+    return where, params, idx
 
 TECHNOLOGIES_QUERY = """
 SELECT domain, name
@@ -293,7 +340,7 @@ WHERE domain = ANY($1::text[])
 ORDER BY last_seen DESC NULLS LAST
 """
 
-PRIOR_COMPANIES_SUMMARY_QUERY = """
+PRIOR_COMPANIES_SUMMARY_BASE = """
 SELECT
     cc.customer_name  AS name,
     cc.customer_domain AS domain,
@@ -308,11 +355,6 @@ JOIN core.company_customers cc
 LEFT JOIN core.company_targets ct
     ON pt.domain = ct.target_company_domain
    AND ct.origin_company_domain = $1
-WHERE ct.gtm_fit = true
-  AND pt.icp_fit = 'YES'
-  AND ($2::text IS NULL OR cc.customer_domain = $2)
-GROUP BY cc.customer_domain, cc.customer_name
-ORDER BY lead_count DESC
 """
 
 
@@ -330,28 +372,45 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
     Get AlumniGTM leads for an origin company.
     Returns people who previously worked at the client's customers
     and now hold positions at new companies.
+
+    Optional filters: gtm_fit (bool), icp_fit (str e.g. 'YES').
+    When omitted, all leads are returned.
     """
     origin_domain = request.origin_company_domain.lower().strip()
     prior_company_domain = request.prior_company_domain
+    gtm_fit = request.gtm_fit
+    icp_fit = request.icp_fit
     limit = min(request.limit or 500, 500)
     offset = request.offset or 0
+
+    where_clause, where_params, next_idx = _build_where(prior_company_domain, gtm_fit, icp_fit)
 
     pool = get_pool()
 
     try:
         async with pool.acquire() as conn:
+            # Funnel counts (always unfiltered except prior_company_domain)
+            funnel_row = await conn.fetchrow(
+                FUNNEL_QUERY, origin_domain, prior_company_domain
+            )
+
+            # Filtered count
+            count_query = COUNT_BASE + where_clause
             total_row = await conn.fetchrow(
-                COUNT_QUERY, origin_domain, prior_company_domain
+                count_query, origin_domain, *where_params
             )
             total_leads = total_row["total"] if total_row else 0
 
-            paginated_query = LEADS_QUERY + " LIMIT $3 OFFSET $4"
+            # Filtered leads
+            leads_query = LEADS_BASE + where_clause + f" ORDER BY pt.person_linkedin_url, cc.customer_domain, pwh.end_date DESC NULLS FIRST LIMIT ${next_idx} OFFSET ${next_idx + 1}"
             rows = await conn.fetch(
-                paginated_query, origin_domain, prior_company_domain, limit, offset
+                leads_query, origin_domain, *where_params, limit, offset
             )
 
+            # Filtered prior companies summary
+            summary_query = PRIOR_COMPANIES_SUMMARY_BASE + where_clause + " GROUP BY cc.customer_domain, cc.customer_name ORDER BY lead_count DESC"
             summary_rows = await conn.fetch(
-                PRIOR_COMPANIES_SUMMARY_QUERY, origin_domain, prior_company_domain
+                summary_query, origin_domain, *where_params
             )
 
             # Collect unique current-company domains for batch lookups
@@ -405,6 +464,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     picture_url=r["picture_url"],
                     matched_seniority=r["matched_seniority"],
                     matched_job_function=r["matched_job_function"],
+                    icp_fit=r["icp_fit"],
                 ),
                 current_company=CurrentCompany(
                     name=r["current_company_name"],
@@ -504,11 +564,18 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
             for sr in summary_rows
         ]
 
+        funnel = FunnelSummary(
+            total_people=funnel_row["total_people"] if funnel_row else 0,
+            gtm_fit_true=funnel_row["gtm_fit_true"] if funnel_row else 0,
+            gtm_fit_true_and_icp_fit_yes=funnel_row["gtm_fit_true_and_icp_fit_yes"] if funnel_row else 0,
+        )
+
         return AlumniGTMLeadsResponse(
             success=True,
             origin_company_domain=origin_domain,
             total_leads=total_leads,
             total_prior_companies=len(prior_companies_summary),
+            funnel=funnel,
             leads=leads,
             prior_companies_summary=prior_companies_summary,
         )
@@ -523,3 +590,40 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
             leads=[],
             prior_companies_summary=[],
         )
+
+
+# ---------------------------------------------------------------------------
+# Update tech_on_site for a company target
+# ---------------------------------------------------------------------------
+
+class UpdateTechOnSiteRequest(BaseModel):
+    origin_company_domain: str
+    target_company_domain: str
+    tech_on_site: str
+
+
+@router.post("/company-targets/tech-on-site")
+async def update_tech_on_site(request: UpdateTechOnSiteRequest):
+    """
+    Set tech_on_site for a company target.
+    Expects a comma-separated string, e.g. "Shopify, Shopify Plus".
+    """
+    pool = get_pool()
+    origin = request.origin_company_domain.lower().strip()
+    target = request.target_company_domain.lower().strip()
+
+    result = await pool.execute(
+        """
+        UPDATE core.company_targets
+        SET tech_on_site = $3, updated_at = now()
+        WHERE origin_company_domain = $1
+          AND target_company_domain = $2
+        """,
+        origin, target, request.tech_on_site,
+    )
+
+    rows_affected = int(result.split()[-1])
+    if rows_affected == 0:
+        return {"success": False, "error": f"No company_targets row for origin={origin}, target={target}"}
+
+    return {"success": True, "origin_company_domain": origin, "target_company_domain": target, "tech_on_site": request.tech_on_site}
