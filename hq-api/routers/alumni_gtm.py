@@ -446,7 +446,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     output = br["output"]
                     if isinstance(output, str):
                         output = json.loads(output)
-                    gtm_brief_map[br["person_linkedin_url"]] = output
+                    gtm_brief_map[br["person_linkedin_url"]] = output.get("content") if isinstance(output, dict) else output
 
         # Build response objects
         leads: list[Lead] = []
