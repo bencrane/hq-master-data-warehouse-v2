@@ -101,6 +101,7 @@ class CurrentCompany(BaseModel):
     cleaned_job_title: Optional[str] = None
     revenue_range: Optional[str] = None
     tech_on_site: Optional[str] = None
+    priority: Optional[str] = None
     firmographics: Optional[Firmographics] = None
     storeleads: Optional[StoreleadsData] = None
     ads: Optional[AdsData] = None
@@ -187,6 +188,7 @@ SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     ct.gtm_fit,
     ct.reason             AS gtm_fit_reason,
     ct.tech_on_site,
+    ct.priority,
 
     pp.headline,
     pp.location_name,
@@ -476,6 +478,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     cleaned_job_title=r["current_role"],
                     revenue_range=r["revenue_range"],
                     tech_on_site=r["tech_on_site"],
+                    priority=r["priority"],
                     firmographics=Firmographics(
                         industry=r["industry"],
                         employee_count=r["employee_count"],
