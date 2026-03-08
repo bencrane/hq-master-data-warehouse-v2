@@ -70,6 +70,11 @@ class PersonContactRequest(BaseModel):
     company_domain: Optional[str] = None
 
 
+class UrlContentExtractRequest(BaseModel):
+    url: str
+    objective: str = "Extract all content from the provided page. Including description, industries served, website url, linkedin url, and contact information"
+
+
 class CaseStudyExtractRequest(BaseModel):
     case_study_url: str
     origin_company_domain: Optional[str] = None
@@ -545,6 +550,60 @@ async def enrich_person_contact(request: PersonContactRequest):
         "email": output.get("email"),
         "linkedin_url": output.get("linkedin_url"),
         "company_website": output.get("company_website")
+    }
+
+
+@router.post("/url-content/extract")
+async def extract_url_content(request: UrlContentExtractRequest):
+    """
+    Extract content from a URL using Parallel AI's search-extract API.
+    Accepts a URL and a flexible objective string.
+    Returns the extraction result and writes to raw.parallel_url_content_extractions.
+    """
+    if not PARALLEL_API_KEY:
+        raise HTTPException(status_code=500, detail="PARALLEL_API_KEY not configured")
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": PARALLEL_API_KEY,
+        "parallel-beta": "search-extract-2025-10-10",
+    }
+
+    payload = {
+        "urls": [request.url],
+        "excerpts": True,
+        "full_content": True,
+        "objective": request.objective,
+    }
+
+    async with httpx.AsyncClient(timeout=120) as client:
+        response = await client.post(
+            "https://api.parallel.ai/v1beta/extract",
+            headers=headers,
+            json=payload,
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Parallel extract API failed: {response.status_code} - {response.text}",
+            )
+
+        result = response.json()
+
+    # Write to DB
+    pool = get_pool()
+    await pool.execute("""
+        INSERT INTO raw.parallel_url_content_extractions
+            (url, objective, result, created_at)
+        VALUES ($1, $2, $3::jsonb, NOW())
+    """, request.url, request.objective, json.dumps(result))
+
+    return {
+        "success": True,
+        "url": request.url,
+        "objective": request.objective,
+        "result": result,
     }
 
 
