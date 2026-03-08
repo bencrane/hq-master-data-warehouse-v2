@@ -18,6 +18,7 @@ router = APIRouter(prefix="/parallel-native", tags=["parallel-native"])
 
 PARALLEL_API_KEY = os.getenv("PARALLEL_API_KEY")
 PARALLEL_TASK_API_URL = "https://api.parallel.ai/v1/tasks/runs"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 # =============================================================================
@@ -75,6 +76,11 @@ class UrlContentExtractRequest(BaseModel):
     objective: str = "Extract all content from the provided page. Including description, industries served, website url, linkedin url, and contact information"
     excerpts: bool = True
     full_content: bool = True
+
+
+class UrlContentParseRequest(BaseModel):
+    full_content: str
+    source_url: Optional[str] = None
 
 
 class CaseStudyExtractRequest(BaseModel):
@@ -606,6 +612,82 @@ async def extract_url_content(request: UrlContentExtractRequest):
         "url": request.url,
         "objective": request.objective,
         "result": result,
+    }
+
+
+@router.post("/url-content/parse")
+async def parse_url_content(request: UrlContentParseRequest):
+    """
+    Parse structured fields from factoring directory full_content markdown.
+    Uses OpenAI to extract company name, description, contact info, socials, etc.
+    Writes to raw.parallel_url_content_parsed.
+    """
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+
+    system_prompt = """You are a structured data extractor. Given markdown content from a factoring company directory page, extract all fields into the exact JSON schema provided. Return null for any field not found. For arrays, return an empty array if none found."""
+
+    user_prompt = f"""Extract structured data from this factoring company page content:
+
+{request.full_content}
+
+Return JSON with these fields:
+- company_name (string)
+- description (string - full company description text)
+- year_established (string or null)
+- associations (array of strings)
+- industries_served (array of strings - parse from description)
+- website_url (string or null)
+- linkedin_url (string or null)
+- facebook_url (string or null)
+- twitter_url (string or null)
+- youtube_url (string or null)
+- phone (string or null)
+- email (string or null)
+- address_full (string or null - complete address as written)
+- address_city (string or null)
+- address_state (string or null)
+- address_zip (string or null)"""
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            },
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"OpenAI API failed: {response.status_code} - {response.text}",
+            )
+
+        openai_result = response.json()
+        parsed = json.loads(openai_result["choices"][0]["message"]["content"])
+
+    # Write to DB
+    pool = get_pool()
+    await pool.execute("""
+        INSERT INTO raw.parallel_url_content_parsed
+            (source_url, full_content, parsed_result, created_at)
+        VALUES ($1, $2, $3::jsonb, NOW())
+    """, request.source_url, request.full_content, json.dumps(parsed))
+
+    return {
+        "success": True,
+        "source_url": request.source_url,
+        "parsed": parsed,
     }
 
 
