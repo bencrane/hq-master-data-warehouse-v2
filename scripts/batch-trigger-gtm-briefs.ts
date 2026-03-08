@@ -12,10 +12,14 @@ configure({ secretKey: TRIGGER_SECRET_KEY });
 
 const ORIGIN_DOMAIN = process.argv[2] || "nostra.ai";
 const LIMIT = parseInt(process.argv[3] || "100", 10);
+const ICP_FIT = process.argv[4] || null; // optional: "YES", "NO", "MAYBE"
 
 async function main() {
   // 1. Fetch all unprocessed leads + prompt template from FastAPI
-  const url = `${HQ_API_URL}/parallel-native/gtm-brief/leads?origin_company_domain=${encodeURIComponent(ORIGIN_DOMAIN)}&limit=${LIMIT}`;
+  let url = `${HQ_API_URL}/parallel-native/gtm-brief/leads?origin_company_domain=${encodeURIComponent(ORIGIN_DOMAIN)}&limit=${LIMIT}`;
+  if (ICP_FIT) {
+    url += `&icp_fit=${encodeURIComponent(ICP_FIT)}`;
+  }
   console.log(`Fetching leads from: ${url}`);
 
   const res = await fetch(url);
