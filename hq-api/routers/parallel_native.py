@@ -73,6 +73,8 @@ class PersonContactRequest(BaseModel):
 class UrlContentExtractRequest(BaseModel):
     url: str
     objective: str = "Extract all content from the provided page. Including description, industries served, website url, linkedin url, and contact information"
+    excerpts: bool = True
+    full_content: bool = True
 
 
 class CaseStudyExtractRequest(BaseModel):
@@ -571,8 +573,8 @@ async def extract_url_content(request: UrlContentExtractRequest):
 
     payload = {
         "urls": [request.url],
-        "excerpts": True,
-        "full_content": True,
+        "excerpts": request.excerpts,
+        "full_content": request.full_content,
         "objective": request.objective,
     }
 
