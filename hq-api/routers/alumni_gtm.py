@@ -29,6 +29,7 @@ class PersonData(BaseModel):
     matched_seniority: Optional[str] = None
     matched_job_function: Optional[str] = None
     icp_fit: Optional[str] = None
+    is_at_customer: Optional[bool] = False
 
 
 class Firmographics(BaseModel):
@@ -174,6 +175,7 @@ SELECT DISTINCT ON (pt.person_linkedin_url, cc.customer_domain)
     pt.person_linkedin_url,
     pt.icp_fit,
     pt.cleaned_job_title  AS current_role,
+    pt.is_at_customer,
     pt.company_name       AS current_company_name,
     pt.domain             AS current_company_domain,
     pt.company_linkedin_url AS current_company_linkedin_url,
@@ -469,6 +471,7 @@ async def get_alumni_gtm_leads(request: AlumniGTMLeadsRequest):
                     matched_seniority=r["matched_seniority"],
                     matched_job_function=r["matched_job_function"],
                     icp_fit=r["icp_fit"],
+                    is_at_customer=r["is_at_customer"],
                 ),
                 current_company=CurrentCompany(
                     name=r["current_company_name"],
