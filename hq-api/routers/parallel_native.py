@@ -795,11 +795,13 @@ async def extract_case_study_v2(request: CaseStudyExtractRequest):
 # =============================================================================
 
 @router.get("/gtm-brief/leads")
-async def get_gtm_brief_leads(origin_company_domain: str, limit: int = 1):
+async def get_gtm_brief_leads(origin_company_domain: str, limit: int = 1, icp_fit: Optional[str] = None):
     """
     Fetch unprocessed alumni GTM leads for a given origin company.
     Returns leads from core.alumni_gtm_leads where has_gtm_brief = false.
     Also returns the prompt template from the enrichment registry.
+
+    Optional icp_fit filter: "YES", "NO", "MAYBE", or None (no filter).
     """
     pool = get_pool()
 
@@ -816,14 +818,24 @@ async def get_gtm_brief_leads(origin_company_domain: str, limit: int = 1):
 
     prompt_template = registry_row["input_template"]
 
-    # Fetch unprocessed leads
-    leads = await pool.fetch("""
-        SELECT *
-        FROM core.alumni_gtm_leads
-        WHERE has_gtm_brief = false
-        AND origin_company_domain = $1
-        LIMIT $2
-    """, origin_company_domain, limit)
+    # Fetch unprocessed leads with optional icp_fit filter
+    if icp_fit:
+        leads = await pool.fetch("""
+            SELECT *
+            FROM core.alumni_gtm_leads
+            WHERE has_gtm_brief = false
+            AND origin_company_domain = $1
+            AND icp_fit = $2
+            LIMIT $3
+        """, origin_company_domain, icp_fit.upper(), limit)
+    else:
+        leads = await pool.fetch("""
+            SELECT *
+            FROM core.alumni_gtm_leads
+            WHERE has_gtm_brief = false
+            AND origin_company_domain = $1
+            LIMIT $2
+        """, origin_company_domain, limit)
 
     return {
         "leads": [dict(row) for row in leads],
